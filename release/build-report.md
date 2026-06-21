@@ -3,8 +3,8 @@
 | Field | Value |
 |-------|-------|
 | Version | 0.1.0 |
-| Build time | 2026-06-21T13:11:40.378Z |
-| Duration | 34.8s |
+| Build time | 2026-06-21T13:15:21.846Z |
+| Duration | 49.0s |
 | Platform | win32 (x64) |
 | Targets | MSI, NSIS |
 | Tauri build | SUCCESS |

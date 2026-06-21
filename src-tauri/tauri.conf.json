@@ -24,13 +24,18 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis"],
+    "targets": [
+      "msi",
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -43,10 +48,19 @@
         "language": "zh-CN"
       },
       "nsis": {
-        "languages": ["English", "SimpChinese"],
+        "languages": [
+          "English",
+          "SimpChinese"
+        ],
         "installerIcon": "icons/icon.ico"
       }
-    }
+    },
+    "resources": [
+      {
+        "path": "backend/",
+        "target": "backend"
+      }
+    ]
   },
   "plugins": {
     "shell": {

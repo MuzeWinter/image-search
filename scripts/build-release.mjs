@@ -83,7 +83,7 @@ try {
   const prevVersion = conf.version;
   conf.version = version;
   conf.bundle = conf.bundle || {};
-  conf.bundle.resources = { "backend/": "backend/" };
+  conf.bundle.resources = [{ "path": "backend/", "target": "backend" }];
   writeFileSync(confPath, JSON.stringify(conf, null, 2) + "\n", "utf-8");
   log(`  ${prevVersion} → ${version}, resources configured`);
 
