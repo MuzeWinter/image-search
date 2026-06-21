@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, Command, Stdio};
@@ -81,7 +81,6 @@ fn call_backend(
             .map_err(|e| format!("stdin newline error: {}", e))?;
         stdin.flush().map_err(|e| format!("stdin flush error: {}", e))?;
     }
-    // Close stdin so Python process sees EOF and exits after responding
     drop(child.stdin.take());
 
     let stdout = child.stdout.take().ok_or("no stdout")?;
@@ -130,7 +129,6 @@ fn scan_library(
         ));
     }
 
-    // Acquire Python lock to prevent concurrent Python calls
     let _guard = PYTHON_LOCK.lock().map_err(|e| format!("lock error: {}", e))?;
 
     let mut child = Command::new(python)
@@ -173,7 +171,6 @@ fn scan_library(
         }
     }
 
-    // Clear scan child
     if let Ok(mut guard) = SCAN_CHILD.lock() {
         if let Some(ref mut c) = *guard {
             let _ = c.wait();
@@ -201,6 +198,33 @@ fn cancel_scan() -> Result<serde_json::Value, String> {
     }
 }
 
+#[tauri::command]
+fn open_file(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if !p.exists() {
+        return Err(format!("File not found: {}", path));
+    }
+    std::process::Command::new("explorer")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| format!("Failed to open: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn open_folder(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    let target = if p.is_file() { p.parent().unwrap_or(p) } else { p };
+    if !target.exists() {
+        return Err(format!("Folder not found: {}", target.display()));
+    }
+    std::process::Command::new("explorer")
+        .arg(target)
+        .spawn()
+        .map_err(|e| format!("Failed to open: {}", e))?;
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -208,7 +232,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             call_backend,
             scan_library,
-            cancel_scan
+            cancel_scan,
+            open_file,
+            open_folder
         ])
         .setup(|app| {
             let _window = app.get_webview_window("main").unwrap();

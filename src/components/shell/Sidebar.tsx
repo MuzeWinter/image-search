@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
 import { useI18n } from "../../i18n/context";
 
 interface NavItem {
@@ -8,7 +8,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { key: "search", path: "/" },
-  { key: "library", path: "/libraries" },
+  { key: "library", path: "/library" },
   { key: "settings", path: "/settings" },
 ];
 

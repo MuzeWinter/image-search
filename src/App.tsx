@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+﻿import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "./i18n/context";
@@ -40,7 +40,7 @@ export function App() {
             <Routes>
               <Route path="/" element={<AppShell />}>
                 <Route index element={suspense(Search)} />
-                <Route path="libraries" element={suspense(Library)} />
+                <Route path="library" element={suspense(Library)} />
                 <Route path="settings" element={suspense(Settings)} />
               </Route>
             </Routes>
