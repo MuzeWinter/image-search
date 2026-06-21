@@ -258,7 +258,7 @@ fn spawn_error_report(trigger: &str, context: &str) {
         .arg("--context")
         .arg(context)
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped()).creation_flags(0x08000000).spawn()
+        .stderr(Stdio::null()).creation_flags(0x08000000).spawn()
     {
         Ok(mut child) => {
             let _ = child.wait();
@@ -343,7 +343,7 @@ fn try_call_backend(
         .arg(backend_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped()).creation_flags(0x08000000).spawn()
+        .stderr(Stdio::null()).creation_flags(0x08000000).spawn()
         .map_err(|e| format!("Failed to start Python backend: {}", e))?;
 
     if let Some(ref mut stdin) = child.stdin {
@@ -618,7 +618,7 @@ fn scan_library(
         .arg("--path")
         .arg(&library_path)
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped()).creation_flags(0x08000000).spawn()
+        .stderr(Stdio::null()).creation_flags(0x08000000).spawn()
         .map_err(|e| format!("Failed to start scan process: {}", e))?;
 
     let stdout = child.stdout.take().ok_or("no stdout from scan process")?;
