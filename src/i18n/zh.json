@@ -63,6 +63,10 @@
     "delete": "删除",
     "confirm": "确认"
   },
+  "errorBoundary": {
+    "title": "应用出错了",
+    "description": "请尝试刷新页面或点击重试按钮。如果问题持续出现，请检查控制台日志。"
+  },
   "settings": {
     "title": "系统设置",
     "appearance": "外观",
@@ -131,6 +135,9 @@
     "phaseCollecting": "正在收集文件...",
     "phaseHashing": "正在计算哈希...",
     "phaseComparing": "正在检测变更...",
+    "excelImages": "Excel 图片",
+    "autoMatches": "自动匹配",
+    "autoIndexed": "自动索引",
     "phaseSaving": "正在保存到数据库...",
     "emptyIcon": "📁",
     "emptyTitle": "暂无资料库",
@@ -176,7 +183,12 @@
     "ocrText": "OCR 文字",
     "similarityHigh": "高",
     "similarityMid": "中",
-    "similarityLow": "低"
+    "similarityLow": "低",
+    "scopeAll": "全部图片",
+    "scopeExcelOnly": "Excel 内嵌图片",
+    "scopeImagesOnly": "独立图片文件",
+    "scopeWithCad": "有关联 CAD",
+    "scopeFavorites": "仅收藏"
   },
   "imageLibrary": {
     "title": "图片资料库",

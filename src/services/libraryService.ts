@@ -1,13 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
+import { callBackend } from "./ipc";
 import { serviceRegistry } from "./registry";
 import type { Library } from "./types";
-
-function call(method: string, params?: unknown) {
-  return invoke("call_backend", {
-    method,
-    params: params ?? {},
-  });
-}
 
 serviceRegistry.register({
   name: "libraryService",
@@ -15,28 +8,26 @@ serviceRegistry.register({
   start: async () => {
     // Library service is stateless, no explicit init needed
   },
-  invoke: <T>(method: string, params?: unknown) => call(method, params) as Promise<T>,
+  invoke: <T>(method: string, params?: Record<string, unknown>) =>
+    callBackend<T>(method, params),
 });
 
 export async function list(): Promise<Library[]> {
   await serviceRegistry.ensureReady("libraryService");
-  return call("library.list") as Promise<Library[]>;
+  return callBackend<Library[]>("library.list");
 }
 
-export async function add(
-  path: string,
-  label?: string,
-): Promise<Library> {
+export async function add(path: string, label?: string): Promise<Library> {
   await serviceRegistry.ensureReady("libraryService");
-  return call("library.add", { path, label }) as Promise<Library>;
+  return callBackend<Library>("library.add", { path, label });
 }
 
 export async function remove(id: number): Promise<void> {
   await serviceRegistry.ensureReady("libraryService");
-  await call("library.remove", { id });
+  await callBackend("library.remove", { id });
 }
 
 export async function get(id: number): Promise<Library> {
   await serviceRegistry.ensureReady("libraryService");
-  return call("library.get", { id }) as Promise<Library>;
+  return callBackend<Library>("library.get", { id });
 }

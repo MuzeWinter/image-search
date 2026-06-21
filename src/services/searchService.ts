@@ -1,12 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import { callBackend } from "./ipc";
 import { serviceRegistry } from "./registry";
-
-function call(method: string, params?: unknown) {
-  return invoke("call_backend", {
-    method,
-    params: params ?? {},
-  });
-}
 
 serviceRegistry.register({
   name: "searchService",
@@ -14,7 +7,8 @@ serviceRegistry.register({
   start: async () => {
     // Search service starts lazily
   },
-  invoke: <T>(method: string, params?: unknown) => call(method, params) as Promise<T>,
+  invoke: <T>(method: string, params?: Record<string, unknown>) =>
+    callBackend<T>(method, params),
 });
 
 export interface ExcelInfo {
@@ -87,47 +81,108 @@ export interface EmbeddingItem {
   source_type: string | null;
 }
 
-export async function searchByImage(imageBase64: string, topK?: number): Promise<SearchResults> {
+export type SearchScope = "all" | "excel_only" | "images_only" | "with_cad" | "favorites_only";
+
+export async function searchByImage(
+  imageBase64: string,
+  topK?: number,
+  scope?: SearchScope,
+): Promise<SearchResults> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.searchByImage", { image_base64: imageBase64, top_k: topK ?? 20 }) as Promise<SearchResults>;
+  return callBackend<SearchResults>("search.searchByImage", {
+    image_base64: imageBase64,
+    top_k: topK ?? 20,
+    scope: scope ?? "all",
+  });
 }
 
-export async function searchByPath(filePath: string, topK?: number): Promise<SearchByPathResults> {
+export async function searchByPath(
+  filePath: string,
+  topK?: number,
+  scope?: SearchScope,
+): Promise<SearchByPathResults> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.searchByPath", { file_path: filePath, top_k: topK ?? 20 }) as Promise<SearchByPathResults>;
+  return callBackend<SearchByPathResults>("search.searchByPath", {
+    file_path: filePath,
+    top_k: topK ?? 20,
+    scope: scope ?? "all",
+  });
 }
 
-export async function searchByVector(vector: number[], topK?: number): Promise<SearchResults> {
+export async function searchByVector(
+  vector: number[],
+  topK?: number,
+  scope?: SearchScope,
+): Promise<SearchResults> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.searchByVector", { vector, top_k: topK ?? 20 }) as Promise<SearchResults>;
+  return callBackend<SearchResults>("search.searchByVector", {
+    vector,
+    top_k: topK ?? 20,
+    scope: scope ?? "all",
+  });
 }
 
-export async function buildIndex(): Promise<{ ok: boolean; count: number; dim?: number }> {
+export async function buildIndex(): Promise<{
+  ok: boolean;
+  count: number;
+  dim?: number;
+}> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.buildIndex") as Promise<{ ok: boolean; count: number; dim?: number }>;
+  return callBackend<{ ok: boolean; count: number; dim?: number }>(
+    "search.buildIndex",
+  );
 }
 
 export async function getIndexStatus(): Promise<IndexStatus> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.getIndexStatus") as Promise<IndexStatus>;
+  return callBackend<IndexStatus>("search.getIndexStatus");
 }
 
-export async function indexImage(imgId: string, imageBase64: string): Promise<{ ok: boolean; img_id: string; vector_dim: number }> {
+export async function indexImage(
+  imgId: string,
+  imageBase64: string,
+): Promise<{ ok: boolean; img_id: string; vector_dim: number }> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.indexImage", { img_id: imgId, image_base64: imageBase64 }) as Promise<{ ok: boolean; img_id: string; vector_dim: number }>;
+  return callBackend<{ ok: boolean; img_id: string; vector_dim: number }>(
+    "search.indexImage",
+    { img_id: imgId, image_base64: imageBase64 },
+  );
 }
 
-export async function batchIndex(limit?: number): Promise<{ ok: boolean; indexed: number; errors: unknown[]; total_checked: number }> {
+export async function batchIndex(
+  limit?: number,
+): Promise<{
+  ok: boolean;
+  indexed: number;
+  errors: unknown[];
+  total_checked: number;
+}> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.batchIndex", { limit: limit ?? 50 }) as Promise<{ ok: boolean; indexed: number; errors: unknown[]; total_checked: number }>;
+  return callBackend<{
+    ok: boolean;
+    indexed: number;
+    errors: unknown[];
+    total_checked: number;
+  }>("search.batchIndex", { limit: limit ?? 50 });
 }
 
-export async function listEmbeddings(limit?: number, offset?: number): Promise<{ items: EmbeddingItem[]; total: number }> {
+export async function listEmbeddings(
+  limit?: number,
+  offset?: number,
+): Promise<{ items: EmbeddingItem[]; total: number }> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.listEmbeddings", { limit: limit ?? 100, offset: offset ?? 0 }) as Promise<{ items: EmbeddingItem[]; total: number }>;
+  return callBackend<{ items: EmbeddingItem[]; total: number }>(
+    "search.listEmbeddings",
+    { limit: limit ?? 100, offset: offset ?? 0 },
+  );
 }
 
-export async function deleteEmbedding(imgId: string): Promise<{ ok: boolean; deleted: string }> {
+export async function deleteEmbedding(
+  imgId: string,
+): Promise<{ ok: boolean; deleted: string }> {
   await serviceRegistry.ensureReady("searchService");
-  return call("search.deleteEmbedding", { img_id: imgId }) as Promise<{ ok: boolean; deleted: string }>;
+  return callBackend<{ ok: boolean; deleted: string }>(
+    "search.deleteEmbedding",
+    { img_id: imgId },
+  );
 }

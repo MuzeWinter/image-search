@@ -6,7 +6,7 @@ export interface ServiceDescriptor {
   name: string;
   status: ServiceStatus;
   start: () => Promise<void>;
-  invoke: <T>(method: string, params?: unknown) => Promise<T>;
+  invoke: <T>(method: string, params?: Record<string, unknown>) => Promise<T>;
   stop?: () => Promise<void>;
 }
 
@@ -82,6 +82,9 @@ export interface ScanResult {
   cad_count: number;
   pdf_count: number;
   other_count: number;
+  excel_image_count?: number;
+  auto_matches?: number;
+  auto_indexed?: number;
   error?: string;
 }
 

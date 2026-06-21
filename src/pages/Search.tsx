@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useI18n } from "../i18n/context";
 import * as searchService from "../services/searchService";
+import type { SearchScope } from "../services/searchService";
 import * as aiService from "../services/aiService";
 import * as ocrService from "../services/ocrService";
 import type { SearchResultItem, SearchResults } from "../services/searchService";
@@ -60,6 +61,7 @@ export default function Search() {
   const [ocrEnabled, setOcrEnabled] = useState(false);
   const [ocrText, setOcrText] = useState("");
   const [copiedPath, setCopiedPath] = useState("");
+  const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -98,7 +100,7 @@ export default function Search() {
     setState("searching");
 
     try {
-      const searchResults = await searchService.searchByImage(base64, 30);
+      const searchResults = await searchService.searchByImage(base64, 30, searchScope);
       setResults(searchResults);
       setState("done");
 
@@ -117,7 +119,7 @@ export default function Search() {
         pollRef.current = null;
       }
     }
-  }, [ocrEnabled]);
+  }, [ocrEnabled, searchScope]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -225,6 +227,28 @@ export default function Search() {
           style={{ display: "none" }}
           onChange={handleFileSelect}
         />
+      </div>
+
+      {/* Search scope filter */}
+      <div className="search-scope-bar">
+        <span className="search-scope-label">{t("aiSearch.scopeAll")}:</span>
+        <div className="search-scope-options">
+          {([
+            ["all", "aiSearch.scopeAll"],
+            ["excel_only", "aiSearch.scopeExcelOnly"],
+            ["images_only", "aiSearch.scopeImagesOnly"],
+            ["with_cad", "aiSearch.scopeWithCad"],
+            ["favorites_only", "aiSearch.scopeFavorites"],
+          ] as const).map(([val, labelKey]) => (
+            <button
+              key={val}
+              className={`search-scope-btn ${searchScope === val ? "active" : ""}`}
+              onClick={() => setSearchScope(val)}
+            >
+              {t(labelKey)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Model loading progress */}

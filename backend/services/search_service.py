@@ -143,8 +143,8 @@ def _index_single(img_id: str, vector: list):
     _log(f"Indexed image {img_id}, total={len(_index_img_ids)}")
 
 
-def _search_similar(query_vector: list, top_k: int = 20):
-    """搜索相似图片"""
+def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all"):
+    """搜索相似图片，支持搜索范围过滤"""
     _load_index()
 
     if _index_status["count"] == 0:
@@ -152,7 +152,10 @@ def _search_similar(query_vector: list, top_k: int = 20):
 
     vec = np.array(query_vector, dtype=np.float32).reshape(1, -1)
 
-    distances, indices = _index.search(vec, min(top_k, _index_status["count"]))
+    # Get more candidates to filter by scope
+    fetch_k = min(top_k * 3, _index_status["count"])
+
+    distances, indices = _index.search(vec, fetch_k)
 
     results = []
     conn = get_connection()
@@ -170,6 +173,24 @@ def _search_similar(query_vector: list, top_k: int = 20):
             continue
 
         img_data = dict(img_row)
+
+        # Apply scope filter
+        if scope == "excel_only" and img_data.get("source_type") != "excel_embedded":
+            continue
+        if scope == "images_only" and img_data.get("source_type") != "file_image":
+            continue
+        if scope == "with_cad":
+            cad_ref = img_data.get("cad_ref")
+            if not cad_ref:
+                # Also check matches table
+                match_row = conn.execute(
+                    "SELECT cad_id FROM matches WHERE img_id = ? AND cad_id IS NOT NULL LIMIT 1",
+                    (img_id,)
+                ).fetchone()
+                if not match_row:
+                    continue
+        if scope == "favorites_only" and not img_data.get("favorite"):
+            continue
 
         # Parse tags
         tags_str = img_data.get("tags") or ""
@@ -310,11 +331,12 @@ def _handle_search_by_vector(params: dict):
     """通过特征向量搜索相似图片"""
     vector = params.get("vector", [])
     top_k = params.get("top_k", 20)
+    scope = params.get("scope", "all")
     if not vector:
         raise ValueError("vector is required")
 
     start = time.time()
-    results = _search_similar(vector, top_k)
+    results = _search_similar(vector, top_k, scope)
     duration_ms = int((time.time() - start) * 1000)
 
     return {
@@ -333,6 +355,7 @@ def _handle_search_by_image(params: dict):
     if not image_b64:
         raise ValueError("image_base64 is required")
     top_k = params.get("top_k", 20)
+    scope = params.get("scope", "all")
 
     # Decode image
     if "," in image_b64 and image_b64.startswith("data:"):
@@ -352,7 +375,7 @@ def _handle_search_by_image(params: dict):
 
     # Search
     start = time.time()
-    results = _search_similar(vector.tolist(), top_k)
+    results = _search_similar(vector.tolist(), top_k, scope)
     duration_ms = int((time.time() - start) * 1000)
 
     # Record search history
@@ -382,6 +405,7 @@ def _handle_search_by_path(params: dict):
     if not os.path.exists(file_path):
         raise ValueError(f"File not found: {file_path}")
     top_k = params.get("top_k", 20)
+    scope = params.get("scope", "all")
 
     with open(file_path, "rb") as f:
         image_bytes = f.read()
@@ -397,7 +421,7 @@ def _handle_search_by_path(params: dict):
     vector = _extract_features(tensor)
 
     start = time.time()
-    results = _search_similar(vector.tolist(), top_k)
+    results = _search_similar(vector.tolist(), top_k, scope)
     duration_ms = int((time.time() - start) * 1000)
 
     # Record search history

@@ -1,26 +1,20 @@
-import { invoke } from "@tauri-apps/api/core";
+import { callBackend } from "./ipc";
 import { serviceRegistry } from "./registry";
 import type { SystemStats } from "./types";
-
-function call(method: string, params?: unknown) {
-  return invoke("call_backend", {
-    method,
-    params: params ?? {},
-  });
-}
 
 serviceRegistry.register({
   name: "dbService",
   status: "idle",
   start: async () => {
-    await call("db.init");
+    await callBackend("db.init");
   },
-  invoke: <T>(method: string, params?: unknown) => call(method, params) as Promise<T>,
+  invoke: <T>(method: string, params?: Record<string, unknown>) =>
+    callBackend<T>(method, params),
 });
 
 export async function getStats(): Promise<SystemStats> {
   await serviceRegistry.ensureReady("dbService");
-  return call("db.getStats") as Promise<SystemStats>;
+  return callBackend<SystemStats>("db.getStats");
 }
 
 export async function query<T = unknown>(
@@ -28,7 +22,7 @@ export async function query<T = unknown>(
   params?: unknown[],
 ): Promise<T[]> {
   await serviceRegistry.ensureReady("dbService");
-  return call("db.query", { sql, params: params ?? [] }) as Promise<T[]>;
+  return callBackend<T[]>("db.query", { sql, params: params ?? [] });
 }
 
 export async function execute(
@@ -36,8 +30,8 @@ export async function execute(
   params?: unknown[],
 ): Promise<{ changes: number; lastRowId: number | null }> {
   await serviceRegistry.ensureReady("dbService");
-  return call("db.execute", { sql, params: params ?? [] }) as Promise<{
-    changes: number;
-    lastRowId: number | null;
-  }>;
+  return callBackend<{ changes: number; lastRowId: number | null }>(
+    "db.execute",
+    { sql, params: params ?? [] },
+  );
 }

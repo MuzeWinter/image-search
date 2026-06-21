@@ -81,6 +81,8 @@ fn call_backend(
             .map_err(|e| format!("stdin newline error: {}", e))?;
         stdin.flush().map_err(|e| format!("stdin flush error: {}", e))?;
     }
+    // Close stdin so Python process sees EOF and exits after responding
+    drop(child.stdin.take());
 
     let stdout = child.stdout.take().ok_or("no stdout")?;
     let reader = BufReader::new(stdout);

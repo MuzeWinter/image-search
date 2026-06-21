@@ -1,12 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import { callBackend } from "./ipc";
 import { serviceRegistry } from "./registry";
-
-function call(method: string, params?: unknown) {
-  return invoke("call_backend", {
-    method,
-    params: params ?? {},
-  });
-}
 
 serviceRegistry.register({
   name: "aiService",
@@ -14,7 +7,8 @@ serviceRegistry.register({
   start: async () => {
     // AI service starts lazily — model loaded on first use
   },
-  invoke: <T>(method: string, params?: unknown) => call(method, params) as Promise<T>,
+  invoke: <T>(method: string, params?: Record<string, unknown>) =>
+    callBackend<T>(method, params),
 });
 
 export interface ModelStatus {
@@ -31,22 +25,36 @@ export interface ExtractResult {
   device: string;
 }
 
-export async function loadModel(): Promise<{ ok: boolean; device: string; status: string }> {
+export async function loadModel(): Promise<{
+  ok: boolean;
+  device: string;
+  status: string;
+}> {
   await serviceRegistry.ensureReady("aiService");
-  return call("ai_search.loadModel") as Promise<{ ok: boolean; device: string; status: string }>;
+  return callBackend<{ ok: boolean; device: string; status: string }>(
+    "ai_search.loadModel",
+  );
 }
 
 export async function getModelStatus(): Promise<ModelStatus> {
   await serviceRegistry.ensureReady("aiService");
-  return call("ai_search.getModelStatus") as Promise<ModelStatus>;
+  return callBackend<ModelStatus>("ai_search.getModelStatus");
 }
 
-export async function extractFeatures(imageBase64: string): Promise<ExtractResult> {
+export async function extractFeatures(
+  imageBase64: string,
+): Promise<ExtractResult> {
   await serviceRegistry.ensureReady("aiService");
-  return call("ai_search.extractFeatures", { image_base64: imageBase64 }) as Promise<ExtractResult>;
+  return callBackend<ExtractResult>("ai_search.extractFeatures", {
+    image_base64: imageBase64,
+  });
 }
 
-export async function extractFeaturesFromPath(filePath: string): Promise<ExtractResult> {
+export async function extractFeaturesFromPath(
+  filePath: string,
+): Promise<ExtractResult> {
   await serviceRegistry.ensureReady("aiService");
-  return call("ai_search.extractFeaturesFromPath", { file_path: filePath }) as Promise<ExtractResult>;
+  return callBackend<ExtractResult>("ai_search.extractFeaturesFromPath", {
+    file_path: filePath,
+  });
 }

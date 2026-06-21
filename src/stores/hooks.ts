@@ -5,7 +5,7 @@ import type { ServiceQueryResult } from "../services/types";
 export function useServiceQuery<T>(
   serviceName: string,
   method: string,
-  params?: unknown,
+  params?: Record<string, unknown>,
 ): ServiceQueryResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);

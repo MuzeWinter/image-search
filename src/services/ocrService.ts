@@ -1,12 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import { callBackend } from "./ipc";
 import { serviceRegistry } from "./registry";
-
-function call(method: string, params?: unknown) {
-  return invoke("call_backend", {
-    method,
-    params: params ?? {},
-  });
-}
 
 serviceRegistry.register({
   name: "ocrService",
@@ -14,7 +7,8 @@ serviceRegistry.register({
   start: async () => {
     // OCR loads lazily
   },
-  invoke: <T>(method: string, params?: unknown) => call(method, params) as Promise<T>,
+  invoke: <T>(method: string, params?: Record<string, unknown>) =>
+    callBackend<T>(method, params),
 });
 
 export interface OcrStatus {
@@ -37,20 +31,26 @@ export interface OcrResult {
 
 export async function recognize(imageBase64: string): Promise<OcrResult> {
   await serviceRegistry.ensureReady("ocrService");
-  return call("ocr.recognize", { image_base64: imageBase64 }) as Promise<OcrResult>;
+  return callBackend<OcrResult>("ocr.recognize", {
+    image_base64: imageBase64,
+  });
 }
 
-export async function recognizeFromPath(filePath: string): Promise<OcrResult> {
+export async function recognizeFromPath(
+  filePath: string,
+): Promise<OcrResult> {
   await serviceRegistry.ensureReady("ocrService");
-  return call("ocr.recognize", { file_path: filePath }) as Promise<OcrResult>;
+  return callBackend<OcrResult>("ocr.recognize", { file_path: filePath });
 }
 
 export async function getOcrStatus(): Promise<OcrStatus> {
   await serviceRegistry.ensureReady("ocrService");
-  return call("ocr.getStatus") as Promise<OcrStatus>;
+  return callBackend<OcrStatus>("ocr.getStatus");
 }
 
-export async function setOcrEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
+export async function setOcrEnabled(
+  enabled: boolean,
+): Promise<{ enabled: boolean }> {
   await serviceRegistry.ensureReady("ocrService");
-  return call("ocr.setEnabled", { enabled }) as Promise<{ enabled: boolean }>;
+  return callBackend<{ enabled: boolean }>("ocr.setEnabled", { enabled });
 }

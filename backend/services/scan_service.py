@@ -10,6 +10,7 @@ import json
 import hashlib
 import time
 import argparse
+import re
 from pathlib import Path
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -100,7 +101,7 @@ def _count_pdf_pages(filepath: str) -> int:
         import re
         with open(filepath, 'rb') as f:
             content = f.read()
-        pages = len(re.findall(b'/Type\s*/Page[^s]', content))
+        pages = len(re.findall(br'/Type\s*/Page[^s]', content))
         return pages if pages > 0 else 0
     except Exception:
         return 0
@@ -179,13 +180,41 @@ def _extract_excel_images(filepath: str, library_path: str) -> int:
                 pil_img.save(img_path, format=fmt)
 
                 img_size = os.path.getsize(img_path)
-                cell_ref = str(img.anchor) if hasattr(img, 'anchor') else ''
+
+                # Try to determine row from anchor for proper EX-ID linking
+                anchor_row = None
+                if hasattr(img, 'anchor'):
+                    anchor = img.anchor
+                    # openpyxl anchor types: OneCellAnchor, TwoCellAnchor, AbsoluteAnchor
+                    if hasattr(anchor, '_from'):
+                        anchor_row = anchor._from.row + 1  # 0-indexed → 1-indexed
+                    elif hasattr(anchor, 'row'):
+                        anchor_row = anchor.row + 1
+
+                # Find matching excel_records entry
+                ex_ref = ''
+                if anchor_row is not None:
+                    ex_row = conn.execute(
+                        "SELECT ex_id FROM excel_records WHERE file_path = ? AND sheet_name = ? AND row_number = ? LIMIT 1",
+                        (filepath, sheet_name, anchor_row)
+                    ).fetchone()
+                    if ex_row:
+                        ex_ref = ex_row["ex_id"]
+
+                # Fallback: link to first record for this file+sheet
+                if not ex_ref:
+                    ex_row = conn.execute(
+                        "SELECT ex_id FROM excel_records WHERE file_path = ? AND sheet_name = ? LIMIT 1",
+                        (filepath, sheet_name)
+                    ).fetchone()
+                    if ex_row:
+                        ex_ref = ex_row["ex_id"]
 
                 conn.execute(
                     """INSERT OR REPLACE INTO images
                        (img_id, source_type, file_path, folder, filename, size_bytes, width, height, file_hash, ex_ref, status, last_modified, indexed_at)
                        VALUES (?, 'excel_embedded', ?, ?, ?, ?, ?, ?, ?, ?, 'normal', ?, ?)""",
-                    (img_id, filepath, folder, img_filename, img_size, width, height, None, cell_ref, mtime, now)
+                    (img_id, filepath, folder, img_filename, img_size, width, height, None, ex_ref, mtime, now)
                 )
 
                 count += 1
@@ -204,6 +233,199 @@ def _log_change(conn, change_type: str, filepath: str, old_value: str = None, ne
            VALUES (?, ?, ?, ?, 'processed', datetime('now','localtime'))""",
         (change_type, filepath, old_value, new_value)
     )
+
+
+def _auto_associate(conn, library_path: str):
+    """Auto-associate images with CAD files, Excel records, and PDFs.
+
+    Creates match records with status 'auto' for:
+    - Images and CAD files in the same folder
+    - Images and CAD files with matching base filenames
+    - Excel embedded images with their Excel records
+    - PDFs with similar-named images
+    """
+    matches_created = 0
+
+    # ── Same-folder: images ↔ CAD ──
+    rows = conn.execute(
+        """SELECT i.img_id, i.folder, i.filename, c.cad_id, c.filename as cad_filename
+           FROM images i
+           JOIN cad_files c ON i.folder = c.folder
+           WHERE i.source_type = 'file_image'
+             AND i.img_id NOT IN (SELECT img_id FROM matches WHERE cad_id = c.cad_id)
+           LIMIT 500"""
+    ).fetchall()
+
+    for row in rows:
+        try:
+            conn.execute(
+                """INSERT INTO matches (img_id, cad_id, status, method, confidence)
+                   VALUES (?, ?, 'auto', 'same-folder', '0.7')""",
+                (row["img_id"], row["cad_id"])
+            )
+            matches_created += 1
+        except Exception:
+            pass  # Skip duplicates
+
+    # ── Same base filename: images ↔ CAD ──
+    rows = conn.execute(
+        """SELECT i.img_id, i.filename, c.cad_id, c.filename as cad_filename
+           FROM images i
+           JOIN cad_files c ON (
+             LOWER(SUBSTR(i.filename, 1, INSTR(i.filename || '.', '.') - 1))
+             = LOWER(SUBSTR(c.filename, 1, INSTR(c.filename || '.', '.') - 1))
+           )
+           WHERE i.source_type = 'file_image'
+             AND i.img_id NOT IN (SELECT img_id FROM matches WHERE cad_id = c.cad_id)
+             AND i.folder != c.folder
+           LIMIT 500"""
+    ).fetchall()
+
+    for row in rows:
+        base_i = os.path.splitext(row["filename"] or "")[0].lower()
+        base_c = os.path.splitext(row["cad_filename"] or "")[0].lower()
+        if base_i == base_c and len(base_i) >= 3:
+            try:
+                conn.execute(
+                    """INSERT INTO matches (img_id, cad_id, status, method, confidence)
+                       VALUES (?, ?, 'auto', 'filename-match', '0.85')""",
+                    (row["img_id"], row["cad_id"])
+                )
+                matches_created += 1
+            except Exception:
+                pass
+
+    # ── Excel embedded images → Excel records ──
+    rows = conn.execute(
+        """SELECT i.img_id, i.file_path as excel_path
+           FROM images i
+           WHERE i.source_type = 'excel_embedded'
+             AND i.ex_ref IS NULL OR i.ex_ref = ''"""
+    ).fetchall()
+
+    for row in rows:
+        try:
+            ex_rows = conn.execute(
+                "SELECT ex_id FROM excel_records WHERE file_path = ? LIMIT 1",
+                (row["excel_path"],)
+            ).fetchall()
+            if ex_rows:
+                ex_id = ex_rows[0]["ex_id"]
+                conn.execute(
+                    "UPDATE images SET ex_ref = ? WHERE img_id = ?",
+                    (ex_id, row["img_id"])
+                )
+                conn.execute(
+                    """INSERT OR IGNORE INTO matches (img_id, ex_id, status, method, confidence)
+                       VALUES (?, ?, 'auto', 'excel-reference', '0.9')""",
+                    (row["img_id"], ex_id)
+                )
+                matches_created += 1
+        except Exception:
+            pass
+
+    # ── PDFs ↔ similar-named images ──
+    rows = conn.execute(
+        """SELECT p.doc_id, p.filename as pdf_filename, p.folder,
+                  i.img_id, i.filename as img_filename
+           FROM pdf_files p
+           JOIN images i ON p.folder = i.folder
+           WHERE i.img_id NOT IN (SELECT img_id FROM matches WHERE pdf_id = p.doc_id)
+           LIMIT 500"""
+    ).fetchall()
+
+    for row in rows:
+        base_p = os.path.splitext(row["pdf_filename"] or "")[0].lower()
+        base_i = os.path.splitext(row["img_filename"] or "")[0].lower()
+        similarity = _name_similarity(base_p, base_i)
+        if similarity > 0.6:
+            try:
+                conn.execute(
+                    """INSERT INTO matches (img_id, pdf_id, status, method, confidence)
+                       VALUES (?, ?, 'auto', 'name-similar', ?)""",
+                    (row["img_id"], row["doc_id"], str(round(similarity, 2)))
+                )
+                matches_created += 1
+            except Exception:
+                pass
+
+    if matches_created > 0:
+        conn.commit()
+        sys.stderr.write(f"[scan] auto-associated {matches_created} matches\n")
+        sys.stderr.flush()
+
+    return matches_created
+
+
+def _name_similarity(a: str, b: str) -> float:
+    """Simple similarity based on common prefix and token overlap."""
+    if not a or not b:
+        return 0.0
+    # Tokenize on common delimiters
+    tokens_a = set(re.split(r'[-_\s.]', a.lower()))
+    tokens_b = set(re.split(r'[-_\s.]', b.lower()))
+    if not tokens_a or not tokens_b:
+        return 0.0
+    intersection = tokens_a & tokens_b
+    union = tokens_a | tokens_b
+    return len(intersection) / len(union)
+
+
+def _auto_index_images(conn, limit: int = 100):
+    """Extract CLIP features for images that don't have vector embeddings yet."""
+    rows = conn.execute(
+        """SELECT i.img_id, i.file_path FROM images i
+           LEFT JOIN vector_embeddings ve ON i.img_id = ve.img_id
+           WHERE ve.img_id IS NULL
+           LIMIT ?""",
+        (limit,)
+    ).fetchall()
+
+    if not rows:
+        return 0
+
+    sys.stderr.write(f"[scan] auto-indexing {len(rows)} images...\n")
+    sys.stderr.flush()
+
+    try:
+        from backend.services.ai_service import _load_model, _preprocess_image, _extract_features
+        _load_model()
+    except Exception as e:
+        sys.stderr.write(f"[scan] cannot load AI model for indexing: {e}\n")
+        sys.stderr.flush()
+        return 0
+
+    indexed = 0
+    for row in rows:
+        img_id = row["img_id"]
+        file_path = row["file_path"]
+        try:
+            if not os.path.exists(file_path):
+                continue
+            with open(file_path, "rb") as f:
+                image_bytes = f.read()
+            tensor = _preprocess_image(image_bytes)
+            vector = _extract_features(tensor)
+
+            # Save to vector_embeddings
+            import numpy as np
+            blob = vector.astype(np.float32).tobytes()
+            conn.execute(
+                "INSERT OR REPLACE INTO vector_embeddings (img_id, vector_dim, vector_blob) VALUES (?, ?, ?)",
+                (img_id, len(vector), blob)
+            )
+            indexed += 1
+        except Exception as e:
+            sys.stderr.write(f"[scan] index error {img_id}: {e}\n")
+            sys.stderr.flush()
+            continue
+
+    if indexed > 0:
+        conn.commit()
+        sys.stderr.write(f"[scan] auto-indexed {indexed} images\n")
+        sys.stderr.flush()
+
+    return indexed
 
 
 def scan_library(library_id: int, library_path: str):
@@ -365,6 +587,24 @@ def scan_library(library_id: int, library_path: str):
                 sys.stderr.write(f"[scan] excel error {filepath}: {e}\n")
                 sys.stderr.flush()
 
+    # Phase 5: Auto-associate images with CAD/Excel/PDF
+    emit_progress("matching", 0, 0, "")
+    try:
+        auto_matches = _auto_associate(conn, library_path)
+    except Exception as e:
+        sys.stderr.write(f"[scan] auto-associate error: {e}\n")
+        sys.stderr.flush()
+        auto_matches = 0
+
+    # Phase 6: Auto-index new images (extract CLIP features → FAISS)
+    emit_progress("indexing", 0, 0, "")
+    try:
+        auto_indexed = _auto_index_images(conn, limit=200)
+    except Exception as e:
+        sys.stderr.write(f"[scan] auto-index error: {e}\n")
+        sys.stderr.flush()
+        auto_indexed = 0
+
     # Write scan history
     duration = time.time() - start_time
     conn.execute(
@@ -396,6 +636,9 @@ def scan_library(library_id: int, library_path: str):
         "cad_count": stats["cad"],
         "pdf_count": stats["pdf"],
         "other_count": stats["other"],
+        "excel_image_count": excel_image_count,
+        "auto_matches": auto_matches,
+        "auto_indexed": auto_indexed,
     })
 
 

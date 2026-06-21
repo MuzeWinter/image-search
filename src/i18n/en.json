@@ -63,6 +63,10 @@
     "delete": "Delete",
     "confirm": "Confirm"
   },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "Please try refreshing the page or click retry. If the issue persists, check the console logs."
+  },
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
@@ -132,6 +136,9 @@
     "phaseHashing": "Computing hashes...",
     "phaseComparing": "Detecting changes...",
     "phaseSaving": "Saving to database...",
+    "excelImages": "Excel Images",
+    "autoMatches": "Auto Matches",
+    "autoIndexed": "Auto Indexed",
     "emptyIcon": "📁",
     "emptyTitle": "No Libraries",
     "emptyDesc": "Add a library folder to start scanning and indexing your files."
@@ -176,7 +183,12 @@
     "ocrText": "OCR Text",
     "similarityHigh": "High",
     "similarityMid": "Medium",
-    "similarityLow": "Low"
+    "similarityLow": "Low",
+    "scopeAll": "All Images",
+    "scopeExcelOnly": "Excel Embedded",
+    "scopeImagesOnly": "File Images",
+    "scopeWithCad": "CAD Associated",
+    "scopeFavorites": "Favorites"
   },
   "imageLibrary": {
     "title": "Image Library",

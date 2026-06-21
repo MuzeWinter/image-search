@@ -277,6 +277,24 @@ export default function LibraryPage() {
                 <span className="scan-result-num">{scanResult.pdf_count}</span>
                 <span className="scan-result-label">PDF</span>
               </div>
+              {scanResult.excel_image_count !== undefined && scanResult.excel_image_count > 0 && (
+                <div className="scan-result-stat">
+                  <span className="scan-result-num">{scanResult.excel_image_count}</span>
+                  <span className="scan-result-label">{t("library.excelImages")}</span>
+                </div>
+              )}
+              {scanResult.auto_matches !== undefined && scanResult.auto_matches > 0 && (
+                <div className="scan-result-stat match">
+                  <span className="scan-result-num">{scanResult.auto_matches}</span>
+                  <span className="scan-result-label">{t("library.autoMatches")}</span>
+                </div>
+              )}
+              {scanResult.auto_indexed !== undefined && scanResult.auto_indexed > 0 && (
+                <div className="scan-result-stat indexed">
+                  <span className="scan-result-num">{scanResult.auto_indexed}</span>
+                  <span className="scan-result-label">{t("library.autoIndexed")}</span>
+                </div>
+              )}
             </div>
           )}
         </section>
