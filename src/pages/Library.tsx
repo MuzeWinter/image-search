@@ -28,6 +28,8 @@ export default function LibraryPage() {
   const listRef = useRef<HTMLDivElement>(null);
   const dragOverRef = useRef(false);
   const unlistenRef = useRef<UnlistenFn | null>(null);
+  const pendingDeletesRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
 
   const {
     data: libraries,
@@ -42,6 +44,13 @@ export default function LibraryPage() {
         unlistenRef.current();
         unlistenRef.current = null;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      pendingDeletesRef.current.forEach((timerId) => clearTimeout(timerId));
+      pendingDeletesRef.current.clear();
     };
   }, []);
 
@@ -174,14 +183,47 @@ export default function LibraryPage() {
   };
 
   const handleRemoveLibrary = async (lib: Library) => {
-    if (!window.confirm(t("libraries.deleteConfirm", { path: lib.label || lib.path }))) return;
-    try {
-      await libraryService.remove(lib.id);
-      refetchLibs();
-      addToast("success", t("libraries.deleted"));
-    } catch (e) {
-      addToast("error", e instanceof Error ? e.message : String(e));
+    if (pendingDeleteIds.has(lib.id)) return;
+
+    setPendingDeleteIds((prev) => new Set(prev).add(lib.id));
+    addToast("info", t("libraries.deleteScheduled"));
+
+    const timerId = setTimeout(async () => {
+      pendingDeletesRef.current.delete(lib.id);
+      try {
+        await libraryService.remove(lib.id);
+        setPendingDeleteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(lib.id);
+          return next;
+        });
+        refetchLibs();
+        addToast("success", t("libraries.deleted"));
+      } catch (e) {
+        setPendingDeleteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(lib.id);
+          return next;
+        });
+        addToast("error", e instanceof Error ? e.message : String(e));
+      }
+    }, 5000);
+
+    pendingDeletesRef.current.set(lib.id, timerId);
+  };
+
+  const handleUndoDelete = (lib: Library) => {
+    const timerId = pendingDeletesRef.current.get(lib.id);
+    if (timerId) {
+      clearTimeout(timerId);
+      pendingDeletesRef.current.delete(lib.id);
     }
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.delete(lib.id);
+      return next;
+    });
+    addToast("success", t("libraries.deleteUndone"));
   };
 
   const handleOpenFolder = async (lib: Library) => {
@@ -430,11 +472,12 @@ export default function LibraryPage() {
                 {libraries.map((lib) => {
                   const isActiveScan = scanningLibId === lib.id && scanPhase === "scanning";
                   const isUnavailable = invalidPaths.has(lib.id);
+                  const isPendingDelete = pendingDeleteIds.has(lib.id);
                   return (
                     <tr
                       key={lib.id}
                       className={
-                        isActiveScan ? "lib-row-scanning" : isUnavailable ? "lib-row-unavailable" : ""
+                        isActiveScan ? "lib-row-scanning" : isUnavailable ? "lib-row-unavailable" : isPendingDelete ? "lib-row-pending-delete" : ""
                       }
                     >
                       <td className="lib-col-status">
@@ -463,7 +506,7 @@ export default function LibraryPage() {
                           className="lib-action-btn"
                           onClick={() => handleOpenFolder(lib)}
                           title={t("libraries.openFolder")}
-                          disabled={isActiveScan}
+                          disabled={isActiveScan || isPendingDelete}
                         >
                           {t("libraries.open")}
                         </button>
@@ -471,18 +514,28 @@ export default function LibraryPage() {
                           className="lib-action-btn lib-action-scan"
                           onClick={() => handleScanLibrary(lib)}
                           title={t("libraries.scan")}
-                          disabled={scanPhase === "scanning" || isUnavailable}
+                          disabled={scanPhase === "scanning" || isUnavailable || isPendingDelete}
                         >
                           {t("libraries.scan")}
                         </button>
-                        <button
-                          className="lib-action-btn lib-action-delete"
-                          onClick={() => handleRemoveLibrary(lib)}
-                          title={t("libraries.delete")}
-                          disabled={isActiveScan}
-                        >
-                          {t("common.delete")}
-                        </button>
+                        {isPendingDelete ? (
+                          <button
+                            className="lib-action-btn lib-action-undo"
+                            onClick={() => handleUndoDelete(lib)}
+                            title={t("libraries.undo")}
+                          >
+                            {t("libraries.undo")}
+                          </button>
+                        ) : (
+                          <button
+                            className="lib-action-btn lib-action-delete"
+                            onClick={() => handleRemoveLibrary(lib)}
+                            title={t("libraries.delete")}
+                            disabled={isActiveScan}
+                          >
+                            {t("common.delete")}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

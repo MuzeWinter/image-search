@@ -895,6 +895,25 @@
   border-color: var(--danger);
 }
 
+.lib-action-undo {
+  color: var(--warning, #ca8a04);
+  border-color: var(--warning, #ca8a04);
+}
+
+.lib-action-undo:hover:not(:disabled) {
+  background: var(--warning, #ca8a04);
+  color: #fff;
+}
+
+.lib-row-pending-delete {
+  opacity: 0.45;
+  pointer-events: auto;
+}
+
+.lib-row-pending-delete .lib-label {
+  text-decoration: line-through;
+}
+
 /* === Scan Progress Panel === */
 .scan-progress-panel {
   background: var(--surface);

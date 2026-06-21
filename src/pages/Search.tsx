@@ -110,6 +110,15 @@ export default function Search() {
   useEffect(() => {
     localStorage.setItem("searchViewMode", viewMode);
   }, [viewMode]);
+
+  const THUMB_SIZES = { s: 60, m: 100, l: 160 } as const;
+  const [thumbSize, setThumbSize] = useState<keyof typeof THUMB_SIZES>(() => {
+    return (localStorage.getItem("searchThumbSize") as keyof typeof THUMB_SIZES | null) || "m";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("searchThumbSize", thumbSize);
+  }, [thumbSize]);
   const { data: stats } = useServiceQuery<SystemStats>("dbService", "db.getStats");
   const [ctxMenu, setCtxMenu] = useState<{
     visible: boolean;
@@ -777,6 +786,32 @@ export default function Search() {
                 </button>
               </Tooltip>
             </div>
+            <div className="search-thumb-size-toggle">
+              <Tooltip content={t("search.thumbSmall")}>
+                <button
+                  className={`search-thumb-size-btn ${thumbSize === "s" ? "active" : ""}`}
+                  onClick={() => setThumbSize("s")}
+                >
+                  {t("search.thumbSmall")}
+                </button>
+              </Tooltip>
+              <Tooltip content={t("search.thumbMedium")}>
+                <button
+                  className={`search-thumb-size-btn ${thumbSize === "m" ? "active" : ""}`}
+                  onClick={() => setThumbSize("m")}
+                >
+                  {t("search.thumbMedium")}
+                </button>
+              </Tooltip>
+              <Tooltip content={t("search.thumbLarge")}>
+                <button
+                  className={`search-thumb-size-btn ${thumbSize === "l" ? "active" : ""}`}
+                  onClick={() => setThumbSize("l")}
+                >
+                  {t("search.thumbLarge")}
+                </button>
+              </Tooltip>
+            </div>
             <button className="search-export-btn" onClick={handleExportCsv}>
               {t("search.exportCsv")}
             </button>
@@ -810,7 +845,10 @@ export default function Search() {
               {t("search.noFilterMatches")}
             </div>
           ) : (
-            <div className={`search-results-list ${viewMode === "grid" ? "grid-view" : ""}`}>
+            <div
+              className={`search-results-list ${viewMode === "grid" ? "grid-view" : ""}`}
+              style={{ "--thumb-size": `${THUMB_SIZES[thumbSize]}px` } as React.CSSProperties}
+            >
             {pagedResults.map((item: SearchResultItem, idx: number) => (
               <div
                 key={item.img_id}

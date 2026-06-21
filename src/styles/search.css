@@ -455,8 +455,8 @@
 }
 
 .search-result-thumb {
-  width: 80px;
-  height: 80px;
+  width: var(--thumb-size, 80px);
+  height: var(--thumb-size, 80px);
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -1015,6 +1015,40 @@
 }
 
 .search-view-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* === Thumbnail Size Toggle === */
+.search-thumb-size-toggle {
+  display: flex;
+  gap: 0;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.search-thumb-size-btn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  border: none;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+
+.search-thumb-size-btn:not(:last-child) {
+  border-right: var(--border-width) solid var(--border);
+}
+
+.search-thumb-size-btn:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.search-thumb-size-btn.active {
   background: var(--accent);
   color: white;
 }
