@@ -13,6 +13,8 @@ use tauri::Emitter;
 use tauri::Manager;
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 
+mod export;
+
 #[derive(Debug, Default)]
 struct StartupArgs {
     scan_path: Option<String>,
@@ -877,7 +879,11 @@ fn main() {
             load_window_state,
             start_folder_watch,
             stop_folder_watch,
-            get_watch_status
+            get_watch_status,
+            export::export_zip,
+            export::export_pdf,
+            export::copy_image_to_clipboard,
+            export::open_file_manager
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

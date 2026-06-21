@@ -1282,3 +1282,40 @@
   white-space: nowrap;
 }
 
+/* === Export Progress === */
+.search-export-progress {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.search-export-progress-bar-container {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.search-export-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.search-export-progress-text {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: right;
+}
+

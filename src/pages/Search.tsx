@@ -6,6 +6,8 @@ import { List, Grid } from "react-window";
 import { useI18n } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
+import * as exportService from "../services/exportService";
+import type { ExportProgress } from "../services/exportService";
 import { callTauri } from "../services/ipc";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
 import type { Library } from "../services/types";
@@ -157,6 +159,9 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
           )}
           <button className="search-action-btn" onClick={() => openFile(item.image_path)}>
             {t("search.openImage")}
+          </button>
+          <button className="search-action-btn" onClick={() => openFolder(item.image_path)}>
+            {t("search.openFolder")}
           </button>
         </div>
         <button
@@ -367,6 +372,8 @@ export default function Search() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [compareItems, setCompareItems] = useState<[SearchResultItem, SearchResultItem] | null>(null);
   const [filterText, setFilterText] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const PAGE_SIZE = 20;
   const VIRTUAL_SCROLL_THRESHOLD = 200;
   const [page, setPage] = useState(0);
@@ -528,6 +535,23 @@ export default function Search() {
       if (modelPollRef.current) clearInterval(modelPollRef.current);
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     };
+  }, []);
+
+  // Listen for export progress events
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    exportService.onExportProgress((progress) => {
+      setExportProgress(progress);
+      if (progress.current >= progress.total) {
+        setTimeout(() => {
+          setExporting(false);
+          setExportProgress(null);
+        }, 1500);
+      }
+    }).then((fn) => { unlisten = fn; }).catch(() => {
+      // Tauri event system not available (e.g. in test environment)
+    });
+    return () => { if (unlisten) unlisten(); };
   }, []);
 
   // Sync model-loading state to splash screen atom
@@ -947,6 +971,121 @@ export default function Search() {
     setCompareItems([selected[0], selected[1]]);
   }, [getSelectedItems, t, addToast]);
 
+  const makeExportItems = useCallback((items: SearchResultItem[]): exportService.ExportItemInput[] => {
+    return items.map((item) => ({
+      image_path: item.image_path,
+      img_id: item.img_id,
+      origin_path: item.origin_path,
+      similarity: item.similarity,
+      source_type: item.source_type,
+      sheet_name: item.sheet_name,
+      row_number: item.row_number,
+      ug_ref: item.ug_ref,
+      ocr_text: item.ocr_text,
+      width: item.width,
+      height: item.height,
+      format: item.format,
+      size_bytes: item.size_bytes,
+    }));
+  }, []);
+
+  const handleExportZip = useCallback(async () => {
+    const items = filteredResults;
+    if (items.length === 0) return;
+
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const filePath = await save({
+      defaultPath: "search_results.zip",
+      filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    });
+    if (!filePath) return;
+
+    setExporting(true);
+    try {
+      await exportService.exportZip(filePath, makeExportItems(items));
+      addToast("success", t("search.exportZipSuccess"));
+    } catch (e) {
+      setExporting(false);
+      setExportProgress(null);
+      addToast("error", t("search.exportZipFailed", { error: String(e instanceof Error ? e.message : e) }));
+    }
+  }, [filteredResults, makeExportItems, t, addToast]);
+
+  const handleExportPdf = useCallback(async () => {
+    const items = filteredResults;
+    if (items.length === 0) return;
+
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const filePath = await save({
+      defaultPath: "search_results.pdf",
+      filters: [{ name: "PDF Document", extensions: ["pdf"] }],
+    });
+    if (!filePath) return;
+
+    setExporting(true);
+    try {
+      await exportService.exportPdf(filePath, makeExportItems(items));
+      addToast("success", t("search.exportPdfSuccess"));
+    } catch (e) {
+      setExporting(false);
+      setExportProgress(null);
+      addToast("error", t("search.exportPdfFailed", { error: String(e instanceof Error ? e.message : e) }));
+    }
+  }, [filteredResults, makeExportItems, t, addToast]);
+
+  const handleBatchExportZip = useCallback(async () => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const filePath = await save({
+      defaultPath: "search_results.zip",
+      filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    });
+    if (!filePath) return;
+
+    setExporting(true);
+    try {
+      await exportService.exportZip(filePath, makeExportItems(selected));
+      addToast("success", t("search.exportZipSuccess"));
+    } catch (e) {
+      setExporting(false);
+      setExportProgress(null);
+      addToast("error", t("search.exportZipFailed", { error: String(e instanceof Error ? e.message : e) }));
+    }
+  }, [getSelectedItems, makeExportItems, t, addToast]);
+
+  const handleBatchExportPdf = useCallback(async () => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const filePath = await save({
+      defaultPath: "search_results.pdf",
+      filters: [{ name: "PDF Document", extensions: ["pdf"] }],
+    });
+    if (!filePath) return;
+
+    setExporting(true);
+    try {
+      await exportService.exportPdf(filePath, makeExportItems(selected));
+      addToast("success", t("search.exportPdfSuccess"));
+    } catch (e) {
+      setExporting(false);
+      setExportProgress(null);
+      addToast("error", t("search.exportPdfFailed", { error: String(e instanceof Error ? e.message : e) }));
+    }
+  }, [getSelectedItems, makeExportItems, t, addToast]);
+
+  const handleCopyImageToClipboard = useCallback(async (imagePath: string) => {
+    try {
+      await exportService.copyImageToClipboard(imagePath);
+      addToast("success", t("search.imageCopied"));
+    } catch (e) {
+      addToast("error", t("search.imageCopyFailed", { error: String(e instanceof Error ? e.message : e) }));
+    }
+  }, [t, addToast]);
+
   const virtRowData = useMemo<VirtualRowData>(() => ({
     items: filteredResults,
     selectedIds,
@@ -1299,8 +1438,14 @@ export default function Search() {
                 </button>
               </Tooltip>
             </div>
-            <button className="search-export-btn" onClick={handleExportCsv}>
+            <button className="search-export-btn" onClick={handleExportCsv} disabled={exporting}>
               {t("search.exportCsv")}
+            </button>
+            <button className="search-export-btn" onClick={handleExportZip} disabled={exporting}>
+              {t("search.exportZip")}
+            </button>
+            <button className="search-export-btn" onClick={handleExportPdf} disabled={exporting}>
+              {t("search.exportPdf")}
             </button>
           </div>
 
@@ -1314,8 +1459,14 @@ export default function Search() {
                 <button className="search-batch-btn" onClick={handleBatchOpenFolders}>
                   {t("search.batchOpenFolders")}
                 </button>
-                <button className="search-batch-btn" onClick={handleBatchExportCsv}>
+                <button className="search-batch-btn" onClick={handleBatchExportCsv} disabled={exporting}>
                   {t("search.batchExportCsv")}
+                </button>
+                <button className="search-batch-btn" onClick={handleBatchExportZip} disabled={exporting}>
+                  {t("search.batchExportZip")}
+                </button>
+                <button className="search-batch-btn" onClick={handleBatchExportPdf} disabled={exporting}>
+                  {t("search.batchExportPdf")}
                 </button>
                 <button className="search-batch-btn" onClick={handleBatchCopyPaths}>
                   {t("search.batchCopyPaths")}
@@ -1327,6 +1478,21 @@ export default function Search() {
                   {t("search.batchClearSelection")}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Export progress */}
+          {exporting && exportProgress && (
+            <div className="search-export-progress">
+              <div className="search-export-progress-bar-container">
+                <div
+                  className="search-export-progress-bar"
+                  style={{ width: `${exportProgress.total > 0 ? Math.round((exportProgress.current / exportProgress.total) * 100) : 0}%` }}
+                />
+              </div>
+              <span className="search-export-progress-text">
+                {exportProgress.message || t("search.exporting")}
+              </span>
             </div>
           )}
 
@@ -1527,6 +1693,12 @@ export default function Search() {
                   >
                     {t("search.openImage")}
                   </button>
+                  <button
+                    className="search-action-btn"
+                    onClick={() => openFolder(item.image_path)}
+                  >
+                    {t("search.openFolder")}
+                  </button>
                 </div>
                 <button
                   className={`search-result-bookmark ${bookmarkedIds.has(item.img_id) ? "bookmarked" : ""}`}
@@ -1642,6 +1814,10 @@ export default function Search() {
               navigator.clipboard.writeText(item.image_path);
               addToast("success", t("search.copied"));
             },
+          },
+          {
+            label: t("search.copyImageToClipboard"),
+            onClick: () => { handleCopyImageToClipboard(item.image_path); },
           },
         ];
         if (item.ug_ref) {
