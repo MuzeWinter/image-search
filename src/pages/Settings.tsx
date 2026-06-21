@@ -300,7 +300,7 @@ export default function Settings() {
       addToast("success", t("settings.ugColumnNameSaved"));
       setTimeout(() => setUgSaveMsg(""), 2000);
     } catch {
-      setUgSaveMsg("Failed to save");
+      setUgSaveMsg(t("common.saveFailed"));
     }
   };
 
@@ -429,7 +429,7 @@ export default function Settings() {
           name: "Backend",
           status: "error",
           detail: e instanceof Error ? e.message : String(e),
-          suggestion: "Check if the Python backend is running.",
+          suggestion: t("common.backendCheckHint"),
         }],
         summary: { total: 1, passed: 0, failed: 1, warning: 0 },
       });

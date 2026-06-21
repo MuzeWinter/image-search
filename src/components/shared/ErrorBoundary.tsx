@@ -59,7 +59,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
               fontSize: 20,
               fontWeight: 600,
               margin: "0 0 8px",
-              color: "var(--color-text-primary, #1a1a1a)",
+              color: "var(--fg)",
             }}
           >
             {this.props.t("common.errorBoundaryTitle")}
@@ -68,7 +68,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
             style={{
               fontSize: 14,
               margin: "0 0 24px",
-              color: "var(--color-text-secondary, #666)",
+              color: "var(--muted)",
               maxWidth: 400,
               lineHeight: 1.6,
             }}
@@ -84,8 +84,8 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
               border: "none",
               borderRadius: 6,
               cursor: "pointer",
-              color: "#fff",
-              backgroundColor: "var(--color-accent, #4a90d9)",
+              color: "var(--surface)",
+              backgroundColor: "var(--accent)",
               transition: "opacity 0.15s",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}

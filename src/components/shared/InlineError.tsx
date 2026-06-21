@@ -1,10 +1,13 @@
-﻿interface InlineErrorProps {
+﻿import { useI18n } from "../../i18n/context";
+
+interface InlineErrorProps {
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
 }
 
 export function InlineError({ message, onRetry, retryLabel }: InlineErrorProps) {
+  const { t } = useI18n();
   return (
     <div className="inline-error" role="alert">
       <svg
@@ -23,7 +26,7 @@ export function InlineError({ message, onRetry, retryLabel }: InlineErrorProps) 
       <span className="inline-error-message">{message}</span>
       {onRetry && (
         <button className="inline-error-retry" onClick={onRetry}>
-          {retryLabel ?? "Retry"}
+          {retryLabel ?? t("common.retry")}
         </button>
       )}
     </div>

@@ -98,7 +98,7 @@
   height: 40px;
   border-radius: var(--radius-sm);
   object-fit: cover;
-  background: var(--muted-muted);
+  background: var(--muted);
   flex-shrink: 0;
 }
 
@@ -106,7 +106,7 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background: var(--muted-muted);
+  background: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;

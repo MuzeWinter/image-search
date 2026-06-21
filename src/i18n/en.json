@@ -51,7 +51,11 @@
     "skip": "Skip",
     "start": "Start",
     "success": "Success",
-    "failed": "Failed"
+    "failed": "Failed",
+    "libraryAddedAndScanning": "Library added and scanning: {path}",
+    "libraryAddFailed": "Failed to add library: {error}",
+    "saveFailed": "Failed to save",
+    "backendCheckHint": "Check if the Python backend is running."
   },
   "settings": {
     "title": "Settings",

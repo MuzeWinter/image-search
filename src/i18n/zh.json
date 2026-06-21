@@ -51,7 +51,11 @@
     "skip": "跳过",
     "start": "开始",
     "success": "操作成功",
-    "failed": "操作失败"
+    "failed": "操作失败",
+    "libraryAddedAndScanning": "已添加资料库并开始扫描: {path}",
+    "libraryAddFailed": "添加资料库失败: {error}",
+    "saveFailed": "保存失败",
+    "backendCheckHint": "请检查 Python 后端是否正在运行。"
   },
   "settings": {
     "title": "系统设置",

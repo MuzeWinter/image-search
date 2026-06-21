@@ -257,6 +257,7 @@ function ModelLoadingGate() {
 function StartupArgHandler() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { t } = useI18n();
   const setStartupSearchPath = useSetAtom(startupSearchPathAtom);
   const handledRef = useRef(false);
 
@@ -277,11 +278,11 @@ function StartupArgHandler() {
       if (args.scanPath) {
         try {
           const lib = await libraryService.add(args.scanPath);
-          addToast("success", `已添加资料库并开始扫描: ${args.scanPath}`);
+          addToast("success", t("common.libraryAddedAndScanning", { path: args.scanPath }));
           await settingsService.syncScanConfig();
           await scanService.startScan(lib.id, lib.path);
         } catch (e) {
-          addToast("error", `添加资料库失败: ${e instanceof Error ? e.message : String(e)}`);
+          addToast("error", t("common.libraryAddFailed", { error: e instanceof Error ? e.message : String(e) }));
         }
       }
 
