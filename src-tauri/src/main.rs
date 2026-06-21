@@ -437,7 +437,7 @@ fn cleanup_old_backups(backups_dir: &std::path::Path, keep: usize) {
         return;
     }
 
-    files.sort_by(|a, b| b.0.cmp(&a.0));
+    files.sort_by_key(|b| std::cmp::Reverse(b.0));
 
     for (_time, path) in files.iter().skip(keep) {
         if let Some(stem) = path.file_stem() {
@@ -927,8 +927,8 @@ fn main() {
                                 states.insert(
                                     "main".to_string(),
                                     WindowState {
-                                        x: pos.x as i32,
-                                        y: pos.y as i32,
+                                        x: pos.x,
+                                        y: pos.y,
                                         width: size.width,
                                         height: size.height,
                                         maximized,

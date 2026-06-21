@@ -67,9 +67,11 @@ pub fn export_zip(
                 "sheet_name": item.sheet_name,
                 "row_number": item.row_number,
                 "ug_ref": item.ug_ref,
+                "ocr_text": item.ocr_text,
                 "format": item.format,
                 "width": item.width,
                 "height": item.height,
+                "size_bytes": item.size_bytes,
             })
         }).collect::<Vec<_>>(),
     });
@@ -147,20 +149,20 @@ pub fn export_pdf(
 
     // Load a system font for PDF rendering
     let font_path = find_system_font();
-    let font_bytes = std::fs::read(&font_path)
+    let font_bytes = std::fs::read(font_path)
         .map_err(|e| format!("Cannot read font file {:?}: {}", font_path, e))?;
     let font_data = genpdf::fonts::FontData::new(font_bytes, None)
         .map_err(|e| format!("Font data error: {}", e))?;
     let font_data_bold = genpdf::fonts::FontData::new(
-        std::fs::read(&font_path).map_err(|e| format!("Cannot re-read font: {}", e))?,
+        std::fs::read(font_path).map_err(|e| format!("Cannot re-read font: {}", e))?,
         None,
     ).map_err(|e| format!("Font data error: {}", e))?;
     let font_data_italic = genpdf::fonts::FontData::new(
-        std::fs::read(&font_path).map_err(|e| format!("Cannot re-read font: {}", e))?,
+        std::fs::read(font_path).map_err(|e| format!("Cannot re-read font: {}", e))?,
         None,
     ).map_err(|e| format!("Font data error: {}", e))?;
     let font_data_bi = genpdf::fonts::FontData::new(
-        std::fs::read(&font_path).map_err(|e| format!("Cannot re-read font: {}", e))?,
+        std::fs::read(font_path).map_err(|e| format!("Cannot re-read font: {}", e))?,
         None,
     ).map_err(|e| format!("Font data error: {}", e))?;
     let font_family = genpdf::fonts::FontFamily {
@@ -230,6 +232,12 @@ pub fn export_pdf(
                 dims.push_str(&format_size(size));
             }
             doc.push(Paragraph::new(dims)
+                .styled(genpdf::style::Style::new()));
+        }
+
+        // OCR text
+        if let Some(ref ocr) = item.ocr_text {
+            doc.push(Paragraph::new(format!("OCR: {}", ocr))
                 .styled(genpdf::style::Style::new()));
         }
 

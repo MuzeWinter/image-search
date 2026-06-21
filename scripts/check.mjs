@@ -7,13 +7,27 @@ const root = resolve(__dirname, "..");
 
 const results = [];
 
-function run(name, command, cwd = root) {
+function run(name, command, cwd = root, opts = {}) {
   process.stdout.write(`\n=== ${name} ===\n`);
+  const { detectWarnings = false } = opts;
   try {
-    execSync(command, { cwd, stdio: "inherit", shell: true });
+    const stdio = detectWarnings ? "pipe" : "inherit";
+    const output = execSync(command, { cwd, stdio, shell: true, encoding: "utf-8" });
+    if (detectWarnings) {
+      const warnings = [...output.matchAll(/warning:/gi)];
+      if (warnings.length > 0) {
+        process.stdout.write(output);
+        process.stdout.write(`[FAIL] ${name} — ${warnings.length} Rust warning(s) detected\n`);
+        results.push({ name, ok: false });
+        return;
+      }
+    }
     process.stdout.write(`[PASS] ${name}\n`);
     results.push({ name, ok: true });
-  } catch {
+  } catch (err) {
+    if (detectWarnings && err.stderr) {
+      process.stderr.write(err.stderr.toString());
+    }
     process.stdout.write(`[FAIL] ${name}\n`);
     results.push({ name, ok: false });
   }
@@ -29,7 +43,7 @@ run("eslint", "npx eslint .");
 run("vite build", "npx vite build");
 
 // 4. Cargo build (Rust/Tauri)
-run("cargo build", "cargo build", resolve(root, "src-tauri"));
+run("cargo build", "cargo build 2>&1", resolve(root, "src-tauri"), { detectWarnings: true });
 
 // 5. Python syntax check
 run("python syntax", "python -m py_compile backend/main.py && python -m compileall -q backend/");
