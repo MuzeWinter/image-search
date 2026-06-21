@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel 记录 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link active"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">Excel 记录</span></div>
+    <div class="app-header-right">
+      <span class="text-xs text-muted">共 7 条 · 正常 5 · 缺图 2</span>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>Excel 记录</h1><p>查看从 Excel 表格中提取的所有有效记录。每条记录显示编号、名称、客户、类别、备注、关联图片和 CAD/UG 文件。</p></div>
+
+    <div class="filter-bar">
+      <select onchange="filterEX()" id="exStatus"><option value="all">全部状态</option><option value="normal">正常</option><option value="missing_image">缺图</option><option value="pending">待确认</option></select>
+      <select onchange="filterEX()" id="exCategory"><option value="all">全部类别</option><option value="夹具">夹具</option><option value="包装">包装</option><option value="工具">工具</option><option value="电子产品">电子产品</option></select>
+      <select onchange="filterEX()" id="exCAD"><option value="all">全部关联</option><option value="linked">有关联 CAD</option><option value="unlinked">无关联 CAD</option></select>
+      <div class="search-bar"><input type="text" placeholder="搜索 EX 编号、名称、客户…" oninput="filterEX()" id="exSearch"></div>
+    </div>
+
+    <div class="table-container"><table>
+      <thead><tr><th>EX 编号</th><th>原始编号</th><th>名称</th><th>客户</th><th>类别</th><th>Excel 文件</th><th>工作表</th><th>行</th><th>关联</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="exTableBody"></tbody>
+    </table></div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  function renderEXTable(records) {
+    const tbody = document.getElementById('exTableBody');
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td><span class="mono">${r.exId}</span></td>
+        <td>${r.originalId || '<span class="text-muted">—</span>'}</td>
+        <td>${r.name}</td>
+        <td>${r.customer || '<span class="text-muted">—</span>'}</td>
+        <td>${r.category || '<span class="text-muted">—</span>'}</td>
+        <td><span class="path-display">${r.excelPath}</span></td>
+        <td>${r.sheetName}</td>
+        <td>${r.row}</td>
+        <td>${r.imageCount > 0 ? '<span class="badge badge-success">'+r.imageCount+' 图</span>' : '<span class="badge badge-warning">0 图</span>'} ${r.cadCount > 0 ? '<span class="badge badge-info">'+r.cadCount+' CAD</span>' : ''}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>
+          <div class="flex gap-1">
+            <button class="btn btn-xs" onclick="showToast('已打开 Excel: ${r.excelPath}')">打开 Excel</button>
+            <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+            <button class="btn btn-xs btn-ghost" onclick="showToast('查看关联图片')">🖼</button>
+            <button class="btn btn-xs btn-ghost btn-danger" onclick="showToast('已忽略: ${r.exId}')">忽略</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  function filterEX() {
+    const status = document.getElementById('exStatus').value;
+    const category = document.getElementById('exCategory').value;
+    const cad = document.getElementById('exCAD').value;
+    const search = document.getElementById('exSearch').value.toLowerCase();
+    let filtered = MOCK.excelRecords.filter(r => {
+      if (status !== 'all' && r.status !== status) return false;
+      if (category !== 'all' && r.category !== category) return false;
+      if (cad === 'linked' && r.cadCount === 0) return false;
+      if (cad === 'unlinked' && r.cadCount > 0) return false;
+      if (search && !r.exId.toLowerCase().includes(search) && !r.name.toLowerCase().includes(search) && !(r.customer||'').toLowerCase().includes(search) && !r.originalId.toLowerCase().includes(search)) return false;
+      return true;
+    });
+    renderEXTable(filtered);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderEXTable(MOCK.excelRecords);
+    initSidebar();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设置 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link active"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">设置</span></div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>设置</h1><p>配置资料库路径、AI 模型参数、扫描规则和备份选项。</p></div>
+
+    <div class="settings-section">
+      <h3>路径配置</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">资料库路径</div>
+          <div class="settings-row-desc">3 个文件夹已配置</div>
+        </div>
+        <button class="btn btn-sm" onclick="showToast('添加资料库文件夹…')">管理</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">AI 模型路径</div>
+          <div class="settings-row-desc">C:\Users\ZOOBET\AppData\Local\ZOOBET检索\models</div>
+        </div>
+        <button class="btn btn-sm" onclick="showToast('选择模型路径…')">浏览</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">缓存路径</div>
+          <div class="settings-row-desc">C:\Users\ZOOBET\AppData\Local\ZOOBET检索\cache</div>
+        </div>
+        <button class="btn btn-sm" onclick="showToast('选择缓存路径…')">浏览</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>扫描规则</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">递归扫描子文件夹</div>
+          <div class="settings-row-desc">自动扫描所有子目录</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">自动扫描</div>
+          <div class="settings-row-desc">启动时自动检测文件变化</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">索引独立图片</div>
+          <div class="settings-row-desc">将目录下所有独立图片加入检索索引</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">索引 Excel 内嵌图片</div>
+          <div class="settings-row-desc">提取并索引 Excel 中粘贴的图片</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">生成 PDF 预览图</div>
+          <div class="settings-row-desc">自动生成 PDF 首页预览并索引</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">扫描文件类型</div>
+          <div class="settings-row-desc">Excel: .xlsx .xls .xlsm | 图片: .jpg .png .webp… | CAD: .prt .step… | PDF: .pdf</div>
+        </div>
+        <button class="btn btn-sm" onclick="showToast('配置文件类型…')">配置</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>图片检索</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">相似度阈值</div>
+          <div class="settings-row-desc">低于此值的结果不显示。当前: 65%</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="range" min="50" max="95" value="65" style="width:120px;">
+          <span class="text-sm mono">65%</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">最大搜索结果数</div>
+          <div class="settings-row-desc">单次搜索返回的最多结果</div>
+        </div>
+        <select><option>20</option><option selected>50</option><option>100</option></select>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">启用 GPU 加速</div>
+          <div class="settings-row-desc">使用 GPU 加速 OpenCLIP 推理和 FAISS 检索</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">启用局部搜索</div>
+          <div class="settings-row-desc">支持框选图片局部区域进行搜索</div>
+        </div>
+        <label class="toggle on" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>OCR 设置</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">启用 OCR</div>
+          <div class="settings-row-desc">使用 PaddleOCR 识别图片中的文字</div>
+        </div>
+        <label class="toggle" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">OCR 语言</div>
+          <div class="settings-row-desc">识别语言设置</div>
+        </div>
+        <select><option>中文 + 英文</option><option>仅中文</option><option>仅英文</option></select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>外观</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">深色模式</div>
+          <div class="settings-row-desc">切换深色 / 浅色界面主题</div>
+        </div>
+        <label class="toggle theme-toggle" onclick="toggleTheme()"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>系统</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">开机启动</div>
+          <div class="settings-row-desc">Windows 启动时自动运行</div>
+        </div>
+        <label class="toggle" onclick="this.classList.toggle('on')"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>数据管理</h3>
+      <div class="form-row" style="margin-bottom:var(--space-4);">
+        <button class="btn" onclick="showToast('数据库备份中…')">备份数据库</button>
+        <button class="btn" onclick="showToast('从备份恢复…')">恢复数据库</button>
+        <button class="btn" onclick="showToast('已清理无效缓存')">清理缓存</button>
+        <button class="btn" onclick="showToast('重建图片索引中…')">重建索引</button>
+      </div>
+      <div class="form-row">
+        <button class="btn" onclick="showToast('已导出扫描报告')">导出扫描报告</button>
+        <button class="btn" onclick="showToast('已导出匹配关系')">导出匹配关系</button>
+        <button class="btn" onclick="showToast('已导出编号和路径清单')">导出编号清单</button>
+        <button class="btn" onclick="showToast('迁移资料库…')">迁移资料库</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>关于</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">版本</div>
+          <div class="settings-row-desc">ZOOBET检索 v1.0.0</div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">技术栈</div>
+          <div class="settings-row-desc">Tauri + React + TypeScript · Python · OpenCLIP · FAISS · SQLite · PaddleOCR</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:var(--space-8);">
+      <button class="btn btn-accent" onclick="showToast('设置已保存')">保存设置</button>
+    </div>
+  </main>
+</div>
+<script src="js/app.js"></script>
+<script>document.addEventListener('DOMContentLoaded', initSidebar);</script>
+</body>
+</html>

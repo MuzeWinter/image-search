@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>标签分类 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+<style>
+  .tag-category { margin-bottom: var(--space-8); }
+  .tag-category h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: var(--border-width) solid var(--border);
+  }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: var(--border-width) solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    font-size: var(--text-sm);
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .tag-pill:hover { border-color: var(--fg); background: var(--surface-hover); }
+  .tag-pill .pill-count { font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tag-pill.selected { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+  .tag-pill.selected .pill-count { color: var(--surface); opacity: 0.7; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link active"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">标签分类</span></div>
+    <div class="app-header-right"><span class="text-xs text-muted">共 16 个标签</span></div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>标签分类</h1><p>按标签浏览和筛选所有资源。标签来源包括 Excel 内容自动提取、文件夹名称、OCR 识别和用户手动添加。</p></div>
+
+    <div class="filter-bar" style="margin-bottom:var(--space-6);">
+      <button class="btn btn-sm btn-accent" onclick="showToast('已添加标签')">+ 新建标签</button>
+      <button class="btn btn-sm" onclick="showToast('批量添加标签')">批量添加</button>
+      <div class="toolbar-spacer"></div>
+      <div class="search-bar"><input type="text" placeholder="搜索标签…" id="tagSearch" oninput="filterTags()"></div>
+    </div>
+
+    <div id="tagCategories"></div>
+
+    <div class="card" id="taggedResults" style="display:none;margin-top:var(--space-6);">
+      <div class="card-header"><span class="card-title" id="taggedTitle">筛选结果</span><button class="btn btn-xs btn-ghost" onclick="clearTagFilter()">清除筛选</button></div>
+      <div id="taggedContent"></div>
+    </div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  function groupByCategory() {
+    const cats = {};
+    MOCK.tags.forEach(t => {
+      if (!cats[t.category]) cats[t.category] = [];
+      cats[t.category].push(t);
+    });
+    return cats;
+  }
+
+  function filterTags() {
+    const search = document.getElementById('tagSearch').value.toLowerCase();
+    const container = document.getElementById('tagCategories');
+    const cats = groupByCategory();
+    container.innerHTML = Object.entries(cats).map(([cat, tags]) => {
+      const filtered = search ? tags.filter(t => t.name.toLowerCase().includes(search)) : tags;
+      if (filtered.length === 0) return '';
+      return `
+      <div class="tag-category">
+        <h3>${cat} <span class="text-xs text-muted" style="font-weight:400;">(${filtered.length})</span></h3>
+        <div class="tag-cloud">
+          ${filtered.map(t => `<span class="tag-pill" onclick="selectTag('${t.name}')">${t.name} <span class="pill-count">${t.count}</span></span>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function selectTag(name) {
+    document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('selected'));
+    event.target.closest('.tag-pill').classList.add('selected');
+
+    const images = MOCK.imageAssets.filter(img => img.tags.includes(name));
+    const cad = MOCK.cadFiles.filter(c => c.tags.includes(name));
+
+    document.getElementById('taggedResults').style.display = '';
+    document.getElementById('taggedTitle').textContent = '筛选: ' + name + ' (' + (images.length + cad.length) + ' 条)';
+
+    let html = '';
+    if (images.length > 0) {
+      html += '<div style="margin-bottom:var(--space-4);"><h4 style="font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:var(--space-2);">图片 ('+images.length+')</h4>';
+      html += images.map(img => `
+        <div class="flex items-center gap-3" style="padding:var(--space-2) 0;border-bottom:1px solid var(--border);">
+          <span class="mono">${img.imgId}</span>
+          <span class="text-sm">${img.filename}</span>
+          <span class="badge badge-muted">${sourceTypeLabel(img.sourceType)}</span>
+          <span class="path-display" style="margin-left:auto;">${img.folder}</span>
+        </div>`).join('');
+      html += '</div>';
+    }
+    if (cad.length > 0) {
+      html += '<div><h4 style="font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:var(--space-2);">CAD 文件 ('+cad.length+')</h4>';
+      html += cad.map(c => `
+        <div class="flex items-center gap-3" style="padding:var(--space-2) 0;border-bottom:1px solid var(--border);">
+          <span class="mono">${c.cadId}</span>
+          <span>${fileTypeIcon(c.fileType)}</span>
+          <span class="text-sm">${c.filename}</span>
+          <span class="path-display" style="margin-left:auto;">${c.path}</span>
+        </div>`).join('');
+      html += '</div>';
+    }
+
+    document.getElementById('taggedContent').innerHTML = html;
+  }
+
+  function clearTagFilter() {
+    document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('selected'));
+    document.getElementById('taggedResults').style.display = 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    filterTags();
+    initSidebar();
+  });
+</script>
+</body>
+</html>

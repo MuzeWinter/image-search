@@ -1,0 +1,44 @@
+﻿{
+  "reviewCommands": [
+    {
+      "name": "Git status",
+      "command": "git status --short",
+      "required": true
+    },
+    {
+      "name": "Git diff summary",
+      "command": "git diff --stat",
+      "required": true
+    },
+    {
+      "name": "HTML structure check",
+      "command": "powershell -Command \"(Get-ChildItem -Recurse -Filter *.html | Measure-Object).Count\"",
+      "required": false
+    },
+    {
+      "name": "JS syntax check",
+      "command": "node --check js/*.js 2>&1",
+      "required": false
+    }
+  ],
+  "mojibakeScan": {
+    "enabled": true,
+    "paths": [
+      "css",
+      "js",
+      "docs"
+    ],
+    "extensions": [
+      "*.html",
+      "*.css",
+      "*.js",
+      "*.json",
+      "*.md"
+    ]
+  },
+  "requiredFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "index.html"
+  ]
+}

@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页搜索 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+<style>
+  .search-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: var(--space-6);
+    height: calc(100vh - var(--header-h) - var(--space-16));
+  }
+  .search-input-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow-y: auto;
+    padding-right: var(--space-2);
+  }
+  .search-results-panel {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .drop-zone-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-8);
+  }
+  .drop-zone-inner .dz-icon {
+    font-size: 3rem;
+    color: var(--muted);
+    margin-bottom: var(--space-4);
+    display: block;
+  }
+  .drop-zone-inner h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-1);
+  }
+  .drop-zone-inner .dz-hint {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    margin-bottom: var(--space-4);
+  }
+  .search-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+  .search-actions .btn { flex: 1; min-width: 80px; justify-content: center; }
+  .scope-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1);
+  }
+  .scope-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    border: var(--border-width) solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+    transition: background 0.1s;
+  }
+  .scope-option:hover { background: var(--surface-hover); }
+  .scope-option.selected { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+  .scope-option input { display: none; }
+  .preview-image-box {
+    border: var(--border-width) solid var(--border);
+    background: var(--surface);
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    cursor: crosshair;
+  }
+  .preview-image-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .preview-image-box .preview-placeholder {
+    text-align: center;
+    color: var(--muted);
+  }
+  .preview-image-box .preview-placeholder span {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: var(--space-2);
+  }
+  .preview-image-box .selection-rect {
+    position: absolute;
+    border: 2px solid var(--accent);
+    background: oklch(52% 0.10 28 / 0.15);
+    pointer-events: none;
+    display: none;
+  }
+  .result-item {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    margin-bottom: var(--space-3);
+    overflow: hidden;
+  }
+  .result-item-header {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .result-item-header:hover { background: var(--surface-hover); }
+  .result-thumbs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    aspect-ratio: 1;
+  }
+  .result-thumb {
+    background: var(--surface-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: var(--text-xs);
+    color: var(--muted);
+    position: relative;
+  }
+  .result-thumb .thumb-label {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 9px;
+    background: var(--surface);
+    padding: 0 3px;
+    border: var(--border-width) solid var(--border);
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .result-detail {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .result-detail .similarity {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .result-detail .img-id {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .result-detail .source {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .result-detail .linked {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    margin-top: var(--space-1);
+    line-height: 1.5;
+  }
+  .result-detail .linked strong { color: var(--fg); font-weight: 500; }
+  .result-expanded {
+    display: none;
+    padding: var(--space-4);
+    border-top: var(--border-width) solid var(--border);
+    background: var(--surface);
+  }
+  .result-item.expanded .result-expanded { display: block; }
+  .result-expanded .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .result-expanded .meta-field {
+    font-size: var(--text-xs);
+  }
+  .result-expanded .meta-field .meta-label {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .result-expanded .meta-field .meta-value {
+    color: var(--fg);
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    word-break: break-all;
+  }
+  .result-actions-row {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    flex-wrap: wrap;
+  }
+  .comparison-overlay-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: var(--border-width) solid var(--border);
+    margin-bottom: var(--space-4);
+    background: var(--surface-hover);
+  }
+  .comparison-overlay-inline .comp-pane {
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .comparison-overlay-inline .comp-pane:first-child {
+    border-right: var(--border-width) solid var(--border);
+  }
+  .comparison-overlay-inline .comp-pane .pane-tag {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--surface);
+    padding: 2px 6px;
+    border: var(--border-width) solid var(--border);
+    color: var(--muted);
+  }
+  .search-summary {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand">
+      <span class="sidebar-brand-icon">设</span>
+      ZOOBET检索
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link active"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left">
+      <span class="app-subtitle">首页搜索</span>
+    </div>
+    <div class="app-header-right">
+      <button class="btn btn-sm btn-ghost" onclick="document.querySelector('.search-layout').scrollTop=0">清空</button>
+      <span class="text-xs text-muted">搜索历史: 3 条</span>
+    </div>
+  </header>
+  <main class="app-main" style="padding: var(--space-6);">
+    <div class="search-layout">
+      <!-- Left: Input Panel -->
+      <div class="search-input-panel">
+        <div class="drop-zone" id="dropZone"
+             onclick="document.getElementById('fileInput').click()"
+             ondragover="event.preventDefault(); this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event)">
+          <div class="drop-zone-inner">
+            <span class="dz-icon">📥</span>
+            <h3>拖入客户照片</h3>
+            <p class="dz-hint">或点击选择、Ctrl+V 粘贴、截图后粘贴</p>
+            <div class="search-actions">
+              <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">选择图片</button>
+              <button class="btn btn-sm" onclick="event.stopPropagation(); showToast('请使用 Ctrl+V 粘贴剪贴板图片')">粘贴图片</button>
+              <button class="btn btn-sm" onclick="event.stopPropagation(); showToast('截图功能已就绪，请截图后 Ctrl+V 粘贴')">截图搜索</button>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" multiple hidden onchange="handleFiles(this.files)">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">搜索范围</span></div>
+          <div class="scope-selector" id="scopeSelector">
+            <label class="scope-option selected" data-scope="all"><input type="radio" name="scope" checked>全部图片资源</label>
+            <label class="scope-option" data-scope="excel"><input type="radio" name="scope">仅 Excel 内嵌图片</label>
+            <label class="scope-option" data-scope="standalone"><input type="radio" name="scope">仅独立图片</label>
+            <label class="scope-option" data-scope="cad-linked"><input type="radio" name="scope">仅关联 CAD/UG</label>
+            <label class="scope-option" data-scope="pdf"><input type="radio" name="scope">仅 PDF 预览图</label>
+            <label class="scope-option" data-scope="favorites"><input type="radio" name="scope">仅收藏</label>
+          </div>
+          <div style="margin-top: var(--space-3);">
+            <label class="text-xs text-muted" style="display:block;margin-bottom:var(--space-1);">指定资料库</label>
+            <select style="width:100%">
+              <option>全部资料库</option>
+              <option>D:\设计资料库\产品设计</option>
+              <option>D:\设计资料库\客户参考</option>
+              <option>E:\项目档案\2025</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" id="previewCard" style="display:none">
+          <div class="card-header">
+            <span class="card-title">图片预览</span>
+            <div class="flex gap-2">
+              <button class="btn btn-xs" onclick="showToast('已旋转 90°')" title="旋转">↻</button>
+              <button class="btn btn-xs" onclick="showToast('框选模式：在图片上拖动鼠标选择区域')" title="框选局部">⬜</button>
+              <button class="btn btn-xs" onclick="clearImage()" title="清空">✕</button>
+            </div>
+          </div>
+          <div class="preview-image-box" id="previewBox">
+            <div class="preview-placeholder"><span>🖼</span><p class="text-xs text-muted">尚未选择图片</p></div>
+            <div class="selection-rect" id="selectionRect"></div>
+          </div>
+          <div style="margin-top:var(--space-3)">
+            <button class="btn btn-accent w-full" id="searchBtn" onclick="doSearch()" disabled>开始搜索</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Results Panel -->
+      <div class="search-results-panel" id="resultsPanel">
+        <div class="empty-state" id="emptyState">
+          <span class="empty-state-icon">🔍</span>
+          <h3>等待搜索</h3>
+          <p>在左侧拖入、粘贴或选择客户照片，然后点击「开始搜索」。系统将使用本地 OpenCLIP + FAISS 在历史资料库中检索相似图片。</p>
+        </div>
+
+        <div id="searchSummary" class="search-summary" style="display:none">
+          <span id="resultCount"></span>
+          <select id="sortSelect" onchange="sortResults()" style="margin-left:auto;">
+            <option>按相似度排序</option>
+            <option>按时间排序</option>
+            <option>按文件名排序</option>
+          </select>
+        </div>
+
+        <div id="resultsList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  let currentResults = [];
+  let selectedFile = null;
+
+  document.addEventListener('paste', (e) => {
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        handleFile(blob);
+        showToast('已粘贴剪贴板图片');
+        break;
+      }
+    }
+  });
+
+  function handleDrop(e) {
+    e.preventDefault();
+    e.target.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+  }
+
+  function handleFiles(files) {
+    if (files.length > 0) handleFile(files[0]);
+  }
+
+  function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const box = document.getElementById('previewBox');
+      box.innerHTML = '<img src="' + ev.target.result + '" alt="preview"><div class="selection-rect" id="selectionRect"></div>';
+      document.getElementById('previewCard').style.display = '';
+      document.getElementById('searchBtn').disabled = false;
+      enableBoxSelect(box);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImage() {
+    selectedFile = null;
+    document.getElementById('previewBox').innerHTML = '<div class="preview-placeholder"><span>🖼</span><p class="text-xs text-muted">尚未选择图片</p></div><div class="selection-rect" id="selectionRect" style="display:none"></div>';
+    document.getElementById('previewCard').style.display = 'none';
+    document.getElementById('searchBtn').disabled = true;
+    document.getElementById('emptyState').style.display = '';
+    document.getElementById('searchSummary').style.display = 'none';
+    document.getElementById('resultsList').innerHTML = '';
+    currentResults = [];
+  }
+
+  function enableBoxSelect(box) {
+    let drawing = false;
+    let startX, startY;
+    const rect = document.getElementById('selectionRect');
+
+    box.onmousedown = function(e) {
+      drawing = true;
+      const br = box.getBoundingClientRect();
+      startX = e.clientX - br.left;
+      startY = e.clientY - br.top;
+      rect.style.display = 'block';
+      rect.style.left = startX + 'px';
+      rect.style.top = startY + 'px';
+      rect.style.width = '0px';
+      rect.style.height = '0px';
+    };
+
+    box.onmousemove = function(e) {
+      if (!drawing) return;
+      const br = box.getBoundingClientRect();
+      const x = e.clientX - br.left;
+      const y = e.clientY - br.top;
+      rect.style.left = Math.min(startX, x) + 'px';
+      rect.style.top = Math.min(startY, y) + 'px';
+      rect.style.width = Math.abs(x - startX) + 'px';
+      rect.style.height = Math.abs(y - startY) + 'px';
+    };
+
+    box.onmouseup = function() {
+      if (drawing) {
+        drawing = false;
+        if (parseInt(rect.style.width) > 10) {
+          showToast('已框选局部区域，搜索时将仅使用框选区域');
+        }
+      }
+    };
+  }
+
+  function doSearch() {
+    if (!selectedFile) return;
+    const scope = document.querySelector('.scope-option.selected')?.dataset?.scope || 'all';
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('searchSummary').style.display = 'flex';
+    document.getElementById('resultCount').textContent = '搜索中...';
+
+    setTimeout(() => {
+      currentResults = simulateSearch('query', scope);
+      renderResults(currentResults);
+      document.getElementById('resultCount').textContent = '找到 ' + currentResults.length + ' 条相似结果';
+    }, 600);
+  }
+
+  function sortResults() {
+    const sort = document.getElementById('sortSelect').value;
+    if (sort.includes('相似度')) currentResults.sort((a,b) => parseFloat(b.similarity) - parseFloat(a.similarity));
+    else if (sort.includes('时间')) currentResults.sort((a,b) => b.lastModified.localeCompare(a.lastModified));
+    else currentResults.sort((a,b) => a.filename.localeCompare(b.filename));
+    renderResults(currentResults);
+  }
+
+  function renderResults(results) {
+    const container = document.getElementById('resultsList');
+    container.innerHTML = results.map((r, i) => {
+      const exRec = r.exRef ? MOCK.excelRecords.find(e => e.exId === r.exRef) : null;
+      const cad = r.cadRef ? MOCK.cadFiles.find(c => c.cadId === r.cadRef) : null;
+      const pdf = r.pdfRef ? MOCK.pdfFiles.find(p => p.docId === r.pdfRef) : null;
+
+      return `
+      <div class="result-item" id="result-${i}">
+        <div class="result-item-header" onclick="toggleResult(${i})">
+          <div class="result-thumbs">
+            <div class="result-thumb">
+              <span class="thumb-label">客户图</span>
+              <span style="color:var(--muted);font-size:10px;">查询图片</span>
+            </div>
+            <div class="result-thumb">
+              <span class="thumb-label">历史图</span>
+              <span style="color:var(--muted);font-size:10px;">${r.imgId}</span>
+            </div>
+          </div>
+          <div class="result-detail">
+            <div class="similarity">${r.similarity}%</div>
+            <div class="img-id">${r.imgId} · ${sourceTypeLabel(r.sourceType)}</div>
+            <div class="source">${r.folder}</div>
+            ${exRec ? '<div class="linked"><strong>EX:</strong> '+exRec.exId+' — '+exRec.name+' · '+exRec.sheetName+' / 行 '+exRec.row+'</div>' : ''}
+            ${cad ? '<div class="linked"><strong>CAD:</strong> '+cad.cadId+' — '+cad.filename+'</div>' : ''}
+            ${pdf ? '<div class="linked"><strong>PDF:</strong> '+pdf.docId+' — '+pdf.filename+'</div>' : ''}
+            ${r.tags.length ? '<div class="flex gap-1" style="margin-top:2px">'+r.tags.map(t=>'<span class="tag">'+t+'</span>').join('')+'</div>' : ''}
+          </div>
+        </div>
+        <div class="result-expanded">
+          <div class="comparison-overlay-inline">
+            <div class="comp-pane"><span class="pane-tag">客户照片</span><span style="color:var(--muted);font-size:12px;">查询图片</span></div>
+            <div class="comp-pane"><span class="pane-tag">${r.imgId}</span><span style="color:var(--muted);font-size:12px;">历史匹配</span></div>
+          </div>
+          <div class="meta-grid">
+            <div class="meta-field"><div class="meta-label">IMG 编号</div><div class="meta-value">${r.imgId}</div></div>
+            <div class="meta-field"><div class="meta-label">来源类型</div><div class="meta-value">${sourceTypeLabel(r.sourceType)}</div></div>
+            <div class="meta-field"><div class="meta-label">相似度</div><div class="meta-value" style="color:var(--accent);font-size:var(--text-lg);font-weight:600;">${r.similarity}%</div></div>
+            <div class="meta-field"><div class="meta-label">匹配状态</div><div class="meta-value">${r.status}</div></div>
+            <div class="meta-field" style="grid-column:1/-1"><div class="meta-label">图片路径</div><div class="meta-value">${r.path}</div></div>
+            <div class="meta-field" style="grid-column:1/-1"><div class="meta-label">所在文件夹</div><div class="meta-value">${r.folder}</div></div>
+            ${exRec ? `
+            <div class="meta-field"><div class="meta-label">EX 编号</div><div class="meta-value">${exRec.exId}</div></div>
+            <div class="meta-field"><div class="meta-label">名称</div><div class="meta-value">${exRec.name}</div></div>
+            <div class="meta-field"><div class="meta-label">客户</div><div class="meta-value">${exRec.customer || '—'}</div></div>
+            <div class="meta-field"><div class="meta-label">类别</div><div class="meta-value">${exRec.category || '—'}</div></div>
+            <div class="meta-field"><div class="meta-label">Excel 文件</div><div class="meta-value">${exRec.excelPath}</div></div>
+            <div class="meta-field"><div class="meta-label">工作表 · 行号</div><div class="meta-value">${exRec.sheetName} · 行 ${exRec.row}</div></div>
+            ` : ''}
+            ${cad ? `
+            <div class="meta-field"><div class="meta-label">CAD 编号</div><div class="meta-value">${cad.cadId}</div></div>
+            <div class="meta-field"><div class="meta-label">CAD 文件名</div><div class="meta-value">${cad.filename}</div></div>
+            <div class="meta-field" style="grid-column:1/-1"><div class="meta-label">CAD 路径</div><div class="meta-value">${cad.path}</div></div>
+            ` : ''}
+            ${pdf ? `
+            <div class="meta-field"><div class="meta-label">DOC 编号</div><div class="meta-value">${pdf.docId}</div></div>
+            <div class="meta-field"><div class="meta-label">PDF 文件名</div><div class="meta-value">${pdf.filename}</div></div>
+            <div class="meta-field" style="grid-column:1/-1"><div class="meta-label">PDF 路径</div><div class="meta-value">${pdf.path}</div></div>
+            ` : ''}
+          </div>
+          <div class="result-actions-row">
+            <button class="btn btn-xs" onclick="event.stopPropagation();showToast('已打开图片')">打开原图</button>
+            <button class="btn btn-xs" onclick="event.stopPropagation();showToast('已打开文件夹')">打开文件夹</button>
+            <button class="btn btn-xs" onclick="event.stopPropagation();showToast('已复制路径')">复制路径</button>
+            ${cad ? '<button class="btn btn-xs" onclick="event.stopPropagation();showToast(\'已打开 CAD 文件: '+cad.filename+'\')">打开 CAD</button>' : ''}
+            ${exRec ? '<button class="btn btn-xs" onclick="event.stopPropagation();showToast(\'已打开 Excel: '+exRec.excelPath+'\')">打开 Excel</button>' : ''}
+            ${pdf ? '<button class="btn btn-xs" onclick="event.stopPropagation();showToast(\'已打开 PDF: '+pdf.filename+'\')">打开 PDF</button>' : ''}
+            <button class="btn btn-xs btn-accent" onclick="event.stopPropagation();showToast('已标记为正确结果')">✓ 正确</button>
+            <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();showToast('已标记为不相关')">✕ 不相关</button>
+            <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();showToast('已加入收藏')">★ 收藏</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleResult(i) {
+    const el = document.getElementById('result-' + i);
+    el.classList.toggle('expanded');
+  }
+
+  document.getElementById('scopeSelector').addEventListener('click', function(e) {
+    const opt = e.target.closest('.scope-option');
+    if (!opt) return;
+    this.querySelectorAll('.scope-option').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+  });
+
+  initSidebar();
+</script>
+</body>
+</html>

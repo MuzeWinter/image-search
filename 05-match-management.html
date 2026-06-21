@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>匹配管理 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link active"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">匹配管理</span></div>
+    <div class="app-header-right">
+      <span class="text-xs text-muted">已匹配 6 · 疑似 1 · 未匹配 1 · 人工确认 1</span>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>匹配管理</h1><p>管理图片资源与 CAD/Excel/PDF 文件之间的关联关系。确认自动匹配、修正错误匹配、手动绑定文件。人工确认过的匹配不会被后续扫描覆盖。</p></div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('confirmed')">已匹配 <span class="badge badge-success" style="margin-left:4px;">6</span></div>
+      <div class="tab" onclick="switchTab('suspected')">疑似匹配 <span class="badge badge-warning" style="margin-left:4px;">1</span></div>
+      <div class="tab" onclick="switchTab('unmatched')">未匹配 <span class="badge badge-muted" style="margin-left:4px;">1</span></div>
+      <div class="tab" onclick="switchTab('manual')">人工绑定 <span class="badge badge-info" style="margin-left:4px;">1</span></div>
+    </div>
+
+    <div class="filter-bar">
+      <select><option>全部来源</option><option>Excel 内嵌</option><option>独立图片</option><option>PDF 预览</option></select>
+      <select><option>全部匹配方式</option><option>Excel 引用匹配</option><option>文件名匹配</option><option>同目录匹配</option><option>人工绑定</option></select>
+      <div class="toolbar-spacer"></div>
+      <button class="btn btn-sm btn-accent" onclick="showToast('已确认选中匹配')">批量确认</button>
+      <button class="btn btn-sm" onclick="showToast('已忽略选中')">批量忽略</button>
+    </div>
+
+    <div class="table-container" id="matchTable"></div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  function buildMatchRow(m) {
+    const img = MOCK.imageAssets.find(i => i.imgId === m.imgId);
+    const exRec = m.exId ? MOCK.excelRecords.find(e => e.exId === m.exId) : null;
+    const cad = m.cadId ? MOCK.cadFiles.find(c => c.cadId === m.cadId) : null;
+    const statusClass = { confirmed: 'badge-success', auto: 'badge-info', suspected: 'badge-warning', unmatched: 'badge-muted', manual: 'badge-success' };
+    const methodLabel = { 'excel-reference': 'Excel 引用', 'filename-match': '文件名匹配', 'filename-similar': '文件名相似', 'same-folder': '同目录', 'manual-bind': '人工绑定' };
+
+    return `
+    <tr>
+      <td><span class="badge ${statusClass[m.status] || 'badge-muted'}">${m.status}</span></td>
+      <td><span class="mono">${m.imgId}</span><br><span class="text-xs text-muted">${sourceTypeLabel(img.sourceType)}</span></td>
+      <td>${exRec ? '<span class="mono">'+exRec.exId+'</span><br><span class="text-xs">'+exRec.name+'</span>' : '<span class="text-muted">—</span>'}</td>
+      <td>${cad ? '<span class="mono">'+cad.cadId+'</span><br><span class="text-xs">'+cad.filename+'</span>' : '<span class="text-muted">—</span>'}</td>
+      <td><span class="badge badge-muted">${methodLabel[m.method] || m.method || '—'}</span></td>
+      <td>${m.confidence ? '<span class="badge '+(m.confidence==='high'?'badge-success':m.confidence==='medium'?'badge-warning':'badge-muted')+'">'+m.confidence+'</span>' : '—'}</td>
+      <td>${img.folder}</td>
+      <td>
+        <div class="flex gap-1">
+          ${m.status !== 'confirmed' && m.status !== 'manual' ? '<button class="btn btn-xs btn-accent" onclick="showToast(\'已确认匹配: '+m.imgId+'\')">确认</button>' : ''}
+          ${m.status !== 'unmatched' ? '<button class="btn btn-xs btn-ghost" onclick="showToast(\'已取消匹配: '+m.imgId+'\')">取消</button>' : ''}
+          <button class="btn btn-xs" onclick="showToast(\'重新选择 CAD 文件…\')">重选 CAD</button>
+          ${!cad ? '<button class="btn btn-xs" onclick="showToast(\'手动绑定中…\')">绑定</button>' : ''}
+          <button class="btn btn-xs btn-ghost" onclick="showToast(\'已忽略: '+m.imgId+'\')">忽略</button>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.closest('.tab').classList.add('active');
+
+    let matches;
+    if (tab === 'confirmed') matches = MOCK.matches.filter(m => m.status === 'confirmed' || m.status === 'auto');
+    else if (tab === 'suspected') matches = MOCK.matches.filter(m => m.status === 'suspected');
+    else if (tab === 'unmatched') matches = MOCK.matches.filter(m => m.status === 'unmatched');
+    else matches = MOCK.matches.filter(m => m.status === 'manual');
+
+    document.getElementById('matchTable').innerHTML = `
+      <table><thead><tr><th>状态</th><th>图片</th><th>Excel 记录</th><th>CAD 文件</th><th>匹配方式</th><th>置信度</th><th>位置</th><th>操作</th></tr></thead>
+      <tbody>${matches.map(buildMatchRow).join('')}</tbody></table>`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    switchTab('confirmed');
+    initSidebar();
+  });
+</script>
+</body>
+</html>

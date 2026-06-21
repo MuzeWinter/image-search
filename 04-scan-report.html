@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>扫描报告 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link active"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">扫描报告</span></div>
+    <div class="app-header-right">
+      <button class="btn btn-sm" onclick="showToast('已导出扫描报告')">导出报告</button>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>扫描报告</h1><p>查看每次资料库扫描的详细报告。包含新增、删除、修改、移动的文件统计，以及错误和警告信息。</p></div>
+
+    <div class="stat-grid" style="margin-bottom:var(--space-8);">
+      <div class="stat-card accent"><div class="stat-label">总扫描次数</div><div class="stat-value">4</div></div>
+      <div class="stat-card"><div class="stat-label">累计新增</div><div class="stat-value" style="color:var(--success)">166</div></div>
+      <div class="stat-card"><div class="stat-label">累计修改</div><div class="stat-value" style="color:var(--warning)">13</div></div>
+      <div class="stat-card"><div class="stat-label">累计错误</div><div class="stat-value" style="color:var(--danger)">1</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">扫描历史</span></div>
+      <div class="table-container"><table>
+        <thead><tr><th>时间</th><th>资料库</th><th>类型</th><th>新增</th><th>删除</th><th>修改</th><th>移动</th><th>错误</th><th>耗时</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>2026-06-15 14:32</td><td><span class="path-display">D:\设计资料库\产品设计</span></td>
+            <td><span class="badge badge-info">全量</span></td>
+            <td style="color:var(--success)">+23</td><td style="color:var(--danger)">-2</td><td style="color:var(--warning)">~5</td><td>↗1</td><td><span class="badge badge-success">0</span></td><td>4m 12s</td>
+            <td><button class="btn btn-xs" onclick="showToast('查看详情')">详情</button></td>
+          </tr>
+          <tr>
+            <td>2026-06-14 09:15</td><td><span class="path-display">D:\设计资料库\客户参考</span></td>
+            <td><span class="badge badge-info">全量</span></td>
+            <td style="color:var(--success)">+8</td><td style="color:var(--danger)">-0</td><td style="color:var(--warning)">~1</td><td>↗0</td><td><span class="badge badge-success">0</span></td><td>1m 48s</td>
+            <td><button class="btn btn-xs" onclick="showToast('查看详情')">详情</button></td>
+          </tr>
+          <tr>
+            <td>2026-06-10 16:48</td><td><span class="path-display">E:\项目档案\2025</span></td>
+            <td><span class="badge badge-muted">增量</span></td>
+            <td style="color:var(--success)">+15</td><td style="color:var(--danger)">-3</td><td style="color:var(--warning)">~7</td><td>↗2</td><td><span class="badge badge-danger">1</span></td><td>3m 05s</td>
+            <td><button class="btn btn-xs" onclick="showToast('查看详情')">详情</button></td>
+          </tr>
+          <tr>
+            <td>2026-06-01 08:00</td><td><span class="path-display">D:\设计资料库\产品设计</span></td>
+            <td><span class="badge badge-info">全量</span></td>
+            <td style="color:var(--success)">+120</td><td style="color:var(--danger)">-0</td><td style="color:var(--warning)">~0</td><td>↗0</td><td><span class="badge badge-success">0</span></td><td>8m 30s</td>
+            <td><button class="btn btn-xs" onclick="showToast('查看详情')">详情</button></td>
+          </tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card" style="margin-top:var(--space-6);">
+      <div class="card-header"><span class="card-title">变更摘要 — 2026-06-15 14:32</span></div>
+      <div class="table-container"><table>
+        <thead><tr><th>类型</th><th>IMG</th><th>EX</th><th>CAD</th><th>旧值</th><th>新值</th><th>路径</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-info">新增图片</span></td><td>IMG-000012</td><td>—</td><td>—</td><td>—</td><td>新增独立图片</td><td><span class="path-display">D:\…\工具套装_v4.jpg</span></td><td><span class="badge badge-success">已处理</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-warning">图片修改</span></td><td>IMG-000003</td><td>—</td><td>—</td><td class="text-muted">hash: i9j0…</td><td>hash: m3n4…</td><td><span class="path-display">D:\…\水泵钳_v3.jpg</span></td><td><span class="badge badge-success">已处理</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-warning">CAD 改名</span></td><td>—</td><td>—</td><td>CAD-000012</td><td class="text-muted">cap_v1.prt</td><td>cap_sample_01.prt</td><td><span class="path-display">D:\…\UG\cap_sample_01.prt</span></td><td><span class="badge badge-success">已处理</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-warning">Excel 修改</span></td><td>—</td><td>EX-000003</td><td>—</td><td class="text-muted">hash: abc123</td><td>hash: def456</td><td><span class="path-display">D:\…\零件清单.xlsx</span></td><td><span class="badge badge-success">已处理</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-danger">图片删除</span></td><td>IMG-000099</td><td>—</td><td>—</td><td class="text-muted">已删除</td><td>—</td><td><span class="path-display">D:\…\已废弃.jpg</span></td><td><span class="badge badge-success">已处理</span></td>
+          </tr>
+        </tbody>
+      </table></div>
+    </div>
+  </main>
+</div>
+<script src="js/app.js"></script>
+<script>document.addEventListener('DOMContentLoaded', initSidebar);</script>
+</body>
+</html>

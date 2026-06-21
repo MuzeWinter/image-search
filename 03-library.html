@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>资料库管理 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link active"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">资料库管理</span></div>
+    <div class="app-header-right">
+      <button class="btn btn-sm btn-accent" onclick="showToast('开始全量扫描…')">立即扫描全部</button>
+      <button class="btn btn-sm" onclick="showToast('已添加资料库文件夹')">+ 添加资料库</button>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>资料库管理</h1><p>设置和管理目标资料文件夹。支持递归扫描子文件夹、增量扫描、排除指定目录。</p></div>
+
+    <div class="stat-grid">
+      <div class="stat-card accent"><div class="stat-label">资料库</div><div class="stat-value">3</div><div class="stat-detail">个目标文件夹</div></div>
+      <div class="stat-card"><div class="stat-label">Excel 文件</div><div class="stat-value">1,243</div><div class="stat-detail">.xlsx / .xls / .xlsm</div></div>
+      <div class="stat-card"><div class="stat-label">Excel 内嵌图片</div><div class="stat-value">4</div><div class="stat-detail">已提取</div></div>
+      <div class="stat-card"><div class="stat-label">独立图片</div><div class="stat-value">7</div><div class="stat-detail">.jpg .png .webp …</div></div>
+      <div class="stat-card"><div class="stat-label">PDF 文件</div><div class="stat-value">3</div><div class="stat-detail">已生成 3 张预览图</div></div>
+      <div class="stat-card"><div class="stat-label">CAD / UG 文件</div><div class="stat-value">12</div><div class="stat-detail">.prt .step .dwg …</div></div>
+      <div class="stat-card"><div class="stat-label">已索引图片</div><div class="stat-value">10</div><div class="stat-detail">FAISS 检索就绪</div></div>
+      <div class="stat-card"><div class="stat-label">未索引</div><div class="stat-value">1</div><div class="stat-detail">待处理</div></div>
+      <div class="stat-card"><div class="stat-label">已匹配</div><div class="stat-value">8</div><div class="stat-detail">图片 ↔ CAD/Excel</div></div>
+      <div class="stat-card"><div class="stat-label">疑似匹配</div><div class="stat-value">2</div><div class="stat-detail">待人工确认</div></div>
+      <div class="stat-card"><div class="stat-label">未匹配</div><div class="stat-value">1</div><div class="stat-detail">无关联文件</div></div>
+      <div class="stat-card"><div class="stat-label">最后扫描</div><div class="stat-value" style="font-size:var(--text-md);">06-15 14:32</div><div class="stat-detail">2026年</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:var(--space-6);">
+      <div class="card-header"><span class="card-title">资料库文件夹</span><span class="text-xs text-muted">3 个</span></div>
+      <div class="table-container"><table>
+        <thead><tr><th>路径</th><th>文件数</th><th>子文件夹</th><th>递归扫描</th><th>最后扫描</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="path-display">D:\设计资料库\产品设计</span></td>
+            <td>1,243</td><td>是</td><td><span class="badge badge-success">开启</span></td>
+            <td>2026-06-15 14:32</td><td><span class="badge badge-success">就绪</span></td>
+            <td>
+              <div class="flex gap-1">
+                <button class="btn btn-xs" onclick="showToast('重新扫描中…')">重新扫描</button>
+                <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+                <button class="btn btn-xs btn-ghost btn-danger" onclick="showToast('已移除（仅从列表移除，不删除文件）')">✕</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="path-display">D:\设计资料库\客户参考</span></td>
+            <td>567</td><td>是</td><td><span class="badge badge-success">开启</span></td>
+            <td>2026-06-14 09:15</td><td><span class="badge badge-success">就绪</span></td>
+            <td>
+              <div class="flex gap-1">
+                <button class="btn btn-xs" onclick="showToast('重新扫描中…')">重新扫描</button>
+                <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+                <button class="btn btn-xs btn-ghost btn-danger" onclick="showToast('已移除')">✕</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="path-display">E:\项目档案\2025</span></td>
+            <td>892</td><td>否</td><td><span class="badge badge-muted">关闭</span></td>
+            <td>2026-06-10 16:48</td><td><span class="badge badge-info">扫描中…</span></td>
+            <td>
+              <div class="flex gap-1">
+                <button class="btn btn-xs" onclick="showToast('已中断扫描')">中断</button>
+                <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card" style="margin-bottom:var(--space-6);">
+      <div class="card-header"><span class="card-title">排除目录</span><button class="btn btn-xs" onclick="showToast('已添加排除目录')">+ 添加</button></div>
+      <div class="flex gap-2" style="flex-wrap:wrap;">
+        <span class="tag">缓存 <span class="tag-remove" onclick="showToast('已移除排除')">✕</span></span>
+        <span class="tag">临时文件 <span class="tag-remove" onclick="showToast('已移除排除')">✕</span></span>
+        <span class="tag">备份 <span class="tag-remove" onclick="showToast('已移除排除')">✕</span></span>
+        <span class="tag">node_modules <span class="tag-remove" onclick="showToast('已移除排除')">✕</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">最近扫描历史</span></div>
+      <div class="table-container"><table>
+        <thead><tr><th>时间</th><th>资料库</th><th>类型</th><th>新增</th><th>删除</th><th>修改</th><th>移动</th><th>错误</th><th>耗时</th></tr></thead>
+        <tbody id="scanHistoryBody"></tbody>
+      </table></div>
+    </div>
+  </main>
+</div>
+<script src="js/app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.getElementById('scanHistoryBody');
+    tbody.innerHTML = MOCK.scanHistory.map(s => `
+      <tr>
+        <td>${s.time}</td>
+        <td><span class="path-display">${s.library}</span></td>
+        <td><span class="badge ${s.type==='full'?'badge-info':'badge-muted'}">${s.type==='full'?'全量':'增量'}</span></td>
+        <td style="color:var(--success)">+${s.added}</td>
+        <td style="color:var(--danger)">-${s.removed}</td>
+        <td style="color:var(--warning)">~${s.modified}</td>
+        <td>↗${s.moved}</td>
+        <td>${s.errors > 0 ? '<span class="badge badge-danger">'+s.errors+'</span>' : '<span class="badge badge-success">0</span>'}</td>
+        <td>${s.duration}</td>
+      </tr>`).join('');
+    initSidebar();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAD / UG 文件 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link active"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">CAD / UG 文件</span></div>
+    <div class="app-header-right">
+      <span class="text-xs text-muted">共 12 个 · UG 8 · STEP 2 · DWG 1 · SLDPRT 1</span>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>CAD / UG 文件</h1><p>浏览所有 UG/NX 的 .prt 文件、STEP、IGES、JT、DWG 等辅助 CAD 文件。查看关联图片和 Excel 记录，支持打开文件、标记主文件和忽略重复。</p></div>
+
+    <div class="filter-bar">
+      <select onchange="filterCAD()" id="cadType"><option value="all">全部类型</option><option value="prt">UG/NX (.prt)</option><option value="step">STEP (.step/.stp)</option><option value="dwg">DWG/DXF</option><option value="sldprt">SolidWorks</option></select>
+      <select onchange="filterCAD()" id="cadStatus"><option value="all">全部状态</option><option value="normal">正常</option><option value="suspected_dup">疑似重复</option><option value="missing">缺失</option></select>
+      <select onchange="filterCAD()" id="cadLinked"><option value="all">全部关联</option><option value="linked">有关联图片</option><option value="unlinked">无关联图片</option></select>
+      <div class="search-bar"><input type="text" placeholder="搜索 CAD 编号、文件名…" oninput="filterCAD()" id="cadSearch"></div>
+    </div>
+
+    <div class="table-container"><table>
+      <thead><tr><th>CAD 编号</th><th>类型</th><th>文件名</th><th>路径</th><th>大小</th><th>修改时间</th><th>关联</th><th>状态</th><th>标签</th><th>操作</th></tr></thead>
+      <tbody id="cadTableBody"></tbody>
+    </table></div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  function renderCADTable(files) {
+    const tbody = document.getElementById('cadTableBody');
+    tbody.innerHTML = files.map(c => `
+      <tr>
+        <td><span class="mono">${c.cadId}</span>${c.isMain ? ' <span class="badge badge-accent" style="border-color:var(--accent);color:var(--accent);">主文件</span>' : ''}</td>
+        <td><span class="mono">${fileTypeIcon(c.fileType)} ${c.fileType.toUpperCase()}</span></td>
+        <td>${c.filename}</td>
+        <td><span class="path-display">${c.path}</span></td>
+        <td>${c.size}</td>
+        <td>${c.lastModified}</td>
+        <td>${c.imageCount > 0 ? '<span class="badge badge-success">'+c.imageCount+' 图</span>' : '<span class="text-muted">—</span>'} ${c.exCount > 0 ? '<span class="badge badge-info">'+c.exCount+' EX</span>' : ''}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td>${c.tags.length ? c.tags.slice(0,2).map(t=>'<span class="tag">'+t+'</span>').join('') : '<span class="text-muted">—</span>'}</td>
+        <td>
+          <div class="flex gap-1">
+            <button class="btn btn-xs" onclick="showToast('已打开: ${c.filename}')">打开</button>
+            <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+            <button class="btn btn-xs btn-ghost" onclick="showToast('查看关联图片')">🖼</button>
+            ${!c.isMain ? '<button class="btn btn-xs" onclick="showToast(\'已设为主文件: '+c.filename+'\')">设为主</button>' : ''}
+            <button class="btn btn-xs btn-ghost btn-danger" onclick="showToast('已忽略: '+c.filename)">忽略</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  function filterCAD() {
+    const type = document.getElementById('cadType').value;
+    const status = document.getElementById('cadStatus').value;
+    const linked = document.getElementById('cadLinked').value;
+    const search = document.getElementById('cadSearch').value.toLowerCase();
+    let filtered = MOCK.cadFiles.filter(c => {
+      if (type !== 'all' && c.fileType !== type) return false;
+      if (status !== 'all' && c.status !== status) return false;
+      if (linked === 'linked' && c.imageCount === 0) return false;
+      if (linked === 'unlinked' && c.imageCount > 0) return false;
+      if (search && !c.cadId.toLowerCase().includes(search) && !c.filename.toLowerCase().includes(search) && !c.path.toLowerCase().includes(search)) return false;
+      return true;
+    });
+    renderCADTable(filtered);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderCADTable(MOCK.cadFiles);
+    initSidebar();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF 文件 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link active"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">PDF 文件</span></div>
+    <div class="app-header-right"><span class="text-xs text-muted">共 3 个 · 预览图 3 张</span></div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>PDF 文件</h1><p>浏览扫描到的 PDF 文件。自动生成首页预览图并加入图片检索索引，搜索结果可定位到对应 PDF。</p></div>
+
+    <div class="stat-grid" style="margin-bottom:var(--space-8);">
+      <div class="stat-card accent"><div class="stat-label">PDF 文件</div><div class="stat-value">3</div></div>
+      <div class="stat-card"><div class="stat-label">预览图</div><div class="stat-value">3</div><div class="stat-detail">已加入检索索引</div></div>
+      <div class="stat-card"><div class="stat-label">总页数</div><div class="stat-value">152</div></div>
+      <div class="stat-card"><div class="stat-label">关联图片</div><div class="stat-value">1</div><div class="stat-detail">IMG-000006</div></div>
+    </div>
+
+    <div class="table-container"><table>
+      <thead><tr><th>DOC 编号</th><th>预览</th><th>文件名</th><th>路径</th><th>大小</th><th>页数</th><th>修改时间</th><th>关联 IMG</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">DOC-000001</span></td>
+          <td><div style="width:64px;height:80px;border:1px solid var(--border);background:var(--surface-hover);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);">预览</div></td>
+          <td>博世-冲击钻说明书.pdf</td>
+          <td><span class="path-display">D:\设计资料库\客户参考\博世-冲击钻说明书.pdf</span></td>
+          <td>3.8 MB</td>
+          <td>24</td>
+          <td>2025-06-01</td>
+          <td><span class="mono">IMG-000006</span></td>
+          <td><span class="badge badge-success">正常</span></td>
+          <td>
+            <div class="flex gap-1">
+              <button class="btn btn-xs" onclick="showToast('已打开 PDF')">打开</button>
+              <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+              <button class="btn btn-xs btn-ghost" onclick="showToast('已复制路径')">📋</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="mono">DOC-000002</span></td>
+          <td><div style="width:64px;height:80px;border:1px solid var(--border);background:var(--surface-hover);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);">预览</div></td>
+          <td>产品规格书_老虎钳.pdf</td>
+          <td><span class="path-display">D:\设计资料库\产品设计\文档\产品规格书_老虎钳.pdf</span></td>
+          <td>1.2 MB</td>
+          <td>8</td>
+          <td>2025-11-22</td>
+          <td><span class="text-muted">—</span></td>
+          <td><span class="badge badge-success">正常</span></td>
+          <td>
+            <div class="flex gap-1">
+              <button class="btn btn-xs" onclick="showToast('已打开 PDF')">打开</button>
+              <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="mono">DOC-000003</span></td>
+          <td><div style="width:64px;height:80px;border:1px solid var(--border);background:var(--surface-hover);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);">预览</div></td>
+          <td>表面处理工艺手册.pdf</td>
+          <td><span class="path-display">D:\设计资料库\参考\表面处理工艺手册.pdf</span></td>
+          <td>15.6 MB</td>
+          <td>120</td>
+          <td>2024-08-15</td>
+          <td><span class="text-muted">—</span></td>
+          <td><span class="badge badge-success">正常</span></td>
+          <td>
+            <div class="flex gap-1">
+              <button class="btn btn-xs" onclick="showToast('已打开 PDF')">打开</button>
+              <button class="btn btn-xs btn-ghost" onclick="showToast('已打开文件夹')">📂</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+  </main>
+</div>
+<script src="js/app.js"></script>
+<script>document.addEventListener('DOMContentLoaded', initSidebar);</script>
+</body>
+</html>

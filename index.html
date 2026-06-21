@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+<style>
+  .launcher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+  }
+  .launcher-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    padding: var(--space-6);
+    text-decoration: none;
+    color: var(--fg);
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 160px;
+  }
+  .launcher-card:hover {
+    border-color: var(--fg);
+    background: var(--surface-hover);
+  }
+  .launcher-card-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    margin-bottom: var(--space-4);
+  }
+  .launcher-card-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: currentColor;
+  }
+  .launcher-card h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    letter-spacing: 0.01em;
+  }
+  .launcher-card p {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    line-height: 1.6;
+    flex: 1;
+  }
+  .launcher-card .card-arrow {
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--muted);
+    align-self: flex-end;
+  }
+  .launcher-card.primary {
+    border-left: var(--border-heavy) solid var(--accent);
+  }
+  .welcome-banner {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    padding: var(--space-8) var(--space-10);
+    margin-bottom: var(--space-8);
+    display: flex;
+    gap: var(--space-8);
+    align-items: center;
+  }
+  .welcome-banner .welcome-text h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin-bottom: var(--space-3);
+  }
+  .welcome-banner .welcome-text p {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+  .welcome-stats {
+    display: flex;
+    gap: var(--space-8);
+    margin-left: auto;
+  }
+  .welcome-stat {
+    text-align: center;
+  }
+  .welcome-stat .welcome-stat-val {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .welcome-stat .welcome-stat-label {
+    font-size: var(--text-xs);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: var(--space-1);
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand">
+      <span class="sidebar-brand-icon">设</span>
+      ZOOBET检索
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left">
+      <span class="app-subtitle">ZOOBET检索</span>
+    </div>
+    <div class="app-header-right">
+      <span class="text-xs text-muted">资料库: 3 个 · 已索引: 11 张 · 就绪</span>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h1>ZOOBET检索</h1>
+        <p>本地 AI 驱动的设计资料视觉检索工具。拖入客户照片，即刻在历史资料库中搜索相似图片，并定位关联的 Excel 记录、UG/CAD 文件、PDF 文档和原始图片路径。全部数据本地处理，无需联网。</p>
+      </div>
+      <div class="welcome-stats">
+        <div class="welcome-stat"><div class="welcome-stat-val">3</div><div class="welcome-stat-label">资料库</div></div>
+        <div class="welcome-stat"><div class="welcome-stat-val">1,243</div><div class="welcome-stat-label">Excel 文件</div></div>
+        <div class="welcome-stat"><div class="welcome-stat-val">11</div><div class="welcome-stat-label">已索引图片</div></div>
+        <div class="welcome-stat"><div class="welcome-stat-val">12</div><div class="welcome-stat-label">CAD/UG 文件</div></div>
+      </div>
+    </div>
+
+    <div class="page-header"><h1>功能导航</h1><p>选择以下任一功能开始使用。建议从「首页搜索」开始体验核心检索能力。</p></div>
+
+    <div class="launcher-grid">
+      <a href="01-search.html" class="launcher-card primary">
+        <div class="launcher-card-icon">🔍</div>
+        <h3>首页搜索</h3>
+        <p>拖入、粘贴或选择客户照片，使用本地 AI 模型搜索历史设计资料。支持整图搜索、局部框选搜索和批量搜索。</p>
+        <span class="card-arrow">搜索 →</span>
+      </a>
+      <a href="02-image-library.html" class="launcher-card">
+        <div class="launcher-card-icon">🖼</div>
+        <h3>图片库</h3>
+        <p>浏览和管理所有已索引图片资源。查看缩略图、来源类型、关联 CAD/UG 文件和 Excel 记录。</p>
+        <span class="card-arrow">浏览 11 张 →</span>
+      </a>
+      <a href="03-library.html" class="launcher-card">
+        <div class="launcher-card-icon">📁</div>
+        <h3>资料库管理</h3>
+        <p>设置目标资料文件夹，查看扫描统计，管理扫描规则和排除目录。支持自动扫描和增量扫描。</p>
+        <span class="card-arrow">管理 →</span>
+      </a>
+      <a href="06-cad-files.html" class="launcher-card">
+        <div class="launcher-card-icon">◇</div>
+        <h3>CAD / UG 文件</h3>
+        <p>浏览所有 UG/NX、STEP、IGES、JT、DWG 等 CAD 文件。查看关联图片和 Excel 记录。</p>
+        <span class="card-arrow">浏览 12 个 →</span>
+      </a>
+      <a href="07-excel-records.html" class="launcher-card">
+        <div class="launcher-card-icon">📊</div>
+        <h3>Excel 记录</h3>
+        <p>查看从 Excel 表格中提取的所有有效记录。显示编号、名称、客户、关联图片和 CAD 文件。</p>
+        <span class="card-arrow">浏览 7 条 →</span>
+      </a>
+      <a href="08-pdf-files.html" class="launcher-card">
+        <div class="launcher-card-icon">📄</div>
+        <h3>PDF 文件</h3>
+        <p>浏览扫描到的 PDF 文件及其预览图。支持查看 PDF 首页缩略图和关联图片。</p>
+        <span class="card-arrow">浏览 3 个 →</span>
+      </a>
+      <a href="04-scan-report.html" class="launcher-card">
+        <div class="launcher-card-icon">📋</div>
+        <h3>扫描报告</h3>
+        <p>查看每次扫描的详细报告：新增、修改、删除、移动的文件数量，以及错误和警告信息。</p>
+        <span class="card-arrow">查看 →</span>
+      </a>
+      <a href="05-match-management.html" class="launcher-card">
+        <div class="launcher-card-icon">🔗</div>
+        <h3>匹配管理</h3>
+        <p>管理图片与 CAD/Excel/PDF 的关联关系。确认自动匹配、修正错误匹配、手动绑定文件。</p>
+        <span class="card-arrow">3 条待确认 →</span>
+      </a>
+      <a href="12-changelog.html" class="launcher-card">
+        <div class="launcher-card-icon">📝</div>
+        <h3>变更记录</h3>
+        <p>查看所有文件变更历史：新增、修改、删除、移动、重命名。支持按类型和日期筛选。</p>
+        <span class="card-arrow">5 条记录 →</span>
+      </a>
+      <a href="09-tags.html" class="launcher-card">
+        <div class="launcher-card-icon">🏷</div>
+        <h3>标签分类</h3>
+        <p>按标签浏览和筛选所有资源。支持按产品类型、部件、工艺、状态等维度分类查看。</p>
+        <span class="card-arrow">浏览 →</span>
+      </a>
+      <a href="10-favorites.html" class="launcher-card">
+        <div class="launcher-card-icon">★</div>
+        <h3>收藏</h3>
+        <p>查看已收藏的图片和记录。快速访问常用参考资料和设计模板。</p>
+        <span class="card-arrow">3 项 →</span>
+      </a>
+      <a href="11-settings.html" class="launcher-card">
+        <div class="launcher-card-icon">⚙</div>
+        <h3>设置</h3>
+        <p>配置资料库路径、AI 模型参数、扫描规则、OCR 开关、GPU 加速和备份恢复选项。</p>
+        <span class="card-arrow">配置 →</span>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

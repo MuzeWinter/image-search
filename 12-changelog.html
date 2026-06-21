@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>变更记录 — ZOOBET检索</title>
+<link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><span class="sidebar-brand-icon">设</span>ZOOBET检索</div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">检索</div>
+      <a href="01-search.html" class="sidebar-link"><span class="sidebar-link-icon">🔍</span>首页搜索</a>
+      <div class="sidebar-section">浏览</div>
+      <a href="02-image-library.html" class="sidebar-link"><span class="sidebar-link-icon">🖼</span>图片库<span class="sidebar-badge">11</span></a>
+      <a href="06-cad-files.html" class="sidebar-link"><span class="sidebar-link-icon">◇</span>CAD / UG 文件<span class="sidebar-badge">12</span></a>
+      <a href="07-excel-records.html" class="sidebar-link"><span class="sidebar-link-icon">📊</span>Excel 记录<span class="sidebar-badge">7</span></a>
+      <a href="08-pdf-files.html" class="sidebar-link"><span class="sidebar-link-icon">📄</span>PDF 文件<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">管理</div>
+      <a href="03-library.html" class="sidebar-link"><span class="sidebar-link-icon">📁</span>资料库</a>
+      <a href="04-scan-report.html" class="sidebar-link"><span class="sidebar-link-icon">📋</span>扫描报告</a>
+      <a href="05-match-management.html" class="sidebar-link"><span class="sidebar-link-icon">🔗</span>匹配管理<span class="sidebar-badge">3</span></a>
+      <a href="12-changelog.html" class="sidebar-link active"><span class="sidebar-link-icon">📝</span>变更记录<span class="sidebar-badge">5</span></a>
+      <div class="sidebar-section">分类</div>
+      <a href="09-tags.html" class="sidebar-link"><span class="sidebar-link-icon">🏷</span>标签分类</a>
+      <a href="10-favorites.html" class="sidebar-link"><span class="sidebar-link-icon">★</span>收藏<span class="sidebar-badge">3</span></a>
+      <div class="sidebar-section">系统</div>
+      <a href="11-settings.html" class="sidebar-link"><span class="sidebar-link-icon">⚙</span>设置</a>
+    </nav>
+    <div class="sidebar-footer">v1.0.0 · 本地运行</div>
+  </aside>
+  <header class="app-header">
+    <div class="app-header-left"><span class="app-subtitle">变更记录</span></div>
+    <div class="app-header-right"><span class="text-xs text-muted">共 5 条记录 · 全部已处理</span></div>
+  </header>
+  <main class="app-main">
+    <div class="page-header"><h1>变更记录</h1><p>查看所有文件变更历史：新增、修改、删除、移动、重命名。每次资料库扫描产生的变更都会记录在此。</p></div>
+
+    <div class="filter-bar">
+      <select onchange="filterChanges()" id="changeType">
+        <option value="all">全部类型</option>
+        <option value="image-added">新增图片</option>
+        <option value="image-modified">图片修改</option>
+        <option value="image-deleted">图片删除</option>
+        <option value="excel-modified">Excel 修改</option>
+        <option value="cad-renamed">CAD 改名</option>
+      </select>
+      <select onchange="filterChanges()" id="changeStatus">
+        <option value="all">全部状态</option>
+        <option value="processed">已处理</option>
+        <option value="pending">待处理</option>
+      </select>
+      <div class="search-bar"><input type="text" placeholder="搜索路径、编号…" oninput="filterChanges()" id="changeSearch"></div>
+    </div>
+
+    <div class="table-container"><table>
+      <thead><tr><th>时间</th><th>类型</th><th>IMG</th><th>EX</th><th>CAD</th><th>DOC</th><th>旧值</th><th>新值</th><th>路径</th><th>状态</th></tr></thead>
+      <tbody id="changeBody"></tbody>
+    </table></div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  const typeLabels = {
+    'image-added': '新增图片',
+    'image-modified': '图片修改',
+    'image-deleted': '图片删除',
+    'excel-modified': 'Excel 修改',
+    'cad-renamed': 'CAD 改名',
+  };
+
+  const typeBadges = {
+    'image-added': 'badge-info',
+    'image-modified': 'badge-warning',
+    'image-deleted': 'badge-danger',
+    'excel-modified': 'badge-warning',
+    'cad-renamed': 'badge-info',
+  };
+
+  function filterChanges() {
+    const type = document.getElementById('changeType').value;
+    const status = document.getElementById('changeStatus').value;
+    const search = document.getElementById('changeSearch').value.toLowerCase();
+
+    let filtered = MOCK.changeLogs.filter(c => {
+      if (type !== 'all' && c.type !== type) return false;
+      if (status !== 'all' && c.status !== status) return false;
+      if (search && !c.path.toLowerCase().includes(search) && !(c.imgId||'').toLowerCase().includes(search) && !(c.cadId||'').toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    document.getElementById('changeBody').innerHTML = filtered.map(c => `
+      <tr>
+        <td>${c.time}</td>
+        <td><span class="badge ${typeBadges[c.type] || 'badge-muted'}">${typeLabels[c.type] || c.type}</span></td>
+        <td>${c.imgId ? '<span class="mono">'+c.imgId+'</span>' : '<span class="text-muted">—</span>'}</td>
+        <td>${c.exId ? '<span class="mono">'+c.exId+'</span>' : '<span class="text-muted">—</span>'}</td>
+        <td>${c.cadId ? '<span class="mono">'+c.cadId+'</span>' : '<span class="text-muted">—</span>'}</td>
+        <td>${c.docId ? '<span class="mono">'+c.docId+'</span>' : '<span class="text-muted">—</span>'}</td>
+        <td class="text-xs text-muted">${c.oldValue || '—'}</td>
+        <td class="text-xs">${c.newValue || '—'}</td>
+        <td><span class="path-display">${c.path}</span></td>
+        <td>${statusBadge(c.status)}</td>
+      </tr>`).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    filterChanges();
+    initSidebar();
+  });
+</script>
+</body>
+</html>
