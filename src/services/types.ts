@@ -127,6 +127,86 @@ export interface ExcelRecord {
   indexed_at: string;
 }
 
+// ── CAD File ──────────────────────────────────────────────────
+
+export interface CadFile {
+  cad_id: string;
+  file_path: string;
+  folder: string | null;
+  filename: string | null;
+  extension: string | null;
+  size_bytes: number | null;
+  file_hash: string | null;
+  img_ref: string | null;
+  tags: string | null;
+  notes: string | null;
+  status: string;
+  last_modified: string | null;
+  indexed_at: string;
+}
+
+// ── PDF File ──────────────────────────────────────────────────
+
+export interface PdfFile {
+  doc_id: string;
+  file_path: string;
+  folder: string | null;
+  filename: string | null;
+  size_bytes: number | null;
+  page_count: number | null;
+  file_hash: string | null;
+  preview_path: string | null;
+  img_ref: string | null;
+  tags: string | null;
+  notes: string | null;
+  status: string;
+  last_modified: string | null;
+  indexed_at: string;
+}
+
+// ── Match ─────────────────────────────────────────────────────
+
+export interface MatchRecord {
+  id: number;
+  img_id: string;
+  ex_id: string | null;
+  cad_id: string | null;
+  pdf_id: string | null;
+  status: string;
+  method: string | null;
+  confidence: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  img_filename?: string | null;
+  img_path?: string | null;
+  excel_filename?: string | null;
+  excel_path?: string | null;
+  sheet_name?: string | null;
+  cad_filename?: string | null;
+  cad_path?: string | null;
+  cad_ext?: string | null;
+  pdf_filename?: string | null;
+  pdf_path?: string | null;
+  page_count?: number | null;
+}
+
+export interface MatchStats {
+  auto: number;
+  suspected: number;
+  confirmed: number;
+  rejected: number;
+  unmatched: number;
+  total: number;
+}
+
+// ── Tag ──────────────────────────────────────────────────
+
+export interface TagInfo {
+  name: string;
+  count: number;
+  color?: string;
+}
+
 // ── UseServiceQuery ──────────────────────────────────────────
 
 export interface ServiceQueryResult<T> {

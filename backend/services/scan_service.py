@@ -78,6 +78,50 @@ def _insert_image_record(conn, filepath: str, info: dict):
     )
 
 
+def _insert_cad_record(conn, filepath: str, info: dict):
+    folder = os.path.dirname(filepath)
+    filename = os.path.basename(filepath)
+    ext = info["ext"].lower().lstrip(".")
+    now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(filepath)))
+    cad_id = f"CAD-{info['hash'][:16]}"
+
+    conn.execute(
+        """INSERT OR REPLACE INTO cad_files
+           (cad_id, file_path, folder, filename, extension, size_bytes, file_hash, status, last_modified, indexed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'normal', ?, ?)""",
+        (cad_id, filepath, folder, filename, ext, info["size"], info["hash"], mtime, now)
+    )
+
+
+def _count_pdf_pages(filepath: str) -> int:
+    """Quick PDF page count by searching for /Type/Page objects."""
+    try:
+        import re
+        with open(filepath, 'rb') as f:
+            content = f.read()
+        pages = len(re.findall(b'/Type\s*/Page[^s]', content))
+        return pages if pages > 0 else 0
+    except Exception:
+        return 0
+
+
+def _insert_pdf_record(conn, filepath: str, info: dict):
+    folder = os.path.dirname(filepath)
+    filename = os.path.basename(filepath)
+    now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(filepath)))
+    doc_id = f"DOC-{info['hash'][:16]}"
+    page_count = _count_pdf_pages(filepath)
+
+    conn.execute(
+        """INSERT OR REPLACE INTO pdf_files
+           (doc_id, file_path, folder, filename, size_bytes, page_count, file_hash, status, last_modified, indexed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'normal', ?, ?)""",
+        (doc_id, filepath, folder, filename, info["size"], page_count, info["hash"], mtime, now)
+    )
+
+
 def _extract_excel_images(filepath: str, library_path: str) -> int:
     """Extract embedded images from Excel. Returns count of images extracted."""
     try:
@@ -229,16 +273,19 @@ def scan_library(library_id: int, library_path: str):
             sys.stderr.write(f"[scan] error reading {filepath}: {e}\n")
             sys.stderr.flush()
 
-    # Phase 3: Change detection
+    # Phase 3: Change detection — query all indexed tables
     emit_progress("comparing", 0, 0, "")
     conn = get_connection()
 
-    prev_rows = conn.execute(
-        "SELECT file_path, file_hash FROM images WHERE file_path LIKE ?",
-        (library_path + "%",)
-    ).fetchall()
+    prev_map = {}
+    for table in ["images", "cad_files", "pdf_files"]:
+        prev_rows = conn.execute(
+            f"SELECT file_path, file_hash FROM {table} WHERE file_path LIKE ?",
+            (library_path + "%",)
+        ).fetchall()
+        for row in prev_rows:
+            prev_map[row["file_path"]] = row["file_hash"]
 
-    prev_map = {row["file_path"]: row["file_hash"] for row in prev_rows}
     prev_paths = set(prev_map.keys())
     curr_paths = set(current_scan.keys())
 
@@ -274,13 +321,27 @@ def scan_library(library_id: int, library_path: str):
     move_count = len(moved_pairs)
 
     # Phase 4: Save to database
-    emit_progress("saving", 0, len(added), "")
+    total_to_save = len(added) + len(removed)
+    emit_progress("saving", 0, max(total_to_save, 1), "")
 
+    saved = 0
     for i, filepath in enumerate(added):
         info = current_scan[filepath]
         if info["type"] == "image":
             _insert_image_record(conn, filepath, info)
-        emit_progress("saving", i + 1, len(added), filepath)
+        elif info["type"] == "cad":
+            _insert_cad_record(conn, filepath, info)
+        elif info["type"] == "pdf":
+            _insert_pdf_record(conn, filepath, info)
+        saved += 1
+        emit_progress("saving", saved, total_to_save, filepath)
+
+    # Remove deleted files from all tables
+    for filepath in removed:
+        for table in ["images", "cad_files", "pdf_files"]:
+            conn.execute(f"DELETE FROM {table} WHERE file_path = ?", (filepath,))
+        saved += 1
+        emit_progress("saving", saved, total_to_save, filepath)
 
     # Log changes
     for p in added:
