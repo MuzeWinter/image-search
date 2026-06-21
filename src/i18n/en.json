@@ -98,6 +98,8 @@
     "scanExtensionsAdd": "Add",
     "scanExtensionsPlaceholder": ".ext",
     "scanExtensionsSaved": "Scan extensions saved",
+    "similarityThreshold": "Similarity Threshold",
+    "similarityThresholdHint": "Search results below this threshold will be hidden",
     "autoMonitor": "Auto-monitor new files",
     "autoMonitorDesc": "Automatically detect and scan new files in all libraries",
     "about": "About",

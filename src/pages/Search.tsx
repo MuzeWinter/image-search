@@ -128,6 +128,7 @@ export default function Search() {
     localStorage.setItem("searchThumbSize", thumbSize);
   }, [thumbSize]);
 
+  const SIMILARITY_THRESHOLD_KEY = "similarityThreshold";
   const BOOKMARKS_KEY = "searchBookmarks";
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
     try {
@@ -145,6 +146,17 @@ export default function Search() {
   }, [bookmarkedIds]);
 
   const [bookmarkFilter, setBookmarkFilter] = useState(false);
+
+  const [similarityThreshold] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(SIMILARITY_THRESHOLD_KEY);
+      if (saved) {
+        const n = parseInt(saved, 10);
+        if (!isNaN(n) && n >= 0 && n <= 100) return n;
+      }
+    } catch {}
+    return 30;
+  });
 
   const toggleBookmark = useCallback((imgId: string) => {
     setBookmarkedIds((prev) => {
@@ -185,6 +197,9 @@ export default function Search() {
       items = items.filter(item => bookmarkedIds.has(item.img_id));
     }
 
+    const threshold = similarityThreshold / 100;
+    items = items.filter(item => item.similarity >= threshold);
+
     const sorted = [...items];
     switch (sortBy) {
       case "filename":
@@ -208,7 +223,7 @@ export default function Search() {
     }
 
     return sorted;
-  }, [results, filterText, sortBy, bookmarkFilter, bookmarkedIds]);
+  }, [results, filterText, sortBy, bookmarkFilter, bookmarkedIds, similarityThreshold]);
 
   // Reset page when filter, sort, or results change
   useEffect(() => {
@@ -971,7 +986,7 @@ export default function Search() {
             </div>
           )}
 
-          {filteredResults.length === 0 && (filterText.trim() || bookmarkFilter) ? (
+          {filteredResults.length === 0 && (filterText.trim() || bookmarkFilter || similarityThreshold > 0) ? (
             <div className="search-filter-empty">
               {t("search.noFilterMatches")}
             </div>

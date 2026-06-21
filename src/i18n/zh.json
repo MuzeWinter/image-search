@@ -98,6 +98,8 @@
     "scanExtensionsAdd": "添加",
     "scanExtensionsPlaceholder": ".扩展名",
     "scanExtensionsSaved": "扫描扩展名已保存",
+    "similarityThreshold": "最低相似度阈值",
+    "similarityThresholdHint": "低于此阈值的搜索结果将被隐藏",
     "autoMonitor": "自动监控新文件",
     "autoMonitorDesc": "自动检测所有资料库中的文件变更并触发增量扫描",
     "about": "关于",

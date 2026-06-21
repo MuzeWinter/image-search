@@ -13,6 +13,7 @@ import { open } from "@tauri-apps/plugin-shell";
 import { Tooltip } from "../components/shared/Tooltip";
 
 const UG_COLUMN_KEY = "ugColumnName";
+const SIMILARITY_THRESHOLD_KEY = "similarityThreshold";
 
 type DiagStatus = "ok" | "warn" | "error";
 
@@ -37,6 +38,17 @@ function getSavedUgColumn(): string {
   return "图号";
 }
 
+function getSavedSimilarityThreshold(): number {
+  try {
+    const saved = localStorage.getItem(SIMILARITY_THRESHOLD_KEY);
+    if (saved) {
+      const n = parseInt(saved, 10);
+      if (!isNaN(n) && n >= 0 && n <= 100) return n;
+    }
+  } catch { /* localStorage unavailable */ }
+  return 30;
+}
+
 export default function Settings() {
   const { t, locale, setLocale } = useI18n();
   const { addToast } = useToast();
@@ -52,6 +64,7 @@ export default function Settings() {
   const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
   const [newExt, setNewExt] = useState("");
   const [autoMonitor, setAutoMonitor] = useState(false);
+  const [similarityThreshold, setSimilarityThreshold] = useState(getSavedSimilarityThreshold);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logFilter, setLogFilter] = useState("");
   const [logLoading, setLogLoading] = useState(false);
@@ -325,6 +338,7 @@ export default function Settings() {
       localStorage.removeItem("theme");
       localStorage.removeItem("locale");
       localStorage.removeItem(UG_COLUMN_KEY);
+      localStorage.removeItem(SIMILARITY_THRESHOLD_KEY);
       // Reset DB settings to defaults
       await Promise.all([
         settingsService.set("theme", "light"),
@@ -431,6 +445,26 @@ export default function Settings() {
             </span>
           </div>
         </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{t("settings.similarityThreshold")}</label>
+          <div className="settings-slider-group">
+            <input
+              type="range"
+              className="settings-slider"
+              min="0"
+              max="100"
+              value={similarityThreshold}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setSimilarityThreshold(v);
+                try { localStorage.setItem(SIMILARITY_THRESHOLD_KEY, String(v)); } catch {}
+              }}
+            />
+            <span className="settings-slider-value">{similarityThreshold}%</span>
+          </div>
+        </div>
+        <p className="settings-ext-hint">{t("settings.similarityThresholdHint")}</p>
 
         {ugSaveMsg && <p className="settings-msg">{ugSaveMsg}</p>}
 
