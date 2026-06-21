@@ -135,6 +135,58 @@
   pointer-events: none;
 }
 
+/* === Text Filter === */
+.search-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.search-filter-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--fg);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-filter-input::placeholder {
+  color: var(--muted);
+}
+
+.search-filter-input:focus {
+  border-color: var(--accent);
+}
+
+.search-filter-clear {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  line-height: 1;
+}
+
+.search-filter-clear:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.search-filter-empty {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
 /* --- Scope Bar --- */
 .search-scope-bar {
   display: flex;

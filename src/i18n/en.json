@@ -119,7 +119,17 @@
     "diagnosticsAllPassed": "All checks passed",
     "diagnosticsFailed": "{count} checks failed",
     "diagnosticsWarning": "{count} warnings",
-    "diagnosticsSuggestion": "Fix suggestion"
+    "diagnosticsSuggestion": "Fix suggestion",
+    "resetDefaults": "Reset All Settings",
+    "resetDefaultsTitle": "Reset All Settings to Defaults?",
+    "resetDefaultsDesc": "This will restore the following settings to their default values. After reset, the page will reload.",
+    "resetDefaultsItemTheme": "Theme → Light",
+    "resetDefaultsItemLocale": "Language → 中文",
+    "resetDefaultsItemUgColumn": "UG Column Name → 图号",
+    "resetDefaultsItemExtensions": "Scan Extensions → .xlsx, .xls, .prt",
+    "resetDefaultsItemCache": "Local cache (localStorage)",
+    "resetDefaultsConfirm": "Reset All",
+    "resetDefaultsSuccess": "Settings reset to defaults. Reloading..."
   },
   "search": {
     "searchPlaceholder": "Search images, tags, filenames...",
@@ -177,7 +187,9 @@
     "batchExportCsv": "Export Selected",
     "batchCopyPaths": "Copy Paths",
     "batchClearSelection": "Clear",
-    "batchPathsCopied": "{count} paths copied"
+    "batchPathsCopied": "{count} paths copied",
+    "filterPlaceholder": "Filter by keyword...",
+    "noFilterMatches": "No matching results"
   },
   "libraries": {
     "add": "Add Library",

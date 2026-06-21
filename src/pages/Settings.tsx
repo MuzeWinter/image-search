@@ -44,6 +44,7 @@ export default function Settings() {
   const [maintLoading, setMaintLoading] = useState("");
   const [dbSize, setDbSize] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
   const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
   const [newExt, setNewExt] = useState("");
@@ -289,6 +290,27 @@ export default function Settings() {
     }
   };
 
+  const handleResetDefaults = async () => {
+    setShowResetConfirm(false);
+    try {
+      // Clear localStorage
+      localStorage.removeItem("theme");
+      localStorage.removeItem("locale");
+      localStorage.removeItem(UG_COLUMN_KEY);
+      // Reset DB settings to defaults
+      await Promise.all([
+        settingsService.set("theme", "light"),
+        settingsService.set("locale", "zh"),
+        settingsService.set("scan_extensions", JSON.stringify(DEFAULT_SCAN_EXTENSIONS)),
+      ]);
+    } catch {
+      // Best-effort: some DB settings may not have been stored yet
+    }
+    addToast("success", t("settings.resetDefaultsSuccess"));
+    // Brief delay so the toast is visible before reload
+    setTimeout(() => window.location.reload(), 600);
+  };
+
   const themeOptions: { value: Theme; labelKey: string }[] = [
     { value: "light", labelKey: "settings.themeLight" },
     { value: "dark", labelKey: "settings.themeDark" },
@@ -453,6 +475,14 @@ export default function Settings() {
           </button>
         </div>
 
+        <button
+          className="settings-btn-reset-danger"
+          onClick={() => setShowResetConfirm(true)}
+          disabled={maintLoading !== ""}
+        >
+          {t("settings.resetDefaults")}
+        </button>
+
         {maintMsg && <p className="settings-msg" style={{ marginTop: 12 }}>{maintMsg}</p>}
       </section>
 
@@ -606,6 +636,51 @@ export default function Settings() {
               >
                 {t("settings.aboutClose")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Defaults Confirm Dialog */}
+      {showResetConfirm && (
+        <div
+          className="reset-confirm-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowResetConfirm(false);
+          }}
+        >
+          <div className="reset-confirm-dialog">
+            <button
+              className="reset-confirm-dialog-close"
+              onClick={() => setShowResetConfirm(false)}
+              aria-label={t("common.close")}
+            >
+              &#x2715;
+            </button>
+            <div className="reset-confirm-body">
+              <h3 className="reset-confirm-title">{t("settings.resetDefaultsTitle")}</h3>
+              <p className="reset-confirm-desc">{t("settings.resetDefaultsDesc")}</p>
+              <ul className="reset-confirm-list">
+                <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemTheme")}</li>
+                <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemLocale")}</li>
+                <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemUgColumn")}</li>
+                <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemExtensions")}</li>
+                <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemCache")}</li>
+              </ul>
+              <div className="reset-confirm-actions">
+                <button
+                  className="reset-confirm-cancel-btn"
+                  onClick={() => setShowResetConfirm(false)}
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  className="reset-confirm-danger-btn"
+                  onClick={handleResetDefaults}
+                >
+                  {t("settings.resetDefaultsConfirm")}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useCallback, useEffect } from "react";
+﻿import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -83,12 +83,25 @@ export default function Search() {
   const escapeEpoch = useAtomValue(escapeEpochAtom);
   const setSplash = useSetAtom(splashStateAtom);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [filterText, setFilterText] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{
     visible: boolean;
     x: number;
     y: number;
     item: SearchResultItem | null;
   }>({ visible: false, x: 0, y: 0, item: null });
+
+  const filteredResults = useMemo(() => {
+    if (!results) return [];
+    if (!filterText.trim()) return results.results;
+    const q = filterText.trim().toLowerCase();
+    return results.results.filter(item =>
+      item.img_id.toLowerCase().includes(q) ||
+      item.origin_path.toLowerCase().includes(q) ||
+      (item.ug_ref && item.ug_ref.toLowerCase().includes(q)) ||
+      (item.sheet_name && item.sheet_name.toLowerCase().includes(q))
+    );
+  }, [results, filterText]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -117,6 +130,7 @@ export default function Search() {
     setResults(null);
     setErrorMsg("");
     setPreviewUrl("");
+    setFilterText("");
   }, [escapeEpoch]);
 
   const waitForModel = useCallback((): Promise<void> => {
@@ -153,6 +167,7 @@ export default function Search() {
     setErrorMsg("");
     setResults(null);
     setSelectedIds(new Set());
+    setFilterText("");
 
     // Check model status first
     try {
@@ -548,6 +563,28 @@ export default function Search() {
         </div>
       )}
 
+      {/* Text filter */}
+      {state === "done" && results && results.results.length > 0 && (
+        <div className="search-filter-bar">
+          <input
+            type="text"
+            className="search-filter-input"
+            placeholder={t("search.filterPlaceholder")}
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+          />
+          {filterText.trim() && (
+            <button
+              className="search-filter-clear"
+              onClick={() => setFilterText("")}
+              title={t("common.cancel")}
+            >
+              x
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Results */}
       {results && results.results.length > 0 && state === "done" && (
         <div className="search-results">
@@ -581,8 +618,13 @@ export default function Search() {
             </div>
           )}
 
-          <div className="search-results-list">
-            {results.results.map((item: SearchResultItem, idx: number) => (
+          {filteredResults.length === 0 && filterText.trim() ? (
+            <div className="search-filter-empty">
+              {t("search.noFilterMatches")}
+            </div>
+          ) : (
+            <div className="search-results-list">
+            {filteredResults.map((item: SearchResultItem, idx: number) => (
               <div
                 key={item.img_id}
                 className={`search-result-item ${selectedIds.has(item.img_id) ? "selected" : ""}`}
@@ -723,6 +765,7 @@ export default function Search() {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 

@@ -1550,6 +1550,155 @@
   opacity: 0.85;
 }
 
+/* === Reset Defaults Confirm Dialog === */
+.reset-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0% 0 0 / 0.4);
+  animation: reset-confirm-fade-in 0.15s ease;
+}
+
+@keyframes reset-confirm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.reset-confirm-dialog {
+  position: relative;
+  background: var(--surface-raised);
+  border: var(--border-width) solid var(--border);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  max-width: 420px;
+  width: calc(100% - var(--space-8) * 2);
+  animation: reset-confirm-scale-in 0.15s ease;
+}
+
+@keyframes reset-confirm-scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.reset-confirm-dialog-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s, color 0.1s;
+}
+
+.reset-confirm-dialog-close:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.reset-confirm-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: var(--space-3);
+}
+
+.reset-confirm-desc {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin-bottom: var(--space-4);
+  line-height: 1.5;
+}
+
+.reset-confirm-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-6);
+}
+
+.reset-confirm-list-item {
+  padding: 6px 0;
+  font-size: var(--text-sm);
+  color: var(--fg);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.reset-confirm-list-item:last-child {
+  border-bottom: none;
+}
+
+.reset-confirm-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.reset-confirm-cancel-btn {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--bg-primary);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+
+.reset-confirm-cancel-btn:hover {
+  background: var(--surface-hover);
+}
+
+.reset-confirm-danger-btn {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #fff;
+  background: #e74c3c;
+  border: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+
+.reset-confirm-danger-btn:hover {
+  background: #c0392b;
+}
+
+/* === Maintenance Reset Button === */
+.settings-btn-reset-danger {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #e74c3c;
+  background: transparent;
+  border: 1px solid #e74c3c;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s, color 0.1s;
+}
+
+.settings-btn-reset-danger:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.settings-btn-reset-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* === Activity Logs === */
 .settings-log-list {
   max-height: 360px;
