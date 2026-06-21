@@ -7,6 +7,7 @@ import { StatusBar } from "./components/shell/StatusBar";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useI18n } from "./i18n/context";
 import { scanPhaseAtom } from "./stores/atoms";
+import GlobalSearch from "./components/shared/GlobalSearch";
 
 export function AppShell() {
   useKeyboardShortcuts();
@@ -44,6 +45,7 @@ export function AppShell() {
         </div>
       </main>
       <StatusBar />
+      <GlobalSearch />
     </div>
   );
 }

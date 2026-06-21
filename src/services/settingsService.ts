@@ -93,6 +93,19 @@ export async function vacuumDb(): Promise<VacuumResult> {
   return callBackend<VacuumResult>("db.vacuum");
 }
 
+export async function syncScanConfig(): Promise<void> {
+  try {
+    const ocr = localStorage.getItem("scan_ocr_enabled") ?? "true";
+    const ug = localStorage.getItem("scan_ug_preview_enabled") ?? "true";
+    await Promise.all([
+      set("scan_ocr_enabled", ocr),
+      set("scan_ug_preview_enabled", ug),
+    ]);
+  } catch {
+    // Best-effort sync before scan
+  }
+}
+
 export async function optimizeDb(): Promise<VacuumResult> {
   await serviceRegistry.ensureReady("settingsService");
   return callBackend<VacuumResult>("db.optimize");

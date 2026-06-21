@@ -56,6 +56,7 @@ function WelcomeGate() {
     const libs = await libraryService.list();
     const lib = libs.find((l: { path: string }) => l.path === path);
     if (lib) {
+      await settingsService.syncScanConfig();
       await scanService.startScan(lib.id, lib.path);
     }
   }, []);
@@ -277,6 +278,7 @@ function StartupArgHandler() {
         try {
           const lib = await libraryService.add(args.scanPath);
           addToast("success", `已添加资料库并开始扫描: ${args.scanPath}`);
+          await settingsService.syncScanConfig();
           await scanService.startScan(lib.id, lib.path);
         } catch (e) {
           addToast("error", `添加资料库失败: ${e instanceof Error ? e.message : String(e)}`);
@@ -361,6 +363,7 @@ function FolderWatchManager() {
             // Pause watch briefly during scan to avoid cascade
             await scanService.stopFolderWatch().catch(() => {});
             try {
+              await settingsService.syncScanConfig();
               await scanService.startScan(lib.id, lib.path);
             } finally {
               // Resume watch after scan

@@ -46,3 +46,6 @@ export type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
 
 /** Current scan phase (shared so AppShell can update window title) */
 export const scanPhaseAtom = atom<ScanPhase>("idle");
+
+/** Whether the global search dialog (Ctrl+Shift+F) is open */
+export const globalSearchOpenAtom = atom(false);

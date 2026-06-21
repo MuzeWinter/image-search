@@ -6,6 +6,7 @@ import { useServiceQuery } from "../../stores/hooks";
 import { pendingChangesAtom, invalidPathsAtom, watchActiveAtom, watchPathCountAtom } from "../../stores/atoms";
 import * as libraryService from "../../services/libraryService";
 import * as scanService from "../../services/scanService";
+import { syncScanConfig } from "../../services/settingsService";
 import type { SystemStats } from "../../services/types";
 
 export function StatusBar() {
@@ -37,6 +38,7 @@ export function StatusBar() {
 
   const handleIncrementalScan = useCallback(async () => {
     try {
+      await syncScanConfig();
       const libs = await libraryService.list();
       for (const lib of libs) {
         if (lib.status === "ready" || lib.status === "idle") {

@@ -98,6 +98,10 @@
     "scanExtensionsAdd": "Add",
     "scanExtensionsPlaceholder": ".ext",
     "scanExtensionsSaved": "Scan extensions saved",
+    "scanOcrEnabled": "Extract text during scan (OCR)",
+    "scanOcrEnabledHint": "Run OCR text recognition on images during scan for better search",
+    "scanUgPreviewEnabled": "Extract UG previews during scan",
+    "scanUgPreviewEnabledHint": "Generate preview images from UG drawings (.prt) during scan",
     "similarityThreshold": "Similarity Threshold",
     "similarityThresholdHint": "Search results below this threshold will be hidden",
     "autoMonitor": "Auto-monitor new files",
@@ -293,6 +297,15 @@
     "preparing": "Preparing AI model...",
     "loadingModel": "Loading model",
     "startingBackend": "Starting backend service..."
+  },
+  "globalSearch": {
+    "placeholder": "Search filename or UG number...",
+    "noResults": "No results",
+    "noResultsDesc": "Try a different search term",
+    "searching": "Searching...",
+    "openFile": "Open File",
+    "openFolder": "Open Folder",
+    "shortcutHint": "Ctrl+Shift+F"
   },
   "welcome": {
     "step1Title": "Welcome to ZOOBET Search",

@@ -14,6 +14,9 @@ import { Tooltip } from "../components/shared/Tooltip";
 
 const UG_COLUMN_KEY = "ugColumnName";
 const SIMILARITY_THRESHOLD_KEY = "similarityThreshold";
+const SCAN_OCR_KEY = "scan_ocr_enabled";
+const SCAN_UG_PREVIEW_KEY = "scan_ug_preview_enabled";
+const SCAN_EXTENSIONS_KEY = "scan_extensions_local";
 
 type DiagStatus = "ok" | "warn" | "error";
 
@@ -49,6 +52,33 @@ function getSavedSimilarityThreshold(): number {
   return 30;
 }
 
+function getSavedScanOcr(): boolean {
+  try {
+    const saved = localStorage.getItem(SCAN_OCR_KEY);
+    if (saved !== null) return saved === "true";
+  } catch { /* localStorage unavailable */ }
+  return true;
+}
+
+function getSavedScanUgPreview(): boolean {
+  try {
+    const saved = localStorage.getItem(SCAN_UG_PREVIEW_KEY);
+    if (saved !== null) return saved === "true";
+  } catch { /* localStorage unavailable */ }
+  return true;
+}
+
+function getSavedScanExtensions(): string[] {
+  try {
+    const saved = localStorage.getItem(SCAN_EXTENSIONS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* localStorage unavailable */ }
+  return [".xlsx", ".xls", ".prt"];
+}
+
 export default function Settings() {
   const { t, locale, setLocale } = useI18n();
   const { addToast } = useToast();
@@ -61,10 +91,12 @@ export default function Settings() {
   const [showAbout, setShowAbout] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
-  const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
+  const [scanExtensions, setScanExtensions] = useState<string[]>(getSavedScanExtensions);
   const [newExt, setNewExt] = useState("");
   const [autoMonitor, setAutoMonitor] = useState(false);
   const [similarityThreshold, setSimilarityThreshold] = useState(getSavedSimilarityThreshold);
+  const [scanOcrEnabled, setScanOcrEnabled] = useState(getSavedScanOcr);
+  const [scanUgPreviewEnabled, setScanUgPreviewEnabled] = useState(getSavedScanUgPreview);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logFilter, setLogFilter] = useState("");
   const [logLoading, setLogLoading] = useState(false);
@@ -72,6 +104,14 @@ export default function Settings() {
   const [diagResults, setDiagResults] = useState<DiagResult | null>(null);
 
   useEffect(() => {
+    // Load scan extensions: localStorage first, fallback to backend DB
+    const localExts = getSavedScanExtensions();
+    if (localExts.length > 0 && localExts.some((e) => !DEFAULT_SCAN_EXTENSIONS.includes(e))) {
+      // localStorage has non-default extensions, use them
+      setScanExtensions(localExts);
+      return;
+    }
+    // Otherwise load from backend DB
     settingsService.get("scan_extensions").then((val) => {
       if (val) {
         try {
@@ -83,6 +123,16 @@ export default function Settings() {
         } catch { /* use defaults */ }
       }
     }).catch(() => { /* use defaults */ });
+  }, []);
+
+  useEffect(() => {
+    // Load OCR and UG preview toggles from backend DB as fallback
+    settingsService.get("scan_ocr_enabled").then((val) => {
+      if (val !== null) setScanOcrEnabled(val === "true");
+    }).catch(() => {});
+    settingsService.get("scan_ug_preview_enabled").then((val) => {
+      if (val !== null) setScanUgPreviewEnabled(val === "true");
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -117,8 +167,23 @@ export default function Settings() {
 
   const saveExtensions = async (exts: string[]) => {
     try {
+      localStorage.setItem(SCAN_EXTENSIONS_KEY, JSON.stringify(exts));
+    } catch { /* best-effort */ }
+    try {
       await settingsService.set("scan_extensions", JSON.stringify(exts));
     } catch { /* best-effort save */ }
+  };
+
+  const handleToggleOcr = (enabled: boolean) => {
+    setScanOcrEnabled(enabled);
+    try { localStorage.setItem(SCAN_OCR_KEY, String(enabled)); } catch {}
+    settingsService.set("scan_ocr_enabled", String(enabled)).catch(() => {});
+  };
+
+  const handleToggleUgPreview = (enabled: boolean) => {
+    setScanUgPreviewEnabled(enabled);
+    try { localStorage.setItem(SCAN_UG_PREVIEW_KEY, String(enabled)); } catch {}
+    settingsService.set("scan_ug_preview_enabled", String(enabled)).catch(() => {});
   };
 
   const handleToggleExt = (ext: string) => {
@@ -339,12 +404,17 @@ export default function Settings() {
       localStorage.removeItem("locale");
       localStorage.removeItem(UG_COLUMN_KEY);
       localStorage.removeItem(SIMILARITY_THRESHOLD_KEY);
+      localStorage.removeItem(SCAN_OCR_KEY);
+      localStorage.removeItem(SCAN_UG_PREVIEW_KEY);
+      localStorage.removeItem(SCAN_EXTENSIONS_KEY);
       // Reset DB settings to defaults
       await Promise.all([
         settingsService.set("theme", "light"),
         settingsService.set("locale", "zh"),
         settingsService.set("scan_extensions", JSON.stringify(DEFAULT_SCAN_EXTENSIONS)),
         settingsService.set("folder_watch_enabled", "false"),
+        settingsService.set("scan_ocr_enabled", "true"),
+        settingsService.set("scan_ug_preview_enabled", "true"),
       ]);
       // Stop folder watch if active
       scanService.stopFolderWatch().catch(() => {});
@@ -507,6 +577,40 @@ export default function Settings() {
                 {t("settings.scanExtensionsAdd")}
               </button>
             </div>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{t("settings.scanOcrEnabled")}</label>
+          <div className="settings-toggle-group">
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={scanOcrEnabled}
+                onChange={(e) => handleToggleOcr(e.target.checked)}
+              />
+              <span className="settings-toggle-slider" />
+            </label>
+            <span className="settings-toggle-desc">
+              {t("settings.scanOcrEnabledHint")}
+            </span>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{t("settings.scanUgPreviewEnabled")}</label>
+          <div className="settings-toggle-group">
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={scanUgPreviewEnabled}
+                onChange={(e) => handleToggleUgPreview(e.target.checked)}
+              />
+              <span className="settings-toggle-slider" />
+            </label>
+            <span className="settings-toggle-desc">
+              {t("settings.scanUgPreviewEnabledHint")}
+            </span>
           </div>
         </div>
       </section>

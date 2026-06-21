@@ -11,6 +11,7 @@ import "./styles/welcome.css";
 import "./styles/splash.css";
 import "./styles/tooltip.css";
 import "./styles/image-compare.css";
+import "./styles/global-search.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

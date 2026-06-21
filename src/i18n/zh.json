@@ -98,6 +98,10 @@
     "scanExtensionsAdd": "添加",
     "scanExtensionsPlaceholder": ".扩展名",
     "scanExtensionsSaved": "扫描扩展名已保存",
+    "scanOcrEnabled": "扫描时提取文字 (OCR)",
+    "scanOcrEnabledHint": "扫描图片时运行 OCR 文字识别，方便后续搜索",
+    "scanUgPreviewEnabled": "扫描时提取 UG 预览",
+    "scanUgPreviewEnabledHint": "扫描 UG 图纸 (.prt) 时生成预览图片",
     "similarityThreshold": "最低相似度阈值",
     "similarityThresholdHint": "低于此阈值的搜索结果将被隐藏",
     "autoMonitor": "自动监控新文件",
@@ -293,6 +297,15 @@
     "preparing": "正在准备 AI 模型...",
     "loadingModel": "加载模型中",
     "startingBackend": "正在启动后端服务..."
+  },
+  "globalSearch": {
+    "placeholder": "搜索文件名或UG编号...",
+    "noResults": "无结果",
+    "noResultsDesc": "请尝试其他搜索词",
+    "searching": "搜索中...",
+    "openFile": "打开文件",
+    "openFolder": "打开文件夹",
+    "shortcutHint": "Ctrl+Shift+F"
   },
   "welcome": {
     "step1Title": "欢迎使用 ZOOBET 智能检索",

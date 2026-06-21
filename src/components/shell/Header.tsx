@@ -1,14 +1,21 @@
+import { useSetAtom } from "jotai";
 import { WindowControls } from "./WindowControls";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { LocaleToggle } from "../shared/LocaleToggle";
 import { useI18n } from "../../i18n/context";
+import { globalSearchOpenAtom } from "../../stores/atoms";
 
 export function Header() {
   const { t } = useI18n();
+  const setGlobalSearchOpen = useSetAtom(globalSearchOpenAtom);
 
   return (
     <header className="header" data-tauri-drag-region>
-      <div className="header-search">
+      <div
+        className="header-search"
+        onClick={() => setGlobalSearchOpen(true)}
+        style={{ cursor: "pointer" }}
+      >
         <svg
           className="header-search-icon"
           width="16"
@@ -24,8 +31,9 @@ export function Header() {
         <input
           type="text"
           className="header-search-input"
-          placeholder={t("search.searchPlaceholder")}
-          disabled
+          placeholder={t("globalSearch.placeholder")}
+          readOnly
+          style={{ cursor: "pointer" }}
         />
       </div>
       <div className="header-actions">

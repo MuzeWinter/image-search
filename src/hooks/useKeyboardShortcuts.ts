@@ -1,14 +1,24 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSetAtom } from "jotai";
-import { escapeEpochAtom } from "../stores/atoms";
+import { escapeEpochAtom, globalSearchOpenAtom } from "../stores/atoms";
 
 export function useKeyboardShortcuts() {
   const navigate = useNavigate();
   const fireEscape = useSetAtom(escapeEpochAtom);
+  const setGlobalSearchOpen = useSetAtom(globalSearchOpenAtom);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      // Ctrl+Shift+F: global search — works everywhere, even in inputs
+      if (ctrl && e.shiftKey && (e.key === "F" || e.key === "f")) {
+        e.preventDefault();
+        setGlobalSearchOpen(true);
+        return;
+      }
+
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toLowerCase();
 
@@ -19,8 +29,6 @@ export function useKeyboardShortcuts() {
       if (target.isContentEditable) {
         return;
       }
-
-      const ctrl = e.ctrlKey || e.metaKey;
 
       if (ctrl && e.key === "1") {
         e.preventDefault();
@@ -39,5 +47,5 @@ export function useKeyboardShortcuts() {
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [navigate, fireEscape]);
+  }, [navigate, fireEscape, setGlobalSearchOpen]);
 }

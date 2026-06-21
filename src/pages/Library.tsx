@@ -6,6 +6,7 @@ import { useServiceQuery } from "../stores/hooks";
 import { invalidPathsAtom, scanPhaseAtom, type ScanPhase } from "../stores/atoms";
 import * as libraryService from "../services/libraryService";
 import * as scanService from "../services/scanService";
+import { syncScanConfig } from "../services/settingsService";
 import type { Library, ScanProgress, ScanResult } from "../services/types";
 import { Skeleton } from "../components/shared/Skeleton";
 import { InlineError } from "../components/shared/InlineError";
@@ -153,6 +154,7 @@ export default function LibraryPage() {
     setSaveMsg("");
 
     try {
+      await syncScanConfig();
       await startListening();
       const result = await scanService.startScan(lib.id, lib.path);
       setScanResult(result);
