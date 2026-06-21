@@ -2,12 +2,13 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useI18n } from "../../i18n/context";
 import { useToast } from "../../contexts/ToastContext";
+import type { Library } from "../../services/types";
 
 const STORAGE_KEY = "zoobet_welcome_done";
 
 interface WelcomeGuideProps {
   onDone: () => void;
-  onAddLibrary: (path: string) => Promise<unknown>;
+  onAddLibrary: (path: string) => Promise<Library>;
   onScan: (path: string) => Promise<void>;
 }
 

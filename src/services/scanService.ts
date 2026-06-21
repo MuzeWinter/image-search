@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { callBackend, callTauri } from "./ipc";
 import { serviceRegistry } from "./registry";
@@ -8,6 +7,8 @@ import type {
   ScanHistory,
   ChangeLog,
   ExcelRecord,
+  ParseExcelResult,
+  ExtractExcelImagesResult,
 } from "./types";
 
 serviceRegistry.register({
@@ -87,9 +88,9 @@ export async function getChangeLogsByLibrary(
 export async function parseExcel(
   filePath: string,
   libraryPath?: string,
-): Promise<unknown> {
+): Promise<ParseExcelResult> {
   await serviceRegistry.ensureReady("excel");
-  return callBackend("excel.parse", {
+  return callBackend<ParseExcelResult>("excel.parse", {
     file_path: filePath,
     library_path: libraryPath,
   });
@@ -107,9 +108,9 @@ export async function listExcelRecords(
 export async function extractExcelImages(
   filePath: string,
   libraryPath?: string,
-): Promise<unknown> {
+): Promise<ExtractExcelImagesResult> {
   await serviceRegistry.ensureReady("excel");
-  return callBackend("excel.extractImages", {
+  return callBackend<ExtractExcelImagesResult>("excel.extractImages", {
     file_path: filePath,
     library_path: libraryPath,
   });

@@ -100,3 +100,53 @@ export interface ScanResult {
   auto_indexed?: number;
   error?: string;
 }
+
+export interface ScanHistory {
+  id: number;
+  library_id: number | null;
+  scan_type: string;
+  added: number;
+  removed: number;
+  modified: number;
+  moved: number;
+  errors: number;
+  duration_sec: number;
+  created_at: string;
+}
+
+export interface ChangeLog {
+  id: number;
+  change_type: string;
+  file_path: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface ExcelRecord {
+  ex_id: string;
+  file_path: string;
+  folder: string | null;
+  filename: string | null;
+  sheet_name: string | null;
+  row_number: number | null;
+  column_name: string | null;
+  cell_value: string | null;
+  has_image: number;
+  file_hash: string | null;
+  last_modified: string | null;
+  indexed_at: string;
+}
+
+export interface ParseExcelResult {
+  ok: boolean;
+  records_parsed: number;
+  file_path: string;
+}
+
+export interface ExtractExcelImagesResult {
+  ok: boolean;
+  images_extracted: number;
+  file_path: string;
+}
