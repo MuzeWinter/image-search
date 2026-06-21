@@ -695,12 +695,23 @@ def scan_library(library_id: int, library_path: str):
     # Phase 5: UG preview extraction
     emit_progress("ug_preview", 0, 0, "")
     ug_extracted = 0
+    ug_cached = 0
+    ug_metadata_only = 0
     try:
         from backend.services.ug_service import process_directory as ug_process
-        ug_result = ug_process(library_path)
+        ug_result = ug_process(library_path, progress_cb=emit_progress)
         ug_extracted = ug_result.get("extracted", 0)
-        if ug_extracted > 0:
-            _add_activity_log("info", "scan", f"UG previews extracted: {ug_extracted}")
+        ug_cached = ug_result.get("cached", 0)
+        ug_metadata_only = ug_result.get("metadata_only", 0)
+        if ug_extracted > 0 or ug_cached > 0 or ug_metadata_only > 0:
+            parts = []
+            if ug_extracted:
+                parts.append(f"{ug_extracted} extracted")
+            if ug_cached:
+                parts.append(f"{ug_cached} cached")
+            if ug_metadata_only:
+                parts.append(f"{ug_metadata_only} metadata-only")
+            _add_activity_log("info", "scan", f"UG previews: {', '.join(parts)}")
     except Exception as e:
         _add_activity_log("warn", "scan", f"UG preview extraction failed: {e}")
         sys.stderr.write(f"[scan] UG preview error: {e}\n")
@@ -772,6 +783,8 @@ def scan_library(library_id: int, library_path: str):
         "auto_matches": auto_matches,
         "auto_indexed": auto_indexed,
         "ug_extracted": ug_extracted,
+        "ug_cached": ug_cached,
+        "ug_metadata_only": ug_metadata_only,
     })
 
 
