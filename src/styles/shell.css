@@ -1652,6 +1652,127 @@
   background: oklch(58% 0.20 25 / 0.1);
 }
 
+/* === Diagnostics === */
+.settings-diag-results {
+  margin-top: var(--space-5);
+}
+
+.settings-diag-summary {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin: 0 0 var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-diag-summary.all-ok {
+  color: var(--success);
+}
+
+.settings-diag-summary.has-error {
+  color: var(--danger);
+}
+
+.settings-diag-count {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.settings-diag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.settings-diag-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.settings-diag-item:last-child {
+  border-bottom: none;
+}
+
+.settings-diag-item.settings-diag-ok {
+  background: transparent;
+}
+
+.settings-diag-item.settings-diag-warn {
+  background: oklch(62% 0.14 75 / 0.06);
+}
+
+.settings-diag-item.settings-diag-error {
+  background: oklch(48% 0.16 22 / 0.08);
+}
+
+[data-theme="dark"] .settings-diag-item.settings-diag-warn {
+  background: oklch(70% 0.17 80 / 0.08);
+}
+
+[data-theme="dark"] .settings-diag-item.settings-diag-error {
+  background: oklch(58% 0.20 25 / 0.1);
+}
+
+.settings-diag-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border-radius: 50%;
+  margin-top: 1px;
+}
+
+.settings-diag-icon.icon-ok {
+  color: var(--success);
+}
+
+.settings-diag-icon.icon-warn {
+  color: var(--warning);
+}
+
+.settings-diag-icon.icon-error {
+  color: var(--danger);
+}
+
+.settings-diag-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-diag-name {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.settings-diag-detail {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.settings-diag-suggestion {
+  font-size: var(--text-xs);
+  color: var(--accent);
+  margin-top: 2px;
+}
+
 /* === Print === */
 @media print {
   .sidebar, .header, .statusbar { display: none !important; }

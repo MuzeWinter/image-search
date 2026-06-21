@@ -762,6 +762,35 @@
   background: oklch(100% 0 0 / 0.25);
 }
 
+/* --- Hover Preview --- */
+.search-hover-preview {
+  position: fixed;
+  z-index: 1500;
+  pointer-events: auto;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px oklch(0% 0 0 / 0.3);
+  padding: var(--space-2);
+  width: 400px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="dark"] .search-hover-preview {
+  box-shadow: 0 8px 32px oklch(0% 0 0 / 0.6);
+}
+
+.search-hover-preview-img {
+  max-width: 380px;
+  max-height: 380px;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
 /* === Primary Action === */
 .search-action-primary {
   color: var(--accent) !important;

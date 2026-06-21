@@ -70,6 +70,13 @@ export default function Search() {
   const [modelPercent, setModelPercent] = useState(0);
   const [modelMsg, setModelMsg] = useState("");
   const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
+  const [hoverPreview, setHoverPreview] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    imgPath: string;
+  }>({ visible: false, x: 0, y: 0, imgPath: "" });
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [history, setHistory] = useState<SearchHistoryItem[]>(() => getHistory());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -83,10 +90,11 @@ export default function Search() {
     item: SearchResultItem | null;
   }>({ visible: false, x: 0, y: 0, item: null });
 
-  // Cleanup model poll on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (modelPollRef.current) clearInterval(modelPollRef.current);
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     };
   }, []);
 
@@ -592,6 +600,32 @@ export default function Search() {
                 <div className="search-result-rank">#{idx + 1}</div>
                 <div
                   className="search-result-thumb"
+                  onMouseEnter={(e) => {
+                    if (brokenImgs.has(item.img_id)) return;
+                    const thumb = e.currentTarget;
+                    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+                    hoverTimerRef.current = setTimeout(() => {
+                      const rect = thumb.getBoundingClientRect();
+                      const gap = 12;
+                      const pw = 400;
+                      const ph = 400;
+                      let px = rect.right + gap;
+                      let py = rect.top + rect.height / 2 - ph / 2;
+                      if (px + pw > window.innerWidth - gap) {
+                        px = rect.left - pw - gap;
+                      }
+                      if (py < gap) py = gap;
+                      if (py + ph > window.innerHeight - gap) py = window.innerHeight - ph - gap;
+                      setHoverPreview({ visible: true, x: px, y: py, imgPath: item.image_path });
+                    }, 300);
+                  }}
+                  onMouseLeave={() => {
+                    if (hoverTimerRef.current) {
+                      clearTimeout(hoverTimerRef.current);
+                      hoverTimerRef.current = null;
+                    }
+                    setHoverPreview({ visible: false, x: 0, y: 0, imgPath: "" });
+                  }}
                   onClick={(e) => {
                     if (e.ctrlKey || e.metaKey) {
                       e.preventDefault();
@@ -699,6 +733,21 @@ export default function Search() {
           title={t("search.noResults")}
           description={t("search.noResultsDesc")}
         />
+      )}
+
+      {/* Hover preview */}
+      {hoverPreview.visible && hoverPreview.imgPath && (
+        <div
+          className="search-hover-preview"
+          style={{ left: hoverPreview.x, top: hoverPreview.y }}
+          onMouseLeave={() => setHoverPreview({ visible: false, x: 0, y: 0, imgPath: "" })}
+        >
+          <img
+            src={fileToUrl(hoverPreview.imgPath) || ""}
+            alt="Preview"
+            className="search-hover-preview-img"
+          />
+        </div>
       )}
 
       {/* Context menu */}

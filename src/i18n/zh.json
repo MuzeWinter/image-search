@@ -112,7 +112,14 @@
     "logSourceScan": "扫描",
     "logSourceSearch": "搜索",
     "version": "版本",
-    "versionText": "ZOOBET检索 v0.1.0"
+    "versionText": "ZOOBET检索 v0.1.0",
+    "diagnostics": "系统诊断",
+    "diagnosticsRun": "运行诊断",
+    "diagnosticsRunning": "正在诊断...",
+    "diagnosticsAllPassed": "所有检查通过",
+    "diagnosticsFailed": "{count} 项检查未通过",
+    "diagnosticsWarning": "{count} 项有警告",
+    "diagnosticsSuggestion": "修复建议"
   },
   "search": {
     "searchPlaceholder": "搜索图片、标签、文件名...",

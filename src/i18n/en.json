@@ -112,7 +112,14 @@
     "logSourceScan": "Scan",
     "logSourceSearch": "Search",
     "version": "Version",
-    "versionText": "ZOOBET Search v0.1.0"
+    "versionText": "ZOOBET Search v0.1.0",
+    "diagnostics": "System Diagnostics",
+    "diagnosticsRun": "Run Diagnostics",
+    "diagnosticsRunning": "Running diagnostics...",
+    "diagnosticsAllPassed": "All checks passed",
+    "diagnosticsFailed": "{count} checks failed",
+    "diagnosticsWarning": "{count} warnings",
+    "diagnosticsSuggestion": "Fix suggestion"
   },
   "search": {
     "searchPlaceholder": "Search images, tags, filenames...",

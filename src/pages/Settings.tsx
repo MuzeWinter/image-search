@@ -5,10 +5,26 @@ import { useTheme, type Theme } from "../contexts/ThemeContext";
 import * as settingsService from "../services/settingsService";
 import { getDbStats, optimizeDb } from "../services/settingsService";
 import { getLogs, type ActivityLog } from "../services/dbService";
+import { callBackend } from "../services/ipc";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { open } from "@tauri-apps/plugin-shell";
 
 const UG_COLUMN_KEY = "ugColumnName";
+
+type DiagStatus = "ok" | "warn" | "error";
+
+interface DiagCheck {
+  name: string;
+  status: DiagStatus;
+  detail: string;
+  suggestion?: string;
+}
+
+interface DiagResult {
+  ok: boolean;
+  checks: DiagCheck[];
+  summary: { total: number; passed: number; failed: number; warning: number };
+}
 
 function getSavedUgColumn(): string {
   try {
@@ -34,6 +50,8 @@ export default function Settings() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logFilter, setLogFilter] = useState("");
   const [logLoading, setLogLoading] = useState(false);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagResults, setDiagResults] = useState<DiagResult | null>(null);
 
   useEffect(() => {
     settingsService.get("scan_extensions").then((val) => {
@@ -249,6 +267,28 @@ export default function Settings() {
     }
   };
 
+  const handleDiagnostics = async () => {
+    setDiagLoading(true);
+    setDiagResults(null);
+    try {
+      const result = await callBackend<DiagResult>("system.diagnostics");
+      setDiagResults(result);
+    } catch (e) {
+      setDiagResults({
+        ok: false,
+        checks: [{
+          name: "Backend",
+          status: "error",
+          detail: e instanceof Error ? e.message : String(e),
+          suggestion: "Check if the Python backend is running.",
+        }],
+        summary: { total: 1, passed: 0, failed: 1, warning: 0 },
+      });
+    } finally {
+      setDiagLoading(false);
+    }
+  };
+
   const themeOptions: { value: Theme; labelKey: string }[] = [
     { value: "light", labelKey: "settings.themeLight" },
     { value: "dark", labelKey: "settings.themeDark" },
@@ -459,6 +499,54 @@ export default function Settings() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Diagnostics */}
+      <section className="settings-section">
+        <h3>{t("settings.diagnostics")}</h3>
+
+        <button
+          className="settings-btn-secondary"
+          onClick={handleDiagnostics}
+          disabled={diagLoading}
+        >
+          {diagLoading ? t("settings.diagnosticsRunning") : t("settings.diagnosticsRun")}
+        </button>
+
+        {diagResults && (
+          <div className="settings-diag-results">
+            {diagResults.summary && (
+              <p className={`settings-diag-summary ${diagResults.ok ? "all-ok" : "has-error"}`}>
+                {diagResults.ok
+                  ? t("settings.diagnosticsAllPassed")
+                  : diagResults.summary.failed > 0
+                    ? t("settings.diagnosticsFailed", { count: String(diagResults.summary.failed) })
+                    : t("settings.diagnosticsWarning", { count: String(diagResults.summary.warning) })}
+                <span className="settings-diag-count">
+                  ({diagResults.summary.passed}/{diagResults.summary.total})
+                </span>
+              </p>
+            )}
+            <div className="settings-diag-list">
+              {diagResults.checks.map((check, idx) => (
+                <div key={idx} className={`settings-diag-item settings-diag-${check.status}`}>
+                  <span className={`settings-diag-icon icon-${check.status}`}>
+                    {check.status === "ok" ? "✓" : check.status === "warn" ? "⚠" : "✗"}
+                  </span>
+                  <div className="settings-diag-body">
+                    <span className="settings-diag-name">{check.name}</span>
+                    <span className="settings-diag-detail">{check.detail}</span>
+                    {check.suggestion && (
+                      <span className="settings-diag-suggestion">
+                        {t("settings.diagnosticsSuggestion")}: {check.suggestion}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* About */}
