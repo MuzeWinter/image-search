@@ -1,4 +1,4 @@
-# Performance Audit Report — v2-73
+# Performance Audit Report — v2-80
 
 **Generated:** 2026-06-21
 **Project:** zoobet-image-search v0.1.0
@@ -10,13 +10,13 @@
 
 | Metric | Raw | Gzip |
 |--------|-----|------|
-| Total JS (8 chunks) | 308.3 KB | 98.2 KB |
-| Total CSS (1 bundle) | 71.5 KB | 11.1 KB |
+| Total JS (8 chunks) | 336.1 KB | 107.3 KB |
+| Total CSS (1 bundle) | 74.1 KB | 11.5 KB |
 | HTML entry | 0.9 KB | — |
-| **Grand total** | **380.7 KB** | **~109 KB** |
+| **Grand total** | **411.1 KB** | **~119 KB** |
 | Image assets | 0 | 0 |
 
-**Verdict:** Total gzip size ~109 KB, well under the 2 MB threshold. **Pass.**
+**Verdict:** Total gzip size ~119 KB, well under the 2 MB threshold. **Pass.**
 
 ---
 
@@ -26,24 +26,24 @@
 
 | Chunk | Raw | Gzip | Category |
 |-------|-----|------|----------|
-| `vendor-router-C4cUWPmk.js` | 159.8 KB | 52.1 KB | react-router-dom (vendor) |
-| `chunk-shared-CEQTAcCb.js` | 47.6 KB | 16.0 KB | Shared app code |
-| `page-search-C54BtHHs.js` | 24.8 KB | 7.2 KB | Search page (lazy) |
-| `vendor-tauri-BSj8gmzq.js` | 19.2 KB | 5.0 KB | @tauri-apps/api (vendor) |
-| `page-settings-DCxqapk_.js` | 18.5 KB | 4.6 KB | Settings page (lazy) |
-| `page-library-BCZU4t6F.js` | 14.7 KB | 4.3 KB | Library page (lazy) |
-| `index-BnxVx57d.js` | 12.5 KB | 4.4 KB | Main entry |
-| `vendor-jotai-BL9y0vvS.js` | 11.2 KB | 4.6 KB | jotai state mgmt (vendor) |
+| `vendor-router-C4cUWPmk.js` | 163.6 KB | 53.4 KB | react-router-dom (vendor) |
+| `page-search-CR4NZRgb.js` | 47.5 KB | 13.3 KB | Search page (lazy) |
+| `chunk-shared-Dd8gOUBY.js` | 45.6 KB | 16.9 KB | Shared app code |
+| `page-settings-CP9EhE3q.js` | 20.2 KB | 5.0 KB | Settings page (lazy) |
+| `vendor-tauri-BSj8gmzq.js` | 19.7 KB | 5.1 KB | @tauri-apps/api (vendor) |
+| `page-library-B6G93TBp.js` | 15.0 KB | 4.4 KB | Library page (lazy) |
+| `index-M8UJWwD4.js` | 12.8 KB | 4.4 KB | Main entry |
+| `vendor-jotai-BL9y0vvS.js` | 11.5 KB | 4.7 KB | jotai state mgmt (vendor) |
 
-**Largest chunk:** `vendor-router` at 52 KB gzip. This is react-router-dom, which is a core dependency. Pages are code-split (lazy-loaded), and each page chunk is well under 10 KB gzip.
+**Largest chunk:** `vendor-router` at 53.4 KB gzip. This is react-router-dom, which is a core dependency. Pages are code-split (lazy-loaded), and each page chunk is well under 15 KB gzip.
 
 ### CSS
 
 | Chunk | Raw | Gzip |
 |-------|-----|------|
-| `index-EN7Qt8kG.css` | 71.5 KB | 11.1 KB |
+| `index-rMRx06fW.css` | 74.1 KB | 11.5 KB |
 
-CSS is bundled into a single file. 11 KB gzip is lightweight.
+CSS is bundled into a single file. 11.5 KB gzip is lightweight.
 
 ### Image Assets
 
@@ -62,7 +62,7 @@ No image or font assets in the build output. The app uses only CSS-based styling
 | `.css` (stylesheets) | 12 |
 | `.json` (i18n: en + zh) | 2 |
 | `.rs` (Rust backend) | 2 |
-| **Total source files** | **57** |
+| **Total source files** | **59** |
 
 ### Components
 
@@ -107,8 +107,8 @@ No image or font assets in the build output. The app uses only CSS-based styling
 | File | Lines |
 |------|-------|
 | `src-tauri/src/lib.rs` | 2 |
-| `src-tauri/src/main.rs` | 834 |
-| **Total** | **836** |
+| `src-tauri/src/main.rs` | 990 |
+| **Total** | **992** |
 
 ---
 
@@ -117,9 +117,9 @@ No image or font assets in the build output. The app uses only CSS-based styling
 | Dependency | Purpose | Gzip (approx.) |
 |------------|---------|-----------------|
 | react + react-dom | UI framework | embedded in entry |
-| react-router-dom ^6 | Routing + lazy pages | 52.1 KB |
-| jotai ^2 | State management | 4.6 KB |
-| @tauri-apps/api ^2 | Desktop bridge | 5.0 KB |
+| react-router-dom ^6 | Routing + lazy pages | 53.4 KB |
+| jotai ^2 | State management | 4.7 KB |
+| @tauri-apps/api ^2 | Desktop bridge | 5.1 KB |
 
 **Total runtime dependencies: 4 packages.** No unnecessary dependencies.
 
@@ -133,7 +133,7 @@ No image or font assets in the build output. The app uses only CSS-based styling
 | Vendor chunking | Pass — 3 vendor chunks |
 | CSS bundling | Pass — single file, small |
 | No unused heavy deps | Pass — only 4 runtime deps |
-| Gzip total < 2 MB | Pass — ~109 KB |
+| Gzip total < 2 MB | Pass — ~119 KB |
 | Image optimization | N/A — no image assets |
 | Tree shaking | Active (Vite/Rollup default) |
 
@@ -142,10 +142,10 @@ No image or font assets in the build output. The app uses only CSS-based styling
 ## 6. Summary
 
 The build is lean and well-structured:
-- **Total gzip: ~109 KB** — would load in under 1 second on a 3G connection
+- **Total gzip: ~119 KB** — would load in under 1 second on a 3G connection
 - Pages are lazy-loaded via react-router, keeping the entry point small (4.4 KB gzip)
-- The single largest chunk (react-router-dom at 52 KB gzip) is a core dependency, shared across pages
-- CSS is bundled efficiently at 11 KB gzip
+- The single largest chunk (react-router-dom at 53.4 KB gzip) is a core dependency, shared across pages
+- CSS is bundled efficiently at 11.5 KB gzip
 - No image or font bloat
 - Only 4 runtime npm dependencies
 
