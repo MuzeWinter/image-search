@@ -153,7 +153,7 @@ export interface ModelStatus {
 }
 
 export async function getModelStatus(): Promise<ModelStatus> {
-  return callBackend<ModelStatus>("ai_search.getModelStatus");
+  return callBackend<ModelStatus>("search.modelStatus");
 }
 
 export async function deleteEmbedding(

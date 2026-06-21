@@ -317,6 +317,8 @@ def execute(method: str, params: dict):
             "count": _index_status["count"],
             "dim": _index_status["dim"],
         }
+    elif method == "search.modelStatus":
+        return _handle_model_status()
     elif method == "search.listEmbeddings":
         return _handle_list_embeddings(params)
     elif method == "search.deleteEmbedding":
@@ -567,4 +569,17 @@ def _handle_batch_index(params: dict):
         "indexed": indexed,
         "errors": errors,
         "total_checked": len(rows),
+    }
+
+
+def _handle_model_status():
+    """查询 AI 模型加载进度（委托给 ai_service 的内部状态）"""
+    from backend.services.ai_service import _load_progress, _device, _LOAD_FAILED_MSG
+
+    return {
+        "status": _load_progress["status"],
+        "percent": _load_progress["percent"],
+        "message": _load_progress["message"],
+        "device": _device,
+        "error": _LOAD_FAILED_MSG,
     }

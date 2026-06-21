@@ -14,16 +14,14 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from backend.services import db_service, settings_service, library_service, excel_service, ai_service, search_service, ocr_service, ug_service
+from backend.services import db_service, settings_service, library_service, excel_service, search_service, ug_service
 
 ROUTES = {
     "db": db_service,
     "settings": settings_service,
     "library": library_service,
     "excel": excel_service,
-    "ai_search": ai_service,
     "search": search_service,
-    "ocr": ocr_service,
     "ug": ug_service,
 }
 
@@ -69,8 +67,28 @@ def handle_request(req: dict):
         send_error(req_id, -32000, str(e))
 
 
+def check_dependencies():
+    """启动时检查 Python 依赖，记录缺失的包"""
+    deps = {
+        "torch": "AI model inference",
+        "open_clip": "OpenCLIP model",
+        "faiss": "vector search index",
+        "numpy": "vector operations",
+        "PIL": "image processing (Pillow)",
+    }
+    for module_name, purpose in deps.items():
+        try:
+            __import__(module_name)
+            log(f"Dependency OK: {module_name} ({purpose})")
+        except ImportError:
+            log(f"WARNING: Missing dependency: {module_name} ({purpose})")
+
+
 def main():
     log("Python backend started, waiting for requests on stdin...")
+
+    # 检查依赖
+    check_dependencies()
 
     # 初始化数据库
     try:

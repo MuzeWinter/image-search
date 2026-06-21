@@ -10,9 +10,10 @@
   padding: var(--space-10) var(--space-8);
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.2s, background 0.2s, border-style 0.2s, box-shadow 0.2s;
   background: var(--surface);
   margin-bottom: var(--space-6);
+  outline: none;
 }
 
 .search-dropzone:hover {
@@ -23,7 +24,8 @@
 .search-dropzone.drag-over {
   border-color: var(--accent);
   background: var(--surface-active);
-  border-style: solid;
+  border-style: dashed;
+  box-shadow: inset 0 0 0 2px oklch(from var(--accent) l c h / 0.15);
 }
 
 .search-dropzone.hidden {
@@ -78,6 +80,11 @@
 
 .search-dropzone-content {
   pointer-events: none;
+  transition: transform 0.2s;
+}
+
+.search-dropzone.drag-over .search-dropzone-content {
+  transform: scale(1.03);
 }
 
 .search-dropzone-icon {

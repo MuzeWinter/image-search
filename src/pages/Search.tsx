@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/context";
 import * as searchService from "../services/searchService";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
@@ -16,7 +17,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 function fileToUrl(filePath: string): string {
-  return `asset://localhost/${encodeURI(filePath.replace(/\\/g, "/"))}`;
+  return convertFileSrc(filePath);
 }
 
 function formatSimilarity(sim: number): string {
