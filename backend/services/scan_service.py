@@ -2,6 +2,8 @@
 
 Runnable as standalone script: python scan_service.py --library-id 1 --path /target/dir
 Outputs progress JSON lines to stdout, final result as last line.
+
+Also usable as a JSON-RPC service module via execute(method, params).
 """
 
 import sys
@@ -690,6 +692,130 @@ def scan_library(library_id: int, library_path: str):
         "auto_indexed": auto_indexed,
         "ug_extracted": ug_extracted,
     })
+
+
+def check_changes(library_id: int) -> dict:
+    """Quick check for new/modified/removed files without running a full scan.
+
+    Walks the library directory, hashes files, and compares against the DB.
+    Returns counts only — no DB writes, no image extraction, no indexing.
+    """
+    conn = get_connection()
+
+    lib = conn.execute(
+        "SELECT path FROM libraries WHERE id = ?", (library_id,)
+    ).fetchone()
+    if not lib:
+        return {"error": f"Library not found: {library_id}", "added": 0, "removed": 0,
+                "modified": 0, "moved": 0, "has_changes": False}
+
+    library_path = lib["path"]
+    path = Path(library_path)
+
+    if not path.exists() or not path.is_dir():
+        return {"error": f"Path does not exist: {library_path}", "added": 0, "removed": 0,
+                "modified": 0, "moved": 0, "has_changes": False}
+
+    scan_exts = _load_scan_extensions(conn)
+
+    # Collect files
+    all_files = []
+    try:
+        for root, dirs, files in os.walk(path):
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            for f in files:
+                if not f.startswith('.') and not f.startswith('~'):
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in scan_exts:
+                        all_files.append(os.path.join(root, f))
+    except PermissionError:
+        return {"error": "Permission denied reading library path", "added": 0, "removed": 0,
+                "modified": 0, "moved": 0, "has_changes": False}
+
+    if not all_files:
+        # No files on disk — check if DB has old records (all removed)
+        prev_count = 0
+        for table in ["images", "cad_files", "pdf_files"]:
+            c = conn.execute(
+                f"SELECT COUNT(*) as n FROM {table} WHERE file_path LIKE ?",
+                (library_path + "%",)
+            ).fetchone()
+            prev_count += c["n"]
+        return {"added": 0, "removed": prev_count, "modified": 0, "moved": 0,
+                "has_changes": prev_count > 0}
+
+    # Hash each file
+    current_scan = {}
+    for filepath in all_files:
+        try:
+            file_hash = sha256_file(filepath)
+            current_scan[filepath] = file_hash
+        except (PermissionError, OSError):
+            pass
+
+    # Query existing records
+    prev_map = {}
+    for table in ["images", "cad_files", "pdf_files"]:
+        prev_rows = conn.execute(
+            f"SELECT file_path, file_hash FROM {table} WHERE file_path LIKE ?",
+            (library_path + "%",)
+        ).fetchall()
+        for row in prev_rows:
+            prev_map[row["file_path"]] = row["file_hash"]
+
+    prev_paths = set(prev_map.keys())
+    curr_paths = set(current_scan.keys())
+
+    added = curr_paths - prev_paths
+    removed = prev_paths - curr_paths
+    common = curr_paths & prev_paths
+
+    modified = set()
+    for p in common:
+        if current_scan[p] != prev_map[p]:
+            modified.add(p)
+
+    # Detect moved/renamed files
+    curr_hash_to_paths = {}
+    for p in added:
+        h = current_scan[p]
+        curr_hash_to_paths.setdefault(h, []).append(p)
+
+    prev_hash_to_paths = {}
+    for p in removed:
+        h = prev_map[p]
+        prev_hash_to_paths.setdefault(h, []).append(p)
+
+    moved_pairs = []
+    for h, new_paths in list(curr_hash_to_paths.items()):
+        if h in prev_hash_to_paths:
+            old_paths = prev_hash_to_paths[h]
+            for old_p, new_p in zip(old_paths, new_paths):
+                moved_pairs.append((old_p, new_p))
+                added.discard(new_p)
+                removed.discard(old_p)
+
+    total_changes = len(added) + len(removed) + len(modified) + len(moved_pairs)
+
+    return {
+        "added": len(added),
+        "removed": len(removed),
+        "modified": len(modified),
+        "moved": len(moved_pairs),
+        "has_changes": total_changes > 0,
+        "total_files": len(current_scan),
+    }
+
+
+def execute(method: str, params: dict):
+    """JSON-RPC service entry point for scan_service."""
+    if method == "scan.checkChanges":
+        library_id = params.get("library_id", 0)
+        if not isinstance(library_id, int) or library_id <= 0:
+            raise ValueError("library_id must be a positive integer")
+        return check_changes(library_id)
+    else:
+        raise ValueError(f"Unknown scan method: {method}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import type { Library, SystemStats } from "../services/types";
+import type { Library, SystemStats, CheckChangesResult } from "../services/types";
 
 export const serviceStatusAtom = atom<Record<string, string>>({});
 
@@ -19,3 +19,6 @@ export const localeAtom = atomWithStorage<"zh" | "en">("locale", "zh");
 
 /** Incremented on each Escape keypress to signal cancel/clear to pages */
 export const escapeEpochAtom = atom(0);
+
+/** Aggregated pending change counts across all libraries (auto-detected on startup) */
+export const pendingChangesAtom = atom<CheckChangesResult | null>(null);

@@ -6,6 +6,8 @@ import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
 import { openFile, openFolder } from "../services/systemService";
+import ContextMenu from "../components/shared/ContextMenu";
+import type { ContextMenuItem } from "../components/shared/ContextMenu";
 import { escapeEpochAtom } from "../stores/atoms";
 import {
   getHistory,
@@ -47,6 +49,12 @@ function extractFilename(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+function extractDir(filePath: string): string {
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  parts.pop();
+  return parts.join("/") || filePath;
+}
+
 export default function Search() {
   const { t } = useI18n();
   const { addToast } = useToast();
@@ -63,6 +71,12 @@ export default function Search() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const escapeEpoch = useAtomValue(escapeEpochAtom);
+  const [ctxMenu, setCtxMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    item: SearchResultItem | null;
+  }>({ visible: false, x: 0, y: 0, item: null });
 
   // Cleanup model poll on unmount
   useEffect(() => {
@@ -380,7 +394,12 @@ export default function Search() {
           <h3 className="search-results-title">{t("search.results")}</h3>
           <div className="search-results-list">
             {results.results.map((item: SearchResultItem, idx: number) => (
-              <div key={item.img_id} className="search-result-item">
+              <div key={item.img_id} className="search-result-item"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setCtxMenu({ visible: true, x: e.clientX, y: e.clientY, item });
+                }}
+              >
                 <div className="search-result-rank">#{idx + 1}</div>
                 <div
                   className="search-result-thumb"
@@ -485,6 +504,46 @@ export default function Search() {
           <p className="search-empty-desc">{t("search.noResultsDesc")}</p>
         </div>
       )}
+
+      {/* Context menu */}
+      {ctxMenu.visible && ctxMenu.item && (() => {
+        const item = ctxMenu.item;
+        const menuItems: ContextMenuItem[] = [
+          {
+            label: t("search.openImage"),
+            onClick: () => { openFile(item.image_path); },
+          },
+          {
+            label: t("search.openContainingFolder"),
+            onClick: () => { openFolder(extractDir(item.image_path)); },
+          },
+          { separator: true },
+          {
+            label: t("search.copyPath"),
+            onClick: () => {
+              navigator.clipboard.writeText(item.image_path);
+              addToast("success", t("search.copied"));
+            },
+          },
+        ];
+        if (item.ug_ref) {
+          menuItems.push({
+            label: t("search.copyUgNumber"),
+            onClick: () => {
+              navigator.clipboard.writeText(item.ug_ref!);
+              addToast("success", t("search.copied"));
+            },
+          });
+        }
+        return (
+          <ContextMenu
+            x={ctxMenu.x}
+            y={ctxMenu.y}
+            items={menuItems}
+            onClose={() => setCtxMenu((prev) => ({ ...prev, visible: false }))}
+          />
+        );
+      })()}
     </div>
   );
 }

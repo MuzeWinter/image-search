@@ -238,6 +238,25 @@
   font-variant-numeric: tabular-nums;
 }
 
+.statusbar-changes {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--warning-bg, rgba(234, 179, 8, 0.15));
+  color: var(--warning, #ca8a04);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.statusbar-changes:hover {
+  background: var(--warning-bg-hover, rgba(234, 179, 8, 0.25));
+}
+
 /* === Page Placeholder === */
 .page-placeholder {
   max-width: 800px;

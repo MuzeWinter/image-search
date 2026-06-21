@@ -6,6 +6,7 @@ import "./styles/shell.css";
 import "./styles/skeleton.css";
 import "./styles/search.css";
 import "./styles/toast.css";
+import "./styles/context-menu.css";
 import "./styles/welcome.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

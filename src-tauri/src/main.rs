@@ -368,10 +368,10 @@ fn main() {
                 }
             }
 
-            // Save window state on close
+            // Save window state on close, minimize to tray instead of exiting
             let app_handle = app.handle().clone();
             window.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { .. } = event {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     if let Some(w) = app_handle.get_webview_window("main") {
                         if let Ok(pos) = w.outer_position() {
                             if let Ok(size) = w.outer_size() {
@@ -391,8 +391,55 @@ fn main() {
                             }
                         }
                     }
+                    api.prevent_close();
+                    if let Some(w) = app_handle.get_webview_window("main") {
+                        let _ = w.hide();
+                    }
                 }
             });
+
+            // Set up system tray icon
+            let png_bytes = include_bytes!("../icons/32x32.png");
+            let img = image::load_from_memory(png_bytes)
+                .expect("Failed to decode tray icon PNG");
+            let rgba = img.into_rgba8();
+            let (w, h) = rgba.dimensions();
+            let tray_image = tauri::image::Image::new_owned(rgba.into_raw(), w, h);
+
+            let show_item = tauri::menu::MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+            let quit_item = tauri::menu::MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let tray_menu = tauri::menu::MenuBuilder::new(app)
+                .item(&show_item)
+                .item(&quit_item)
+                .build()?;
+
+            let tray = tauri::tray::TrayIconBuilder::new()
+                .icon(tray_image)
+                .menu(&tray_menu)
+                .on_menu_event(|app_handle, event| {
+                    match event.id().as_ref() {
+                        "show" => {
+                            if let Some(w) = app_handle.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            app_handle.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray_icon, event| {
+                    if let tauri::tray::TrayIconEvent::DoubleClick { .. } = event {
+                        if let Some(w) = tray_icon.app_handle().get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+            app.manage(tray);
 
             Ok(())
         })

@@ -18,7 +18,9 @@
     "libraries": "资料库",
     "images": "已索引图片",
     "tasks": "后台任务",
-    "idle": "空闲"
+    "idle": "空闲",
+    "changesDetected": "检测到 {count} 个文件变更",
+    "changesHint": "点击执行增量扫描"
   },
   "theme": {
     "light": "浅色",
@@ -107,7 +109,9 @@
     "openImage": "打开图片",
     "openExcel": "打开 Excel",
     "openUgFolder": "打开 UG 文件夹",
+    "openContainingFolder": "打开所在文件夹",
     "copyPath": "复制路径",
+    "copyUgNumber": "复制 UG 编号",
     "copied": "已复制!",
     "scopeAll": "全部",
     "scopeExcelOnly": "Excel 内嵌",

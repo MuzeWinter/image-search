@@ -1,5 +1,6 @@
-﻿import { Suspense, lazy, useCallback } from "react";
+﻿import { Suspense, lazy, useCallback, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useSetAtom } from "jotai";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "./i18n/context";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -8,8 +9,10 @@ import { WelcomeGuide, useWelcomeState } from "./components/shared/WelcomeGuide"
 import { AppShell } from "./AppShell";
 import { Skeleton } from "./components/shared/Skeleton";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
+import { pendingChangesAtom } from "./stores/atoms";
 import * as libraryService from "./services/libraryService";
 import * as scanService from "./services/scanService";
+import type { CheckChangesResult } from "./services/types";
 
 const Search = lazy(() => import("./pages/Search"));
 const Library = lazy(() => import("./pages/Library"));
@@ -62,6 +65,67 @@ function WelcomeGate() {
   );
 }
 
+function StartupChangeDetector() {
+  const setPendingChanges = useSetAtom(pendingChangesAtom);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function detect() {
+      try {
+        const libs = await libraryService.list();
+        if (cancelled || libs.length === 0) return;
+
+        const aggregated: CheckChangesResult = {
+          added: 0,
+          removed: 0,
+          modified: 0,
+          moved: 0,
+          has_changes: false,
+          total_files: 0,
+        };
+
+        for (const lib of libs) {
+          if (cancelled) return;
+          try {
+            const result = await scanService.checkChanges(lib.id);
+            if (result.error) continue;
+            aggregated.added += result.added;
+            aggregated.removed += result.removed;
+            aggregated.modified += result.modified;
+            aggregated.moved += result.moved;
+            aggregated.total_files += result.total_files;
+          } catch {
+            // Skip libraries that fail the check
+          }
+        }
+
+        aggregated.has_changes =
+          aggregated.added +
+            aggregated.removed +
+            aggregated.modified +
+            aggregated.moved >
+          0;
+
+        if (!cancelled) {
+          setPendingChanges(aggregated);
+        }
+      } catch {
+        // No libraries yet or service not ready — that's fine
+      }
+    }
+
+    // Delay slightly so the UI renders first, then run detection
+    const timer = setTimeout(detect, 800);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [setPendingChanges]);
+
+  return null;
+}
+
 export function App() {
   return (
     <ThemeProvider>
@@ -69,6 +133,7 @@ export function App() {
         <ToastProvider>
           <BrowserRouter>
             <ErrorBoundary>
+              <StartupChangeDetector />
               <WelcomeGate />
               <Routes>
                 <Route path="/" element={<AppShell />}>

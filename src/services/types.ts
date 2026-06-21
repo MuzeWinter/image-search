@@ -152,3 +152,13 @@ export interface ExtractExcelImagesResult {
   images_extracted: number;
   file_path: string;
 }
+
+export interface CheckChangesResult {
+  added: number;
+  removed: number;
+  modified: number;
+  moved: number;
+  has_changes: boolean;
+  total_files: number;
+  error?: string;
+}

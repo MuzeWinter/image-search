@@ -18,7 +18,9 @@
     "libraries": "Libraries",
     "images": "Indexed Images",
     "tasks": "Background Tasks",
-    "idle": "Idle"
+    "idle": "Idle",
+    "changesDetected": "{count} file changes detected",
+    "changesHint": "Click to run incremental scan"
   },
   "theme": {
     "light": "Light",
@@ -107,7 +109,9 @@
     "openImage": "Open Image",
     "openExcel": "Open Excel",
     "openUgFolder": "Open UG Folder",
+    "openContainingFolder": "Open Containing Folder",
     "copyPath": "Copy Path",
+    "copyUgNumber": "Copy UG Number",
     "copied": "Copied!",
     "scopeAll": "All",
     "scopeExcelOnly": "Excel Embedded",

@@ -6,6 +6,7 @@ import type {
   ScanResult,
   ScanHistory,
   ChangeLog,
+  CheckChangesResult,
   ExcelRecord,
   ParseExcelResult,
   ExtractExcelImagesResult,
@@ -13,6 +14,14 @@ import type {
 
 serviceRegistry.register({
   name: "excel",
+  status: "idle",
+  start: async () => {},
+  invoke: <T>(method: string, params?: Record<string, unknown>) =>
+    callBackend<T>(method, params),
+});
+
+serviceRegistry.register({
+  name: "scanService",
   status: "idle",
   start: async () => {},
   invoke: <T>(method: string, params?: Record<string, unknown>) =>
@@ -33,6 +42,15 @@ export async function startScan(
 
 export async function cancelScan(): Promise<{ cancelled: boolean }> {
   return callTauri<{ cancelled: boolean }>("cancel_scan");
+}
+
+export async function checkChanges(
+  libraryId: number,
+): Promise<CheckChangesResult> {
+  await serviceRegistry.ensureReady("scanService");
+  return callBackend<CheckChangesResult>("scan.checkChanges", {
+    library_id: libraryId,
+  });
 }
 
 export function onScanProgress(
