@@ -425,7 +425,7 @@ export default function Search() {
         const arr = JSON.parse(raw);
         if (Array.isArray(arr)) return new Set(arr);
       }
-    } catch {}
+    } catch { /* ignore */ }
     return new Set<string>();
   });
 
@@ -442,7 +442,7 @@ export default function Search() {
         const n = parseInt(saved, 10);
         if (!isNaN(n) && n >= 0 && n <= 100) return n;
       }
-    } catch {}
+    } catch { /* ignore */ }
     return 30;
   });
 
@@ -755,7 +755,7 @@ export default function Search() {
     const base64 = await fileToBase64(file);
     const url = URL.createObjectURL(file);
     doSearch(base64, url);
-  }, [doSearch, t]);
+  }, [doSearch, t, addToast]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -795,11 +795,11 @@ export default function Search() {
     }
   };
 
-  const sourceTypeLabel = (sourceType: string): string => {
+  const sourceTypeLabel = useCallback((sourceType: string): string => {
     if (sourceType === "excel-embedded") return t("search.sourceExcelEmbedded");
     if (sourceType === "ug-preview") return t("search.sourceUgPreview");
     return sourceType;
-  };
+  }, [t]);
 
   function escapeCsvField(val: string): string {
     if (val.includes(",") || val.includes("\"") || val.includes("\n") || val.includes("\r")) {
@@ -850,10 +850,10 @@ export default function Search() {
 
       await callTauri("write_text_file", { path: filePath, content: csvContent });
       addToast("success", t("search.exportSuccess"));
-    } catch (e) {
+    } catch {
       addToast("error", t("search.exportFailed"));
     }
-  }, [results, t, addToast]);
+  }, [results, t, addToast, sourceTypeLabel]);
 
   const toggleSelect = useCallback((imgId: string) => {
     setSelectedIds((prev) => {
@@ -926,10 +926,10 @@ export default function Search() {
 
       await callTauri("write_text_file", { path: filePath, content: csvContent });
       addToast("success", t("search.exportSuccess"));
-    } catch (e) {
+    } catch {
       addToast("error", t("search.exportFailed"));
     }
-  }, [getSelectedItems, t, addToast]);
+  }, [getSelectedItems, t, addToast, sourceTypeLabel]);
 
   const handleBatchCopyPaths = useCallback(async () => {
     const selected = getSelectedItems();

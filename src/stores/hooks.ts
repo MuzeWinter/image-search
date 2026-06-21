@@ -17,7 +17,6 @@ export function useServiceQuery<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
-  const paramsKey = JSON.stringify(params);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -35,7 +34,7 @@ export function useServiceQuery<T>(
         setLoading(false);
       }
     }
-  }, [serviceName, method, paramsKey]);
+  }, [serviceName, method, params]);
 
   useEffect(() => {
     mountedRef.current = true;

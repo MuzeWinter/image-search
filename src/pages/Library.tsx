@@ -49,9 +49,10 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
+    const pendingDeletes = pendingDeletesRef.current;
     return () => {
-      pendingDeletesRef.current.forEach((timerId) => clearTimeout(timerId));
-      pendingDeletesRef.current.clear();
+      pendingDeletes.forEach((timerId) => clearTimeout(timerId));
+      pendingDeletes.clear();
     };
   }, []);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useI18n, type Locale } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
@@ -26,6 +26,8 @@ const ACCENT_PRESETS = [
   { key: "orange", color: "oklch(58% 0.17 45)",  labelKey: "settings.accentOrange" },
   { key: "red",    color: "oklch(52% 0.19 20)",  labelKey: "settings.accentRed" },
 ];
+
+const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
 
 type DiagStatus = "ok" | "warn" | "error";
 
@@ -107,7 +109,6 @@ export default function Settings() {
   const [dbSize, setDbSize] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
   const [scanExtensions, setScanExtensions] = useState<string[]>(getSavedScanExtensions);
   const [newExt, setNewExt] = useState("");
   const [autoMonitor, setAutoMonitor] = useState(false);
@@ -134,7 +135,7 @@ export default function Settings() {
 
   const handleAccentChange = (key: string) => {
     setAccentColor(key);
-    try { localStorage.setItem(ACCENT_COLOR_KEY, key); } catch {}
+    try { localStorage.setItem(ACCENT_COLOR_KEY, key); } catch { /* ignore */ }
     applyAccentColor(key);
   };
 
@@ -190,7 +191,7 @@ export default function Settings() {
     }).catch(() => { /* non-critical */ });
   }, []);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLogLoading(true);
     try {
       const entries = await getLogs(logFilter || undefined, 50);
@@ -200,11 +201,11 @@ export default function Settings() {
     } finally {
       setLogLoading(false);
     }
-  };
+  }, [logFilter]);
 
   useEffect(() => {
     fetchLogs();
-  }, [logFilter]);
+  }, [fetchLogs]);
 
   const saveExtensions = async (exts: string[]) => {
     try {
@@ -217,13 +218,13 @@ export default function Settings() {
 
   const handleToggleOcr = (enabled: boolean) => {
     setScanOcrEnabled(enabled);
-    try { localStorage.setItem(SCAN_OCR_KEY, String(enabled)); } catch {}
+    try { localStorage.setItem(SCAN_OCR_KEY, String(enabled)); } catch { /* ignore */ }
     settingsService.set("scan_ocr_enabled", String(enabled)).catch(() => {});
   };
 
   const handleToggleUgPreview = (enabled: boolean) => {
     setScanUgPreviewEnabled(enabled);
-    try { localStorage.setItem(SCAN_UG_PREVIEW_KEY, String(enabled)); } catch {}
+    try { localStorage.setItem(SCAN_UG_PREVIEW_KEY, String(enabled)); } catch { /* ignore */ }
     settingsService.set("scan_ug_preview_enabled", String(enabled)).catch(() => {});
   };
 
@@ -587,7 +588,7 @@ export default function Settings() {
               onChange={(e) => {
                 const v = Number(e.target.value);
                 setSimilarityThreshold(v);
-                try { localStorage.setItem(SIMILARITY_THRESHOLD_KEY, String(v)); } catch {}
+                try { localStorage.setItem(SIMILARITY_THRESHOLD_KEY, String(v)); } catch { /* ignore */ }
               }}
             />
             <span className="settings-slider-value">{similarityThreshold}%</span>
