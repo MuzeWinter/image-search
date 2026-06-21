@@ -53,11 +53,14 @@ def _get_stats():
     img_count = conn.execute("SELECT COUNT(*) as n FROM images").fetchone()["n"]
     embedded_count = conn.execute("SELECT COUNT(*) as n FROM images WHERE source_type='excel-embedded'").fetchone()["n"]
     ug_count = conn.execute("SELECT COUNT(*) as n FROM images WHERE source_type='ug-preview'").fetchone()["n"]
+    last_scan_row = conn.execute("SELECT MAX(created_at) as last_scan FROM scan_history").fetchone()
+    last_scan = last_scan_row["last_scan"] if last_scan_row else None
     return {
         "libraries": lib_count,
         "images": img_count,
         "excelEmbedded": embedded_count,
         "ugPreviews": ug_count,
+        "lastScan": last_scan,
     }
 
 

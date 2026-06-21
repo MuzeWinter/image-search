@@ -12,6 +12,8 @@ import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
 import { escapeEpochAtom, splashStateAtom, startupSearchPathAtom } from "../stores/atoms";
+import { useServiceQuery } from "../stores/hooks";
+import type { SystemStats } from "../services/types";
 import {
   getHistory,
   addHistory,
@@ -40,6 +42,13 @@ function fileToUrl(filePath: string): string | null {
 
 function formatSimilarity(sim: number): string {
   return `${(sim * 100).toFixed(1)}%`;
+}
+
+function formatLastScan(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function similarityClass(sim: number): string {
@@ -95,6 +104,7 @@ export default function Search() {
   useEffect(() => {
     localStorage.setItem("searchViewMode", viewMode);
   }, [viewMode]);
+  const { data: stats } = useServiceQuery<SystemStats>("dbService", "db.getStats");
   const [ctxMenu, setCtxMenu] = useState<{
     visible: boolean;
     x: number;
@@ -112,7 +122,8 @@ export default function Search() {
         item.img_id.toLowerCase().includes(q) ||
         item.origin_path.toLowerCase().includes(q) ||
         (item.ug_ref && item.ug_ref.toLowerCase().includes(q)) ||
-        (item.sheet_name && item.sheet_name.toLowerCase().includes(q))
+        (item.sheet_name && item.sheet_name.toLowerCase().includes(q)) ||
+        (item.ocr_text && item.ocr_text.toLowerCase().includes(q))
       );
     }
 
@@ -507,6 +518,28 @@ export default function Search() {
     <div className="search-page">
       <h2 className="page-title">{t("sidebar.nav.search")}</h2>
 
+      {/* Dashboard summary */}
+      <div className="search-summary">
+        <div className="search-summary-card">
+          <span className="search-summary-label">{t("search.summaryLibraries")}</span>
+          <span className="search-summary-value">
+            {stats ? (stats.libraries || t("search.summaryNoData")) : t("search.summaryNoData")}
+          </span>
+        </div>
+        <div className="search-summary-card">
+          <span className="search-summary-label">{t("search.summaryImages")}</span>
+          <span className="search-summary-value">
+            {stats ? (stats.images || t("search.summaryNoData")) : t("search.summaryNoData")}
+          </span>
+        </div>
+        <div className="search-summary-card">
+          <span className="search-summary-label">{t("search.summaryLastScan")}</span>
+          <span className="search-summary-value">
+            {stats?.lastScan ? formatLastScan(stats.lastScan) : t("search.summaryNever")}
+          </span>
+        </div>
+      </div>
+
       {/* Drop zone */}
       <div
         className={`search-dropzone ${dragOver ? "drag-over" : ""} ${showDropZone ? "" : "hidden"}`}
@@ -751,7 +784,7 @@ export default function Search() {
             {pagedResults.map((item: SearchResultItem, idx: number) => (
               <div
                 key={item.img_id}
-                className={`search-result-item ${selectedIds.has(item.img_id) ? "selected" : ""}`}
+                className={`search-result-item ${similarityClass(item.similarity)} ${selectedIds.has(item.img_id) ? "selected" : ""}`}
                 onClick={(e) => {
                   if (e.ctrlKey || e.metaKey) {
                     e.preventDefault();
@@ -841,6 +874,17 @@ export default function Search() {
                       {extractFilename(item.origin_path)}
                     </span>
                   </div>
+                  {/* OCR text */}
+                  {item.ocr_text && (
+                    <div className="search-result-detail">
+                      <span className="search-ocr-label">{t("search.ocrLabel")}:</span>
+                      <span className="search-ocr-text" title={item.ocr_text}>
+                        {item.ocr_text.length > 50
+                          ? item.ocr_text.slice(0, 50) + "..."
+                          : item.ocr_text}
+                      </span>
+                    </div>
+                  )}
                   {/* Excel info */}
                   {item.source_type === "excel-embedded" && item.sheet_name && (
                     <div className="search-result-detail">

@@ -68,6 +68,7 @@ export interface SystemStats {
   images: number;
   excelEmbedded: number;
   ugPreviews: number;
+  lastScan: string | null;
 }
 
 // ── Scan ─────────────────────────────────────────────────────

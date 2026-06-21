@@ -164,6 +164,7 @@
     "row": "行",
     "ugRef": "UG编号",
     "noPreview": "无预览",
+    "ocrLabel": "OCR识别",
     "historyTitle": "搜索历史",
     "clearHistory": "清除全部",
     "historyDeleted": "已从历史中移除",
@@ -198,7 +199,12 @@
     "viewList": "列表",
     "pageInfo": "第 {page}/{total} 页，共 {count} 条",
     "pagePrev": "上一页",
-    "pageNext": "下一页"
+    "pageNext": "下一页",
+    "summaryLibraries": "资料库",
+    "summaryImages": "已索引图片",
+    "summaryLastScan": "最近扫描",
+    "summaryNoData": "—",
+    "summaryNever": "从未扫描"
   },
   "libraries": {
     "add": "添加资料库",

@@ -34,7 +34,17 @@ def init_schema():
     schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.sql")
     with open(schema_path, "r", encoding="utf-8") as f:
         conn.executescript(f.read())
+    # v2-49: add ocr_text column if upgrading from older schema
+    _migrate_add_column(conn, "images", "ocr_text", "TEXT DEFAULT ''")
     conn.commit()
+
+
+def _migrate_add_column(conn, table: str, column: str, col_def: str):
+    """Add a column if it doesn't already exist (safe for repeated runs)."""
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}")
+    except Exception:
+        pass  # column already exists
 
 
 def close_connection():

@@ -27,6 +27,28 @@ CAD_EXT = {'.dwg', '.dxf', '.step', '.stp', '.iges', '.igs', '.prt', '.asm',
            '.sldprt', '.sldasm', '.catpart', '.catproduct', '.ipt', '.iam', '.stl', '.obj'}
 PDF_EXT = {'.pdf'}
 
+_OCR_ATTEMPTED = False
+_OCR_AVAILABLE = False
+
+
+def _try_ocr_image(image_path: str) -> str:
+    """Try to OCR an image file. Returns recognized text or empty string on any failure."""
+    global _OCR_ATTEMPTED, _OCR_AVAILABLE
+    if _OCR_ATTEMPTED and not _OCR_AVAILABLE:
+        return ""
+    _OCR_ATTEMPTED = True
+    try:
+        from backend.services.ocr_service import _load_ocr, _recognize_text
+        _load_ocr()
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
+        results = _recognize_text(image_bytes)
+        _OCR_AVAILABLE = True
+        return " ".join(r["text"] for r in results)
+    except Exception:
+        _OCR_AVAILABLE = False
+        return ""
+
 
 def _add_activity_log(level: str, source: str, message: str):
     try:
@@ -241,11 +263,12 @@ def _extract_excel_images(filepath: str, library_path: str) -> int:
                     if ex_row:
                         ex_ref = ex_row["ex_id"]
 
+                ocr_text = _try_ocr_image(img_path)
                 conn.execute(
                     """INSERT OR REPLACE INTO images
-                       (img_id, source_type, file_path, folder, filename, size_bytes, width, height, file_hash, ex_ref, status, last_modified, indexed_at)
-                       VALUES (?, 'excel_embedded', ?, ?, ?, ?, ?, ?, ?, ?, 'normal', ?, ?)""",
-                    (img_id, filepath, folder, img_filename, img_size, width, height, None, ex_ref, mtime, now)
+                       (img_id, source_type, file_path, folder, filename, size_bytes, width, height, file_hash, ex_ref, ocr_text, status, last_modified, indexed_at)
+                       VALUES (?, 'excel_embedded', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'normal', ?, ?)""",
+                    (img_id, filepath, folder, img_filename, img_size, width, height, None, ex_ref, ocr_text, mtime, now)
                 )
 
                 count += 1

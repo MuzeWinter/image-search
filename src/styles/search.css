@@ -505,17 +505,32 @@
 
 .search-result-similarity.high {
   background: oklch(54% 0.12 155 / 0.15);
-  color: var(--success);
+  color: oklch(50% 0.14 155);
 }
 
 .search-result-similarity.mid {
-  background: oklch(62% 0.14 75 / 0.15);
-  color: var(--warning);
+  background: oklch(62% 0.14 75 / 0.18);
+  color: oklch(58% 0.15 75);
 }
 
 .search-result-similarity.low {
-  background: oklch(48% 0.16 22 / 0.1);
-  color: var(--muted);
+  background: oklch(50% 0.01 90 / 0.1);
+  color: oklch(48% 0.01 90);
+}
+
+[data-theme="dark"] .search-result-similarity.high {
+  background: oklch(62% 0.15 155 / 0.18);
+  color: oklch(72% 0.12 155);
+}
+
+[data-theme="dark"] .search-result-similarity.mid {
+  background: oklch(70% 0.17 80 / 0.18);
+  color: oklch(80% 0.14 80);
+}
+
+[data-theme="dark"] .search-result-similarity.low {
+  background: oklch(60% 0.01 90 / 0.12);
+  color: oklch(68% 0.01 90);
 }
 
 .search-result-meta {
@@ -643,6 +658,47 @@
   font-weight: 600;
   color: var(--fg);
   margin-bottom: var(--space-5);
+}
+
+/* === Dashboard Summary Cards === */
+.search-summary {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.search-summary-card {
+  flex: 1;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-overlay);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.search-summary-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-modal);
+}
+
+.search-summary-label {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.search-summary-value {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.2;
 }
 
 /* === Model Progress === */
@@ -969,6 +1025,31 @@
 
 .search-results-list.grid-view .search-result-similarity {
   font-size: 10px;
+}
+
+/* Grid view left border by similarity */
+.search-results-list.grid-view .search-result-item.high {
+  border-left: 3px solid oklch(54% 0.12 155);
+}
+
+.search-results-list.grid-view .search-result-item.mid {
+  border-left: 3px solid oklch(62% 0.14 75);
+}
+
+.search-results-list.grid-view .search-result-item.low {
+  border-left: 3px solid oklch(50% 0.01 90);
+}
+
+[data-theme="dark"] .search-results-list.grid-view .search-result-item.high {
+  border-left-color: oklch(62% 0.15 155);
+}
+
+[data-theme="dark"] .search-results-list.grid-view .search-result-item.mid {
+  border-left-color: oklch(70% 0.17 80);
+}
+
+[data-theme="dark"] .search-results-list.grid-view .search-result-item.low {
+  border-left-color: oklch(60% 0.01 90);
 }
 
 .search-results-list.grid-view .search-result-meta {

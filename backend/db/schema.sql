@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS images (
     sheet_name TEXT,
     row_number INTEGER,
     tags TEXT DEFAULT '',
+    ocr_text TEXT DEFAULT '',
     favorite INTEGER DEFAULT 0,
     status TEXT DEFAULT 'normal',
     last_modified TEXT,

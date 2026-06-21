@@ -164,6 +164,7 @@
     "row": "Row",
     "ugRef": "UG Ref",
     "noPreview": "No preview",
+    "ocrLabel": "OCR",
     "historyTitle": "Search History",
     "clearHistory": "Clear All",
     "historyDeleted": "Removed from history",
@@ -198,7 +199,12 @@
     "viewList": "List",
     "pageInfo": "Page {page}/{total}, {count} results",
     "pagePrev": "Prev",
-    "pageNext": "Next"
+    "pageNext": "Next",
+    "summaryLibraries": "Libraries",
+    "summaryImages": "Indexed Images",
+    "summaryLastScan": "Last Scan",
+    "summaryNoData": "—",
+    "summaryNever": "Never"
   },
   "libraries": {
     "add": "Add Library",

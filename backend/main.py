@@ -14,7 +14,7 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from backend.services import db_service, settings_service, library_service, excel_service, search_service, ug_service, scan_service, system_service, error_report_service
+from backend.services import db_service, settings_service, library_service, excel_service, search_service, ug_service, scan_service, system_service, error_report_service, ocr_service
 
 ROUTES = {
     "db": db_service,
@@ -26,6 +26,7 @@ ROUTES = {
     "scan": scan_service,
     "system": system_service,
     "errorReport": error_report_service,
+    "ocr": ocr_service,
 }
 
 

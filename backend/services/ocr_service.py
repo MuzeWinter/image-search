@@ -11,7 +11,7 @@ import base64
 import threading
 
 _ocr_reader = None
-_ocr_enabled = False
+_ocr_enabled = True
 _ocr_lock = threading.Lock()
 _ocr_ready = False
 _OCR_FAILED_MSG = None

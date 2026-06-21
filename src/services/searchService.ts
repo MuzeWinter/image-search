@@ -20,6 +20,7 @@ export interface SearchResultItem {
   row_number: number | null;
   ug_ref: string | null;
   similarity: number;
+  ocr_text?: string;
 }
 
 export interface SearchResults {
