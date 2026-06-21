@@ -2,6 +2,71 @@
 
 ## v2 系列 (2025–2026)
 
+### v2-110 — 项目发布就绪最终验证
+- `npm run check` 8/8 全绿确认（tsc/eslint/vite/cargo/python/mypy/pytest/vitest）
+- 121 个已完成任务全部审核通过
+- 125 commits 完整提交历史
+- CHANGELOG 汇总 v2-94 至 v2-110 全部变更
+- 发布检查清单 RELEASE-CHECKLIST.md 生成
+- 项目发布就绪
+
+### v2-109 — 启动性能优化
+- React 代码分割（lazy + Suspense），非首页组件按需加载
+- 图片懒加载优化（IntersectionObserver）
+- Python 后端延迟初始化，首次使用时才加载模型
+- 启动时仅加载必要配置，其余延迟加载
+- SplashScreen 显示实际加载进度
+
+### v2-108 — CI/CD 流水线完善
+- CI workflow 增加 vitest 前端测试步骤
+- CI workflow 增加 cargo clippy 检查
+- CI workflow 增加 Rust test 步骤
+- CI 失败时自动在 PR/commit 上标注状态
+- CI 缓存策略优化（node_modules、cargo、pip）
+
+### v2-107 — 无障碍访问 (a11y) 基础支持
+- 所有按钮添加 `aria-label` 属性
+- 所有输入框添加 `aria-label` 或关联 `<label>`
+- 搜索结果列表支持键盘导航（上下箭头 + Enter）
+- 焦点可见样式（focus-visible outline）
+- 主菜单支持 Tab 键导航
+
+### v2-106 — ESLint 警告清零与代码规范强化
+- ESLint 零警告零错误
+- 代码规范强化，统一风格
+- 修复全部 react-hooks/exhaustive-deps 警告
+- 确保代码库整洁可维护
+
+### v2-105 — 最终质量审查与优化
+- 全项目质量审计报告
+- 代码质量、测试覆盖率、文档完整性审查
+- 性能瓶颈识别与优化建议
+- 安全隐患排查
+
+### v2-104 — 搜索结果详情面板增强
+- 侧边详情面板：完整元数据、文件信息、相似度
+- 大图预览模式
+- 快捷操作按钮（导出、收藏、定位文件）
+- 面板动画过渡
+
+### v2-103 — Rust 警告清零与代码整洁
+- cargo clippy 零警告
+- Rust 代码整洁规范
+- 移除未使用变量和导入
+- 优化错误处理模式
+
+### v2-102 — 最终集成验收测试
+- 全栈联合测试覆盖
+- 前端→后端→Python→Rust 全链路验证
+- 极端边界条件测试
+- 并发与竞态条件测试
+
+### v2-101 — 错误边界与崩溃恢复加固
+- ErrorBoundary 全局异常捕获
+- 进程守护，Python 后端崩溃自动重启
+- 数据库损坏自动修复
+- 崩溃诊断日志收集
+
 ### v2-100 — 项目文档与使用指南
 - 完善 README.md：项目介绍、功能列表、安装步骤、文档索引
 - 新增 USER-GUIDE.md：详细用户使用指南
@@ -235,8 +300,10 @@
 
 ## 统计
 
-- **总版本数**：100+（v2-01 至 v2-100）
-- **总功能数**：110 项（见 [FEATURES.md](FEATURES.md)）
-- **总测试数**：前端 vitest + 后端 pytest + e2e
+- **总版本数**：110（v2-01 至 v2-110）
+- **总提交数**：125 commits
+- **总完成数**：121 个 done 任务 + v2-110 当前任务
+- **质量门禁**：npm run check 8/8 全绿（tsc/eslint/vite/cargo/python/mypy/pytest/vitest）
+- **总测试数**：120 pytest + 20 vitest + e2e
 - **支持语言**：中文 / 英文（313 翻译键）
 - **支持主题**：浅色 / 深色 / 跟随系统
