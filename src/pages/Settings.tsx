@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n, type Locale } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
@@ -23,6 +23,60 @@ export default function Settings() {
   const [ugSaveMsg, setUgSaveMsg] = useState("");
   const [maintMsg, setMaintMsg] = useState("");
   const [maintLoading, setMaintLoading] = useState("");
+  const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
+  const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
+  const [newExt, setNewExt] = useState("");
+
+  useEffect(() => {
+    settingsService.get("scan_extensions").then((val) => {
+      if (val) {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setScanExtensions(parsed);
+            return;
+          }
+        } catch { /* use defaults */ }
+      }
+    }).catch(() => { /* use defaults */ });
+  }, []);
+
+  const saveExtensions = async (exts: string[]) => {
+    try {
+      await settingsService.set("scan_extensions", JSON.stringify(exts));
+    } catch { /* best-effort save */ }
+  };
+
+  const handleToggleExt = (ext: string) => {
+    const next = scanExtensions.includes(ext)
+      ? scanExtensions.filter((e) => e !== ext)
+      : [...scanExtensions, ext];
+    setScanExtensions(next);
+    saveExtensions(next);
+  };
+
+  const handleAddExt = () => {
+    const raw = newExt.trim().toLowerCase();
+    if (!raw) return;
+    const normalized = raw.startsWith(".") ? raw : `.${raw}`;
+    if (scanExtensions.includes(normalized)) {
+      setNewExt("");
+      return;
+    }
+    const next = [...scanExtensions, normalized];
+    setScanExtensions(next);
+    setNewExt("");
+    saveExtensions(next);
+  };
+
+  const handleRemoveExt = (ext: string) => {
+    if (DEFAULT_SCAN_EXTENSIONS.includes(ext)) return;
+    const next = scanExtensions.filter((e) => e !== ext);
+    setScanExtensions(next);
+    saveExtensions(next);
+  };
+
+  const displayExtensions = [...new Set([...DEFAULT_SCAN_EXTENSIONS, ...scanExtensions])];
 
   const handleThemeChange = async (newTheme: Theme) => {
     setTheme(newTheme);
@@ -201,6 +255,47 @@ export default function Settings() {
         </div>
 
         {ugSaveMsg && <p className="settings-msg">{ugSaveMsg}</p>}
+
+        <div className="settings-row" style={{ alignItems: "flex-start" }}>
+          <label className="settings-label">{t("settings.scanExtensions")}</label>
+          <div className="settings-ext-list">
+            <p className="settings-ext-hint">{t("settings.scanExtensionsHint")}</p>
+            {displayExtensions.map((ext) => (
+              <label key={ext} className="settings-ext-item">
+                <input
+                  type="checkbox"
+                  checked={scanExtensions.includes(ext)}
+                  onChange={() => handleToggleExt(ext)}
+                />
+                <span>{ext}</span>
+                {!DEFAULT_SCAN_EXTENSIONS.includes(ext) && (
+                  <button
+                    className="settings-ext-remove"
+                    onClick={() => handleRemoveExt(ext)}
+                    title={t("common.delete")}
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+            ))}
+            <div className="settings-ext-add-row">
+              <input
+                type="text"
+                className="settings-ext-input"
+                placeholder={t("settings.scanExtensionsPlaceholder")}
+                value={newExt}
+                onChange={(e) => setNewExt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddExt();
+                }}
+              />
+              <button className="settings-btn-primary" onClick={handleAddExt}>
+                {t("settings.scanExtensionsAdd")}
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Maintenance */}

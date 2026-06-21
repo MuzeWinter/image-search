@@ -156,8 +156,25 @@ export default function LibraryPage() {
       case "hashing": return t("libraries.phaseHashing");
       case "comparing": return t("libraries.phaseComparing");
       case "saving": return t("libraries.phaseSaving");
+      case "ug_preview": return t("libraries.phaseUgPreview");
+      case "matching": return t("libraries.phaseMatching");
+      case "indexing": return t("libraries.phaseIndexing");
       default: return "";
     }
+  };
+
+  const truncatePath = (path: string, maxLen = 60) => {
+    if (path.length <= maxLen) return path;
+    const parts = path.replace(/\\/g, "/").split("/");
+    if (parts.length <= 2) return "..." + path.slice(-maxLen);
+    return parts[0] + "/.../" + parts[parts.length - 1];
+  };
+
+  const formatTime = (sec: number) => {
+    if (sec < 60) return `${sec.toFixed(0)}s`;
+    const m = Math.floor(sec / 60);
+    const s = Math.round(sec % 60);
+    return `${m}m ${s}s`;
   };
 
   if (libsError) {
@@ -228,9 +245,19 @@ export default function LibraryPage() {
                   {scanProgress.current} / {scanProgress.total} ({scanProgress.percent}%)
                 </span>
               </div>
+              <div className="scan-progress-time">
+                <span className="scan-progress-elapsed">
+                  {t("libraries.elapsedTime")}: {formatTime(scanProgress.elapsed_sec)}
+                </span>
+                {scanProgress.eta_sec > 0 && (
+                  <span className="scan-progress-eta">
+                    {t("libraries.estimatedTime")}: {formatTime(scanProgress.eta_sec)}
+                  </span>
+                )}
+              </div>
               {scanProgress.current_file && (
-                <div className="scan-progress-file text-mono truncate">
-                  {scanProgress.current_file}
+                <div className="scan-progress-file text-mono" title={scanProgress.current_file}>
+                  {truncatePath(scanProgress.current_file)}
                 </div>
               )}
             </>

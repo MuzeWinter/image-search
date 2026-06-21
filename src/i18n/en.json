@@ -81,6 +81,11 @@
     "ugColumnName": "UG Column Name",
     "ugColumnNameHint": "Enter UG drawing number column name",
     "ugColumnNameSaved": "UG column name saved",
+    "scanExtensions": "Scan Extensions",
+    "scanExtensionsHint": "Only files with these extensions will be scanned",
+    "scanExtensionsAdd": "Add",
+    "scanExtensionsPlaceholder": ".ext",
+    "scanExtensionsSaved": "Scan extensions saved",
     "about": "About",
     "version": "Version",
     "versionText": "ZOOBET Search v0.1.0"
@@ -115,7 +120,11 @@
     "sheet": "Sheet",
     "row": "Row",
     "ugRef": "UG Ref",
-    "noPreview": "No preview"
+    "noPreview": "No preview",
+    "historyTitle": "Search History",
+    "clearHistory": "Clear All",
+    "historyDeleted": "Removed from history",
+    "historyCleared": "History cleared"
   },
   "libraries": {
     "add": "Add Library",
@@ -152,6 +161,11 @@
     "phaseHashing": "Computing hashes...",
     "phaseComparing": "Detecting changes...",
     "phaseSaving": "Saving to database...",
+    "phaseUgPreview": "Extracting UG previews...",
+    "phaseMatching": "Auto-matching records...",
+    "phaseIndexing": "Indexing images...",
+    "elapsedTime": "Elapsed",
+    "estimatedTime": "Est. remaining",
     "excelImages": "Excel Images",
     "autoMatches": "Auto Matches",
     "autoIndexed": "Auto Indexed",

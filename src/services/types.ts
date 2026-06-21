@@ -74,11 +74,13 @@ export interface SystemStats {
 
 export interface ScanProgress {
   type: "progress";
-  phase: "collecting" | "hashing" | "comparing" | "saving";
+  phase: "collecting" | "hashing" | "comparing" | "saving" | "ug_preview" | "matching" | "indexing";
   current: number;
   total: number;
   current_file: string;
   percent: number;
+  elapsed_sec: number;
+  eta_sec: number;
 }
 
 export interface ScanResult {

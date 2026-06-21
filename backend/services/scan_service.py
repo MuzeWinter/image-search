@@ -46,14 +46,25 @@ def sha256_file(filepath: str) -> str:
     return h.hexdigest()
 
 
+_scan_start_time: float = 0.0
+
+
 def emit_progress(phase: str, current: int, total: int, current_file: str = ""):
+    pct = int(current / max(total, 1) * 100)
+    elapsed = round(time.time() - _scan_start_time, 1) if _scan_start_time > 0 else 0.0
+    if pct > 0 and elapsed > 0:
+        eta = round(elapsed / pct * (100 - pct), 1)
+    else:
+        eta = 0.0
     payload = {
         "type": "progress",
         "phase": phase,
         "current": current,
         "total": total,
         "current_file": current_file,
-        "percent": int(current / max(total, 1) * 100)
+        "percent": pct,
+        "elapsed_sec": elapsed,
+        "eta_sec": eta,
     }
     sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
     sys.stdout.flush()
@@ -434,8 +445,23 @@ def _auto_index_images(conn, limit: int = 100):
     return indexed
 
 
+def _load_scan_extensions(conn) -> set:
+    """Read scan_extensions from settings DB, return lowercase set. Defaults to Excel+PRT."""
+    row = conn.execute("SELECT value FROM settings WHERE key = 'scan_extensions'").fetchone()
+    if row and row["value"]:
+        try:
+            exts = json.loads(row["value"])
+            if isinstance(exts, list) and len(exts) > 0:
+                return {e.lower() for e in exts if isinstance(e, str)}
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return {'.xlsx', '.xls', '.prt'}
+
+
 def scan_library(library_id: int, library_path: str):
-    start_time = time.time()
+    global _scan_start_time
+    _scan_start_time = time.time()
+    start_time = _scan_start_time
     path = Path(library_path)
 
     if not path.exists():
@@ -452,7 +478,11 @@ def scan_library(library_id: int, library_path: str):
                      "cad_count": 0, "pdf_count": 0, "other_count": 0})
         return
 
-    # Phase 1: Collect all file paths
+    # Read scan extensions config
+    conn = get_connection()
+    scan_exts = _load_scan_extensions(conn)
+
+    # Phase 1: Collect all file paths (filtered by configured extensions)
     emit_progress("collecting", 0, 0, str(path))
     all_files = []
     try:
@@ -460,7 +490,9 @@ def scan_library(library_id: int, library_path: str):
             dirs[:] = [d for d in dirs if not d.startswith('.')]
             for f in files:
                 if not f.startswith('.') and not f.startswith('~'):
-                    all_files.append(os.path.join(root, f))
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in scan_exts:
+                        all_files.append(os.path.join(root, f))
     except PermissionError as e:
         emit_result({"error": f"Permission denied: {e}", "added": 0, "removed": 0,
                      "modified": 0, "moved": 0, "errors": 1, "duration_sec": 0,

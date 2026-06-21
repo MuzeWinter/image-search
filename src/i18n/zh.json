@@ -81,6 +81,11 @@
     "ugColumnName": "UG 编号列名",
     "ugColumnNameHint": "输入 UG 图号对应的 Excel 列名",
     "ugColumnNameSaved": "UG 列名已保存",
+    "scanExtensions": "扫描文件类型",
+    "scanExtensionsHint": "仅扫描具有这些扩展名的文件",
+    "scanExtensionsAdd": "添加",
+    "scanExtensionsPlaceholder": ".扩展名",
+    "scanExtensionsSaved": "扫描扩展名已保存",
     "about": "关于",
     "version": "版本",
     "versionText": "ZOOBET检索 v0.1.0"
@@ -115,7 +120,11 @@
     "sheet": "工作表",
     "row": "行",
     "ugRef": "UG编号",
-    "noPreview": "无预览"
+    "noPreview": "无预览",
+    "historyTitle": "搜索历史",
+    "clearHistory": "清除全部",
+    "historyDeleted": "已从历史中移除",
+    "historyCleared": "历史已清除"
   },
   "libraries": {
     "add": "添加资料库",
@@ -152,6 +161,11 @@
     "phaseHashing": "正在计算哈希...",
     "phaseComparing": "正在检测变更...",
     "phaseSaving": "正在保存到数据库...",
+    "phaseUgPreview": "正在提取 UG 预览...",
+    "phaseMatching": "正在自动匹配记录...",
+    "phaseIndexing": "正在索引图片...",
+    "elapsedTime": "已用",
+    "estimatedTime": "预估剩余",
     "excelImages": "Excel 图片",
     "autoMatches": "自动匹配",
     "autoIndexed": "自动索引",

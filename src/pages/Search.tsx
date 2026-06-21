@@ -7,6 +7,14 @@ import * as searchService from "../services/searchService";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
 import { openFile, openFolder } from "../services/systemService";
 import { escapeEpochAtom } from "../stores/atoms";
+import {
+  getHistory,
+  addHistory,
+  deleteHistoryByIndex,
+  clearHistory,
+  createThumbnail,
+} from "../services/searchHistoryStore";
+import type { SearchHistoryItem } from "../services/searchHistoryStore";
 
 type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
 
@@ -51,6 +59,7 @@ export default function Search() {
   const [modelPercent, setModelPercent] = useState(0);
   const [modelMsg, setModelMsg] = useState("");
   const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
+  const [history, setHistory] = useState<SearchHistoryItem[]>(() => getHistory());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const escapeEpoch = useAtomValue(escapeEpochAtom);
@@ -127,6 +136,24 @@ export default function Search() {
       const searchResults = await searchService.searchByImage(base64, 30, searchScope);
       setResults(searchResults);
       setState("done");
+
+      // Save to search history
+      createThumbnail(base64).then((thumb) => {
+        const updated = addHistory({
+          thumbnail: thumb,
+          timestamp: Date.now(),
+          resultCount: searchResults.count,
+        });
+        setHistory(updated);
+      }).catch(() => {
+        // Thumbnail creation failed; store without thumbnail
+        const updated = addHistory({
+          thumbnail: "",
+          timestamp: Date.now(),
+          resultCount: searchResults.count,
+        });
+        setHistory(updated);
+      });
     } catch (e) {
       setState("error");
       setErrorMsg(e instanceof Error ? e.message : String(e));
@@ -216,6 +243,56 @@ export default function Search() {
           onChange={handleFileSelect}
         />
       </div>
+
+      {/* Search history */}
+      {history.length > 0 && (state === "idle" || state === "done") && (
+        <div className="search-history">
+          <div className="search-history-header">
+            <span className="search-history-title">{t("search.historyTitle")}</span>
+            <button
+              className="search-history-clear-btn"
+              onClick={() => {
+                clearHistory();
+                setHistory([]);
+              }}
+            >
+              {t("search.clearHistory")}
+            </button>
+          </div>
+          <div className="search-history-list">
+            {history.map((item, idx) => (
+              <div
+                key={`${item.timestamp}-${idx}`}
+                className="search-history-item"
+                onClick={() => {
+                  if (item.thumbnail) {
+                    doSearch(item.thumbnail, item.thumbnail);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  const updated = deleteHistoryByIndex(idx);
+                  setHistory(updated);
+                }}
+                title={new Date(item.timestamp).toLocaleString()}
+              >
+                {item.thumbnail ? (
+                  <img
+                    src={item.thumbnail}
+                    alt=""
+                    className="search-history-thumb"
+                  />
+                ) : (
+                  <div className="search-history-thumb search-history-thumb-placeholder">
+                    ?
+                  </div>
+                )}
+                <span className="search-history-count">{item.resultCount}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search scope filter */}
       <div className="search-scope-bar">
