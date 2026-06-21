@@ -1,7 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+
+function readAppVersion(): string {
+  try {
+    const configPath = resolve(__dirname, "src-tauri", "tauri.conf.json");
+    const raw = readFileSync(configPath, "utf-8");
+    const config = JSON.parse(raw);
+    return config.version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(readAppVersion()),
+  },
   plugins: [react()],
   clearScreen: false,
   server: {

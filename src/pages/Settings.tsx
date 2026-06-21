@@ -3,7 +3,9 @@ import { useI18n, type Locale } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
 import * as settingsService from "../services/settingsService";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { getDbStats, optimizeDb } from "../services/settingsService";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-shell";
 
 const UG_COLUMN_KEY = "ugColumnName";
 
@@ -23,6 +25,8 @@ export default function Settings() {
   const [ugSaveMsg, setUgSaveMsg] = useState("");
   const [maintMsg, setMaintMsg] = useState("");
   const [maintLoading, setMaintLoading] = useState("");
+  const [dbSize, setDbSize] = useState(0);
+  const [showAbout, setShowAbout] = useState(false);
   const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
   const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
   const [newExt, setNewExt] = useState("");
@@ -39,6 +43,12 @@ export default function Settings() {
         } catch { /* use defaults */ }
       }
     }).catch(() => { /* use defaults */ });
+  }, []);
+
+  useEffect(() => {
+    getDbStats().then((stats) => {
+      setDbSize(stats.fileSize);
+    }).catch(() => { /* non-critical */ });
   }, []);
 
   const saveExtensions = async (exts: string[]) => {
@@ -135,7 +145,7 @@ export default function Settings() {
   const handleRestore = async () => {
     if (!window.confirm(t("settings.restoreConfirm"))) return;
     try {
-      const sourcePath = await open({
+      const sourcePath = await openDialog({
         multiple: false,
         filters: [{ name: "Database", extensions: ["db"] }],
         title: t("settings.restoreDb"),
@@ -176,6 +186,31 @@ export default function Settings() {
       addToast("success", t("settings.clearCacheSuccess"));
     } catch (e) {
       showMaintMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setMaintLoading("");
+    }
+  };
+
+  const formatSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleOptimize = async () => {
+    if (!window.confirm(t("settings.optimizeConfirm"))) return;
+    try {
+      setMaintLoading("optimize");
+      const result = await optimizeDb();
+      setDbSize(result.newSize);
+      showMaintMsg(
+        `${t("settings.optimizeSuccess")} — ${t("settings.spaceFreed", { size: formatSize(result.freed) })}`,
+        5000,
+      );
+      addToast("success", t("settings.optimizeSuccess"));
+    } catch (e) {
+      showMaintMsg(`${t("settings.optimizeFail")}: ${e instanceof Error ? e.message : String(e)}`);
+      addToast("error", t("settings.optimizeFail"));
     } finally {
       setMaintLoading("");
     }
@@ -302,6 +337,11 @@ export default function Settings() {
       <section className="settings-section">
         <h3>{t("settings.maintenance")}</h3>
 
+        <div className="settings-row">
+          <label className="settings-label">{t("settings.dbSize")}</label>
+          <span className="settings-db-size">{formatSize(dbSize)}</span>
+        </div>
+
         <div className="settings-maintenance-grid">
           <button
             className="settings-btn-secondary"
@@ -331,6 +371,13 @@ export default function Settings() {
           >
             {maintLoading === "clear" ? `${t("common.loading")}` : t("settings.clearCache")}
           </button>
+          <button
+            className="settings-btn-secondary"
+            onClick={handleOptimize}
+            disabled={maintLoading !== ""}
+          >
+            {maintLoading === "optimize" ? `${t("common.loading")}` : t("settings.optimizeDb")}
+          </button>
         </div>
 
         {maintMsg && <p className="settings-msg" style={{ marginTop: 12 }}>{maintMsg}</p>}
@@ -339,8 +386,64 @@ export default function Settings() {
       {/* About */}
       <section className="settings-section">
         <h3>{t("settings.about")}</h3>
-        <p>{t("settings.versionText")}</p>
+        <button className="settings-btn-secondary" onClick={() => setShowAbout(true)}>
+          {t("settings.aboutBtn")}
+        </button>
       </section>
+
+      {/* About Dialog */}
+      {showAbout && (
+        <div
+          className="about-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAbout(false);
+          }}
+        >
+          <div className="about-dialog">
+            <button
+              className="about-dialog-close"
+              onClick={() => setShowAbout(false)}
+              aria-label={t("common.close")}
+            >
+              &#x2715;
+            </button>
+            <div className="about-dialog-body">
+              <div className="about-app-icon">Z</div>
+              <h3 className="about-app-name">{t("settings.aboutAppName")}</h3>
+              <p className="about-version">
+                {t("settings.aboutVersion", { version: __APP_VERSION__ })}
+              </p>
+              <div className="about-tech-stack">
+                <span className="about-tech-label">{t("settings.aboutTechStack")}</span>
+                <span className="about-tech-badge">Tauri</span>
+                <span className="about-tech-badge">React</span>
+                <span className="about-tech-badge">Python</span>
+                <span className="about-tech-badge">CLIP</span>
+                <span className="about-tech-badge">FAISS</span>
+              </div>
+              <a
+                className="about-github-link"
+                href={t("settings.aboutGitHubUrl")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  open(t("settings.aboutGitHubUrl"));
+                }}
+              >
+                <svg className="about-github-icon" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+                {t("settings.aboutGitHub")}
+              </a>
+              <button
+                className="about-close-btn"
+                onClick={() => setShowAbout(false)}
+              >
+                {t("settings.aboutClose")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -71,3 +71,29 @@ export async function clearCache(): Promise<{
     "settings.clearCache",
   );
 }
+
+export interface DbStats {
+  fileSize: number;
+  tables: Record<string, number>;
+}
+
+export async function getDbStats(): Promise<DbStats> {
+  await serviceRegistry.ensureReady("settingsService");
+  return callBackend<DbStats>("db.stats");
+}
+
+export interface VacuumResult {
+  oldSize: number;
+  newSize: number;
+  freed: number;
+}
+
+export async function vacuumDb(): Promise<VacuumResult> {
+  await serviceRegistry.ensureReady("settingsService");
+  return callBackend<VacuumResult>("db.vacuum");
+}
+
+export async function optimizeDb(): Promise<VacuumResult> {
+  await serviceRegistry.ensureReady("settingsService");
+  return callBackend<VacuumResult>("db.optimize");
+}
