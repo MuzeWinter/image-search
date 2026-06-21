@@ -38,8 +38,11 @@ def _emit_progress(status: str, percent: int, message: str):
         pass
 
 
+_LOAD_TIMEOUT_S = 120
+
+
 def _load_model():
-    """延迟加载 OpenCLIP ViT-B/32 模型（线程安全）"""
+    """延迟加载 OpenCLIP ViT-B/32 模型（线程安全，带超时检测）"""
     global _model, _preprocess, _device, _LOAD_FAILED_MSG
 
     if _model is not None:
@@ -53,43 +56,65 @@ def _load_model():
         if _LOAD_FAILED_MSG is not None:
             raise RuntimeError(_LOAD_FAILED_MSG)
 
-        try:
-            _emit_progress("loading", 5, "Importing torch...")
-            _log("Importing torch...")
-            import torch
-            _device = "cuda" if torch.cuda.is_available() else "cpu"
-            _log(f"Using device: {_device}")
+        load_result = {}
 
-            _emit_progress("loading", 15, "Importing open_clip...")
-            _log("Importing open_clip...")
-            import open_clip
+        def _do_load():
+            try:
+                _emit_progress("loading", 5, "Importing torch...")
+                _log("Importing torch...")
+                import torch
+                dev = "cuda" if torch.cuda.is_available() else "cpu"
+                _log(f"Using device: {dev}")
 
-            _emit_progress("loading", 25, "Loading ViT-B/32 model...")
-            _log("Loading OpenCLIP ViT-B/32...")
-            _model, _, _preprocess = open_clip.create_model_and_transforms(
-                "ViT-B-32", pretrained="laion2b_s34b_b79k"
-            )
-            _model = _model.to(_device)
-            _model.eval()
+                _emit_progress("loading", 15, "Importing open_clip...")
+                _log("Importing open_clip...")
+                import open_clip
 
-            _emit_progress("loading", 80, "Loading tokenizer...")
-            _log("Loading tokenizer...")
-            import open_clip.tokenizer
-            # Tokenizer is bundled, just verify it works
-            open_clip.get_tokenizer("ViT-B-32")
+                _emit_progress("loading", 25, "Loading ViT-B/32 model...")
+                _log("Loading OpenCLIP ViT-B/32...")
+                m, _, prep = open_clip.create_model_and_transforms(
+                    "ViT-B-32", pretrained="laion2b_s34b_b79k"
+                )
+                m = m.to(dev)
+                m.eval()
 
-            _emit_progress("ready", 100, "Model ready")
-            _log("Model loaded successfully")
-        except ImportError as e:
-            _LOAD_FAILED_MSG = f"Missing Python package: {e}. Install with: pip install open-clip-torch torch torchvision pillow"
+                _emit_progress("loading", 80, "Loading tokenizer...")
+                _log("Loading tokenizer...")
+                import open_clip.tokenizer
+                # Tokenizer is bundled, just verify it works
+                open_clip.get_tokenizer("ViT-B-32")
+
+                _emit_progress("ready", 100, "Model ready")
+                _log("Model loaded successfully")
+                load_result["ok"] = True
+                load_result["model"] = m
+                load_result["preprocess"] = prep
+                load_result["device"] = dev
+            except ImportError as e:
+                load_result["error"] = f"Missing Python package: {e}. Install with: pip install open-clip-torch torch torchvision pillow"
+            except Exception as e:
+                load_result["error"] = f"Model load failed: {e}"
+
+        t = threading.Thread(target=_do_load, daemon=True)
+        t.start()
+        t.join(timeout=_LOAD_TIMEOUT_S)
+
+        if t.is_alive():
+            _LOAD_FAILED_MSG = "模型加载超时"
             _emit_progress("error", 0, _LOAD_FAILED_MSG)
             _log(_LOAD_FAILED_MSG)
             raise RuntimeError(_LOAD_FAILED_MSG)
-        except Exception as e:
-            _LOAD_FAILED_MSG = f"Model load failed: {e}"
+
+        if load_result.get("error"):
+            _LOAD_FAILED_MSG = load_result["error"]
             _emit_progress("error", 0, _LOAD_FAILED_MSG)
             _log(_LOAD_FAILED_MSG)
             raise RuntimeError(_LOAD_FAILED_MSG)
+
+        if load_result.get("ok"):
+            _model = load_result["model"]
+            _preprocess = load_result["preprocess"]
+            _device = load_result["device"]
 
 
 def _preprocess_image(image_data: bytes):
@@ -130,6 +155,15 @@ def _decode_base64_image(b64_string: str) -> bytes:
     return base64.b64decode(b64_string)
 
 
+def _handle_reset_model():
+    global _LOAD_FAILED_MSG, _load_progress
+    _LOAD_FAILED_MSG = None
+    _load_progress = {"status": "idle", "percent": 0, "message": ""}
+    _emit_progress("idle", 0, "")
+    _log("Model state reset for retry")
+    return {"ok": True}
+
+
 def execute(method: str, params: dict):
     if method == "ai_search.loadModel":
         return _handle_load_model()
@@ -139,6 +173,8 @@ def execute(method: str, params: dict):
         return _handle_extract_features(params)
     elif method == "ai_search.extractFeaturesFromPath":
         return _handle_extract_features_from_path(params)
+    elif method == "ai_search.resetModel":
+        return _handle_reset_model()
     else:
         raise ValueError(f"Unknown ai_search method: {method}")
 

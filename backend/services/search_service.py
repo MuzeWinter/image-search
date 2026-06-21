@@ -354,6 +354,8 @@ def execute(method: str, params: dict):
         }
     elif method == "search.modelStatus":
         return _handle_model_status()
+    elif method == "search.resetModel":
+        return _handle_reset_model()
     elif method == "search.listEmbeddings":
         return _handle_list_embeddings(params)
     elif method == "search.deleteEmbedding":
@@ -627,3 +629,9 @@ def _handle_model_status():
         "device": _device,
         "error": _LOAD_FAILED_MSG,
     }
+
+
+def _handle_reset_model():
+    """重置 AI 模型失败状态以支持手动重试"""
+    from backend.services.ai_service import _handle_reset_model as _ai_reset
+    return _ai_reset()

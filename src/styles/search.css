@@ -442,6 +442,7 @@
 }
 
 .search-result-item {
+  position: relative;
   display: flex;
   gap: var(--space-4);
   background: var(--surface);
@@ -804,6 +805,37 @@
   text-align: center;
 }
 
+/* === Bookmark Star === */
+.search-result-bookmark {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 4px;
+  color: var(--muted);
+  transition: color 0.15s, transform 0.15s;
+  z-index: 1;
+  border-radius: var(--radius-sm);
+}
+
+.search-result-bookmark:hover {
+  color: oklch(62% 0.16 75);
+  transform: scale(1.2);
+}
+
+.search-result-bookmark.bookmarked {
+  color: oklch(62% 0.16 75);
+}
+
+[data-theme="dark"] .search-result-bookmark:hover,
+[data-theme="dark"] .search-result-bookmark.bookmarked {
+  color: oklch(72% 0.18 80);
+}
+
 /* === Source Badge === */
 .search-result-source-badge {
   font-size: 11px;
@@ -1153,6 +1185,23 @@
 
 .search-results-list.grid-view .search-result-actions {
   display: none;
+}
+
+.search-results-list.grid-view .search-result-bookmark {
+  top: var(--space-2);
+  right: var(--space-2);
+  font-size: 20px;
+  background: oklch(0% 0 0 / 0.25);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="dark"] .search-results-list.grid-view .search-result-bookmark {
+  background: oklch(0% 0 0 / 0.45);
 }
 
 /* === Pagination === */

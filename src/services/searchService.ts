@@ -172,6 +172,10 @@ export async function getModelStatus(): Promise<ModelStatus> {
   return callBackend<ModelStatus>("search.modelStatus");
 }
 
+export async function resetModel(): Promise<{ ok: boolean }> {
+  return callBackend<{ ok: boolean }>("search.resetModel");
+}
+
 export async function deleteEmbedding(
   imgId: string,
 ): Promise<{ ok: boolean; deleted: string }> {

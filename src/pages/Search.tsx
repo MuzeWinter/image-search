@@ -96,6 +96,12 @@ export default function Search() {
   const [history, setHistory] = useState<SearchHistoryItem[]>(() => getHistory());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingSearchRef = useRef<{
+    type: "base64" | "path";
+    base64?: string;
+    path?: string;
+    url: string;
+  } | null>(null);
   const escapeEpoch = useAtomValue(escapeEpochAtom);
   const setSplash = useSetAtom(splashStateAtom);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -119,6 +125,37 @@ export default function Search() {
   useEffect(() => {
     localStorage.setItem("searchThumbSize", thumbSize);
   }, [thumbSize]);
+
+  const BOOKMARKS_KEY = "searchBookmarks";
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(BOOKMARKS_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) return new Set(arr);
+      }
+    } catch {}
+    return new Set<string>();
+  });
+
+  useEffect(() => {
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([...bookmarkedIds]));
+  }, [bookmarkedIds]);
+
+  const [bookmarkFilter, setBookmarkFilter] = useState(false);
+
+  const toggleBookmark = useCallback((imgId: string) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(imgId)) {
+        next.delete(imgId);
+      } else {
+        next.add(imgId);
+      }
+      return next;
+    });
+  }, []);
+
   const { data: stats } = useServiceQuery<SystemStats>("dbService", "db.getStats");
   const [ctxMenu, setCtxMenu] = useState<{
     visible: boolean;
@@ -140,6 +177,10 @@ export default function Search() {
         (item.sheet_name && item.sheet_name.toLowerCase().includes(q)) ||
         (item.ocr_text && item.ocr_text.toLowerCase().includes(q))
       );
+    }
+
+    if (bookmarkFilter) {
+      items = items.filter(item => bookmarkedIds.has(item.img_id));
     }
 
     const sorted = [...items];
@@ -165,7 +206,7 @@ export default function Search() {
     }
 
     return sorted;
-  }, [results, filterText, sortBy]);
+  }, [results, filterText, sortBy, bookmarkFilter, bookmarkedIds]);
 
   // Reset page when filter, sort, or results change
   useEffect(() => {
@@ -206,8 +247,17 @@ export default function Search() {
   }, [escapeEpoch]);
 
   const waitForModel = useCallback((): Promise<void> => {
+    const MODEL_POLL_TIMEOUT_MS = 130_000;
     return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+
       const poll = async () => {
+        if (Date.now() - startTime > MODEL_POLL_TIMEOUT_MS) {
+          if (modelPollRef.current) clearInterval(modelPollRef.current);
+          modelPollRef.current = null;
+          reject(new Error("MODEL_TIMEOUT"));
+          return;
+        }
         try {
           const status = await searchService.getModelStatus();
           setModelPercent(status.percent);
@@ -245,19 +295,32 @@ export default function Search() {
     setResults(null);
     setSelectedIds(new Set());
     setFilterText("");
+    pendingSearchRef.current = { type: "base64", base64, url: displayUrl };
 
     // Check model status first
+    let modelFailed = false;
     try {
       const initialStatus = await searchService.getModelStatus();
       if (initialStatus.status !== "ready") {
         setState("model-loading");
         setModelPercent(initialStatus.percent);
         setModelMsg(initialStatus.message);
-        await waitForModel();
+        try {
+          await waitForModel();
+        } catch (modelErr) {
+          modelFailed = true;
+          setState("error");
+          const msg = modelErr instanceof Error ? modelErr.message : String(modelErr);
+          setErrorMsg(msg);
+          addToast("error", msg === "MODEL_TIMEOUT" ? t("search.modelTimeout") : msg);
+          return;
+        }
       }
     } catch {
       // If can't reach backend for status, try search anyway
     }
+
+    if (modelFailed) return;
 
     setState("searching");
 
@@ -265,6 +328,7 @@ export default function Search() {
       const searchResults = await searchService.searchByImage(base64, 30, searchScope, selectedLibraryId ?? undefined);
       setResults(searchResults);
       setState("done");
+      pendingSearchRef.current = null;
 
       // Save to search history
       createThumbnail(base64).then((thumb) => {
@@ -288,7 +352,7 @@ export default function Search() {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       addToast("error", e instanceof Error ? e.message : String(e));
     }
-  }, [searchScope, selectedLibraryId, waitForModel, addToast]);
+  }, [searchScope, selectedLibraryId, waitForModel, addToast, t]);
 
   const doSearchByPath = useCallback(async (filePath: string) => {
     setPreviewUrl(fileToUrl(filePath) || "");
@@ -296,18 +360,31 @@ export default function Search() {
     setResults(null);
     setSelectedIds(new Set());
     setFilterText("");
+    pendingSearchRef.current = { type: "path", path: filePath, url: fileToUrl(filePath) || "" };
 
+    let modelFailed = false;
     try {
       const initialStatus = await searchService.getModelStatus();
       if (initialStatus.status !== "ready") {
         setState("model-loading");
         setModelPercent(initialStatus.percent);
         setModelMsg(initialStatus.message);
-        await waitForModel();
+        try {
+          await waitForModel();
+        } catch (modelErr) {
+          modelFailed = true;
+          setState("error");
+          const msg = modelErr instanceof Error ? modelErr.message : String(modelErr);
+          setErrorMsg(msg);
+          addToast("error", msg === "MODEL_TIMEOUT" ? t("search.modelTimeout") : msg);
+          return;
+        }
       }
     } catch {
       // If can't reach backend for status, try search anyway
     }
+
+    if (modelFailed) return;
 
     setState("searching");
 
@@ -315,6 +392,7 @@ export default function Search() {
       const searchResults = await searchService.searchByPath(filePath, 30, searchScope, selectedLibraryId ?? undefined);
       setResults(searchResults);
       setState("done");
+      pendingSearchRef.current = null;
 
       const updated = addHistory({
         thumbnail: "",
@@ -327,7 +405,29 @@ export default function Search() {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       addToast("error", e instanceof Error ? e.message : String(e));
     }
-  }, [searchScope, selectedLibraryId, waitForModel, addToast]);
+  }, [searchScope, selectedLibraryId, waitForModel, addToast, t]);
+
+  const handleRetryModel = useCallback(async () => {
+    const pending = pendingSearchRef.current;
+    if (!pending) {
+      setState("idle");
+      setErrorMsg("");
+      return;
+    }
+    setErrorMsg("");
+    try {
+      await searchService.resetModel();
+    } catch {
+      // If reset fails, still try to proceed
+    }
+    if (pending.type === "base64" && pending.base64) {
+      doSearch(pending.base64, pending.url);
+    } else if (pending.type === "path" && pending.path) {
+      doSearchByPath(pending.path);
+    } else {
+      setState("idle");
+    }
+  }, [doSearch, doSearchByPath]);
 
   // Respond to --search CLI arg
   const startupSearchPath = useAtomValue(startupSearchPathAtom);
@@ -665,6 +765,13 @@ export default function Search() {
               {t(labelKey)}
             </button>
           ))}
+          <button
+            className={`search-scope-btn ${bookmarkFilter ? "active" : ""}`}
+            onClick={() => setBookmarkFilter((v) => !v)}
+            title={t("search.bookmarkFilter")}
+          >
+            ★ {t("search.bookmarkFilter")}
+          </button>
         </div>
       </div>
 
@@ -706,10 +813,20 @@ export default function Search() {
       {/* Error */}
       {state === "error" && errorMsg && (
         <div className="search-error">
-          <p>{t("common.error")}: {errorMsg}</p>
-          <button className="search-retry-btn" onClick={() => { setState("idle"); setErrorMsg(""); }}>
-            {t("common.retry")}
-          </button>
+          <p>
+            {errorMsg === "MODEL_TIMEOUT"
+              ? t("search.modelTimeout")
+              : `${t("common.error")}: ${errorMsg}`}
+          </p>
+          {errorMsg === "MODEL_TIMEOUT" || errorMsg.includes("Model load failed") || errorMsg.includes("Missing Python package") ? (
+            <button className="search-retry-btn" onClick={handleRetryModel}>
+              {t("common.retry")}
+            </button>
+          ) : (
+            <button className="search-retry-btn" onClick={() => { setState("idle"); setErrorMsg(""); }}>
+              {t("common.retry")}
+            </button>
+          )}
         </div>
       )}
 
@@ -840,7 +957,7 @@ export default function Search() {
             </div>
           )}
 
-          {filteredResults.length === 0 && filterText.trim() ? (
+          {filteredResults.length === 0 && (filterText.trim() || bookmarkFilter) ? (
             <div className="search-filter-empty">
               {t("search.noFilterMatches")}
             </div>
@@ -991,6 +1108,16 @@ export default function Search() {
                     {t("search.openImage")}
                   </button>
                 </div>
+                <button
+                  className={`search-result-bookmark ${bookmarkedIds.has(item.img_id) ? "bookmarked" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleBookmark(item.img_id);
+                  }}
+                  title={bookmarkedIds.has(item.img_id) ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
+                >
+                  {bookmarkedIds.has(item.img_id) ? "★" : "☆"}
+                </button>
               </div>
             ))}
           </div>
@@ -1059,6 +1186,11 @@ export default function Search() {
           {
             label: t("search.openContainingFolder"),
             onClick: () => { openFolder(extractDir(item.image_path)); },
+          },
+          { separator: true },
+          {
+            label: bookmarkedIds.has(item.img_id) ? t("search.bookmarkRemove") : t("search.bookmarkAdd"),
+            onClick: () => { toggleBookmark(item.img_id); },
           },
           { separator: true },
           {
