@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
   "productName": "ZOOBET Search",
-  "buildTimestamp": "2026-06-21T13:15:21.846Z",
-  "buildDurationSeconds": 49,
+  "buildTimestamp": "2026-06-21T13:21:38.459Z",
+  "buildDurationSeconds": 35.3,
   "buildSucceeded": true,
   "platform": "win32",
   "arch": "x64",
@@ -18,8 +18,8 @@
     },
     "nsis": {
       "name": "ZOOBET Search_0.1.0_x64-setup.exe",
-      "size": 4247001,
-      "sizeHuman": "4.05 MB"
+      "size": 4236316,
+      "sizeHuman": "4.04 MB"
     },
     "binary": {
       "name": "zoobet-image-search.exe",

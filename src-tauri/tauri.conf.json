@@ -55,12 +55,9 @@
         "installerIcon": "icons/icon.ico"
       }
     },
-    "resources": [
-      {
-        "path": "backend/",
-        "target": "backend"
-      }
-    ]
+    "resources": {
+      "backend/": "backend/"
+    }
   },
   "plugins": {
     "shell": {
