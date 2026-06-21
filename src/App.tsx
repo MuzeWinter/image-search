@@ -1,4 +1,4 @@
-ï»¿import { Suspense, lazy, useCallback, useEffect, useRef } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -121,7 +121,7 @@ function StartupChangeDetector() {
           setPendingChanges(aggregated);
         }
       } catch {
-        // No libraries yet or service not ready â€” that's fine
+        // No libraries yet or service not ready ¡ª that's fine
       }
     }
 
@@ -161,7 +161,7 @@ function StartupPathValidator() {
               invalidPaths.push(lib.path);
             }
           } catch {
-            // Tauri command unavailable â€” skip
+            // Tauri command unavailable ¡ª skip
           }
         }
 
@@ -175,7 +175,7 @@ function StartupPathValidator() {
           }
         }
       } catch {
-        // No libraries or service not ready â€” fine
+        // No libraries or service not ready ¡ª fine
       }
     }
 
@@ -210,7 +210,7 @@ function ModelLoadingGate() {
         });
 
         if (status.status === "error") {
-          // Model errored â€” hide splash after a brief display
+          // Model errored ¡ª hide splash after a brief display
           const timer = setTimeout(() => {
             if (!cancelled) setSplash({ visible: false, percent: 0, message: "" });
           }, 3000);
@@ -238,11 +238,11 @@ function ModelLoadingGate() {
               }
             }
           } catch {
-            // Backend not reachable â€” ignore
+            // Backend not reachable ¡ª ignore
           }
         }, 500);
       } catch {
-        // Backend not ready yet â€” that's fine, it'll be checked on first search
+        // Backend not ready yet ¡ª that's fine, it'll be checked on first search
       }
     }
 
@@ -297,7 +297,7 @@ function StartupArgHandler() {
 
     const timer = setTimeout(handle, 600);
     return () => clearTimeout(timer);
-  }, [addToast, navigate, setStartupSearchPath]);
+  }, [addToast, navigate, setStartupSearchPath, t]);
 
   return null;
 }
@@ -351,7 +351,7 @@ function FolderWatchManager() {
     };
   }, [setWatchActive, setWatchPathCount]);
 
-  // Listen for file changes â†’ trigger auto-scan
+  // Listen for file changes ¡ú trigger auto-scan
   useEffect(() => {
     let scanInProgress = false;
 
@@ -379,7 +379,7 @@ function FolderWatchManager() {
           }
         }
       } catch {
-        // Silently fail â€” scan errors shown via scan progress UI
+        // Silently fail ¡ª scan errors shown via scan progress UI
       } finally {
         scanInProgress = false;
       }
