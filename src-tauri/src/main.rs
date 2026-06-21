@@ -6,9 +6,12 @@ use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, Command, Stdio};
 use std::panic;
 use std::path::PathBuf;
+use std::sync::mpsc;
 use std::sync::Mutex;
+use std::time::Duration;
 use tauri::Emitter;
 use tauri::Manager;
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 
 #[derive(Debug, Default)]
 struct StartupArgs {
@@ -153,6 +156,11 @@ fn is_position_on_screen(
 static PYTHON_LOCK: Mutex<()> = Mutex::new(());
 static SCAN_CHILD: Mutex<Option<Child>> = Mutex::new(None);
 static BACKEND_FAILURES: Mutex<u32> = Mutex::new(0);
+
+// ── Folder watch state ────────────────────────────────────────
+static FOLDER_WATCHER: Mutex<Option<notify::RecommendedWatcher>> = Mutex::new(None);
+static DEBOUNCE_TX: Mutex<Option<mpsc::Sender<()>>> = Mutex::new(None);
+static WATCHED_PATHS: Mutex<Vec<String>> = Mutex::new(vec![]);
 
 const DEFAULT_MAX_RETRIES: u32 = 2;
 const DEFAULT_RETRY_DELAY_MS: u64 = 500;
@@ -548,6 +556,140 @@ fn open_folder(path: String) -> Result<(), String> {
     Ok(())
 }
 
+fn stop_watcher_internal() {
+    // Drop the debounce sender, which signals the debounce thread to exit
+    if let Ok(mut tx_guard) = DEBOUNCE_TX.lock() {
+        *tx_guard = None;
+    }
+    // Drop the watcher
+    if let Ok(mut w_guard) = FOLDER_WATCHER.lock() {
+        *w_guard = None;
+    }
+    if let Ok(mut p_guard) = WATCHED_PATHS.lock() {
+        p_guard.clear();
+    }
+}
+
+#[tauri::command]
+fn start_folder_watch(
+    app_handle: tauri::AppHandle,
+    paths: Vec<String>,
+) -> Result<serde_json::Value, String> {
+    stop_watcher_internal();
+
+    if paths.is_empty() {
+        let _ = app_handle.emit("watch-status-changed", serde_json::json!({
+            "active": false,
+            "paths": [],
+        }));
+        return Ok(serde_json::json!({"status": "no_paths"}));
+    }
+
+    // Filter to existing directories
+    let valid_paths: Vec<String> = paths
+        .iter()
+        .filter(|p| std::path::Path::new(p).is_dir())
+        .cloned()
+        .collect();
+
+    if valid_paths.is_empty() {
+        let _ = app_handle.emit("watch-status-changed", serde_json::json!({
+            "active": false,
+            "paths": [],
+        }));
+        return Ok(serde_json::json!({"status": "no_valid_paths"}));
+    }
+
+    let (tx, rx) = mpsc::channel::<()>();
+    let app_handle_clone = app_handle.clone();
+
+    // Debounce thread: wait for 5s of quiet, then emit event
+    std::thread::spawn(move || {
+        loop {
+            // Wait for first change notification
+            match rx.recv() {
+                Ok(()) => {
+                    // Debounce loop: reset timer on each new change
+                    loop {
+                        match rx.recv_timeout(Duration::from_secs(5)) {
+                            Ok(()) => continue, // Another change — reset debounce
+                            Err(mpsc::RecvTimeoutError::Timeout) => {
+                                // 5 seconds of quiet — fire event
+                                let _ = app_handle_clone.emit(
+                                    "file-change-detected",
+                                    serde_json::json!({}),
+                                );
+                                break;
+                            }
+                            Err(mpsc::RecvTimeoutError::Disconnected) => return,
+                        }
+                    }
+                }
+                Err(_) => return, // Channel closed
+            }
+        }
+    });
+
+    // Create watcher with callback that feeds the debounce channel
+    let tx_clone = tx.clone();
+    let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
+        match res {
+            Ok(event) => {
+                // Only react to file creation and content modification
+                let relevant = matches!(
+                    event.kind,
+                    EventKind::Create(_) | EventKind::Modify(_)
+                );
+                if relevant {
+                    // Non-blocking send — if channel is full or closed, just skip
+                    let _ = tx_clone.send(());
+                }
+            }
+            Err(e) => {
+                eprintln!("[rust] folder watch error: {:?}", e);
+            }
+        }
+    })
+    .map_err(|e| format!("Failed to create folder watcher: {}", e))?;
+
+    // Watch each library path recursively
+    for path in &valid_paths {
+        watcher
+            .watch(std::path::Path::new(path), RecursiveMode::Recursive)
+            .map_err(|e| format!("Failed to watch {}: {}", path, e))?;
+    }
+
+    *FOLDER_WATCHER.lock().map_err(|e| e.to_string())? = Some(watcher);
+    *DEBOUNCE_TX.lock().map_err(|e| e.to_string())? = Some(tx);
+    *WATCHED_PATHS.lock().map_err(|e| e.to_string())? = valid_paths.clone();
+
+    let _ = app_handle.emit("watch-status-changed", serde_json::json!({
+        "active": true,
+        "paths": valid_paths,
+    }));
+
+    Ok(serde_json::json!({"status": "started", "paths": valid_paths}))
+}
+
+#[tauri::command]
+fn stop_folder_watch(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    stop_watcher_internal();
+
+    let _ = app_handle.emit("watch-status-changed", serde_json::json!({
+        "active": false,
+        "paths": [],
+    }));
+
+    Ok(serde_json::json!({"status": "stopped"}))
+}
+
+#[tauri::command]
+fn get_watch_status() -> Result<serde_json::Value, String> {
+    let active = DEBOUNCE_TX.lock().map_err(|e| e.to_string())?.is_some();
+    let paths = WATCHED_PATHS.lock().map_err(|e| e.to_string())?.clone();
+    Ok(serde_json::json!({"active": active, "paths": paths}))
+}
+
 fn main() {
     panic::set_hook(Box::new(|info| {
         let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
@@ -577,7 +719,10 @@ fn main() {
             open_folder,
             write_text_file,
             save_window_state,
-            load_window_state
+            load_window_state,
+            start_folder_watch,
+            stop_folder_watch,
+            get_watch_status
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

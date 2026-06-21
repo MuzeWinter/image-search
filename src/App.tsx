@@ -11,10 +11,12 @@ import { AppShell } from "./AppShell";
 import { Skeleton } from "./components/shared/Skeleton";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 import { SplashScreen } from "./components/SplashScreen";
-import { pendingChangesAtom, splashStateAtom, startupSearchPathAtom, invalidPathsAtom } from "./stores/atoms";
+import { pendingChangesAtom, splashStateAtom, startupSearchPathAtom, invalidPathsAtom, watchActiveAtom, watchPathCountAtom } from "./stores/atoms";
 import * as libraryService from "./services/libraryService";
 import * as scanService from "./services/scanService";
 import * as searchService from "./services/searchService";
+import * as settingsService from "./services/settingsService";
+import { listen } from "@tauri-apps/api/event";
 import { callTauri } from "./services/ipc";
 import type { CheckChangesResult } from "./services/types";
 
@@ -294,6 +296,96 @@ function StartupArgHandler() {
   return null;
 }
 
+function FolderWatchManager() {
+  const setWatchActive = useSetAtom(watchActiveAtom);
+  const setWatchPathCount = useSetAtom(watchPathCountAtom);
+
+  // On startup, restore watch if setting is enabled
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      try {
+        const enabled = await settingsService.get("folder_watch_enabled");
+        if (cancelled || enabled !== "true") return;
+
+        const libs = await libraryService.list();
+        if (cancelled || libs.length === 0) return;
+
+        const paths = libs.map((l) => l.path);
+        const result = await scanService.startFolderWatch(paths);
+        if (cancelled) return;
+        if (result.active) {
+          setWatchActive(true);
+          setWatchPathCount(result.paths.length);
+        }
+      } catch {
+        // Folder watch not available or backend not ready
+      }
+    }
+
+    const timer = setTimeout(init, 1200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [setWatchActive, setWatchPathCount]);
+
+  // Listen for watch status changes
+  useEffect(() => {
+    const unlisten = listen<{ active: boolean; paths: string[] }>(
+      "watch-status-changed",
+      (event) => {
+        setWatchActive(event.payload.active);
+        setWatchPathCount(event.payload.paths.length);
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [setWatchActive, setWatchPathCount]);
+
+  // Listen for file changes → trigger auto-scan
+  useEffect(() => {
+    let scanInProgress = false;
+
+    const unlisten = listen("file-change-detected", async () => {
+      if (scanInProgress) return;
+
+      try {
+        scanInProgress = true;
+        const libs = await libraryService.list();
+
+        for (const lib of libs) {
+          if (lib.status === "ready" || lib.status === "idle") {
+            // Pause watch briefly during scan to avoid cascade
+            await scanService.stopFolderWatch().catch(() => {});
+            try {
+              await scanService.startScan(lib.id, lib.path);
+            } finally {
+              // Resume watch after scan
+              if (libs.length > 0) {
+                const paths = libs.map((l) => l.path);
+                await scanService.startFolderWatch(paths).catch(() => {});
+              }
+            }
+          }
+        }
+      } catch {
+        // Silently fail — scan errors shown via scan progress UI
+      } finally {
+        scanInProgress = false;
+      }
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  return null;
+}
+
 export function App() {
   const splash = useAtomValue(splashStateAtom);
 
@@ -307,6 +399,7 @@ export function App() {
               <StartupPathValidator />
               <ModelLoadingGate />
               <StartupArgHandler />
+              <FolderWatchManager />
               <WelcomeGate />
               <Routes>
                 <Route path="/" element={<AppShell />}>

@@ -5,6 +5,8 @@ import { useTheme, type Theme } from "../contexts/ThemeContext";
 import * as settingsService from "../services/settingsService";
 import { getDbStats, optimizeDb } from "../services/settingsService";
 import { getLogs, type ActivityLog } from "../services/dbService";
+import * as libraryService from "../services/libraryService";
+import * as scanService from "../services/scanService";
 import { callBackend } from "../services/ipc";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { open } from "@tauri-apps/plugin-shell";
@@ -49,6 +51,7 @@ export default function Settings() {
   const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
   const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
   const [newExt, setNewExt] = useState("");
+  const [autoMonitor, setAutoMonitor] = useState(false);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logFilter, setLogFilter] = useState("");
   const [logLoading, setLogLoading] = useState(false);
@@ -67,6 +70,14 @@ export default function Settings() {
         } catch { /* use defaults */ }
       }
     }).catch(() => { /* use defaults */ });
+  }, []);
+
+  useEffect(() => {
+    settingsService.get("folder_watch_enabled").then((val) => {
+      if (val === "true") {
+        setAutoMonitor(true);
+      }
+    }).catch(() => { /* use default (off) */ });
   }, []);
 
   useEffect(() => {
@@ -124,6 +135,22 @@ export default function Settings() {
     const next = scanExtensions.filter((e) => e !== ext);
     setScanExtensions(next);
     saveExtensions(next);
+  };
+
+  const handleAutoMonitorToggle = async (enabled: boolean) => {
+    setAutoMonitor(enabled);
+    try {
+      await settingsService.set("folder_watch_enabled", String(enabled));
+      if (enabled) {
+        const libs = await libraryService.list();
+        const paths = libs.map((l) => l.path);
+        await scanService.startFolderWatch(paths);
+      } else {
+        await scanService.stopFolderWatch();
+      }
+    } catch {
+      // Best-effort
+    }
   };
 
   const displayExtensions = [...new Set([...DEFAULT_SCAN_EXTENSIONS, ...scanExtensions])];
@@ -303,7 +330,10 @@ export default function Settings() {
         settingsService.set("theme", "light"),
         settingsService.set("locale", "zh"),
         settingsService.set("scan_extensions", JSON.stringify(DEFAULT_SCAN_EXTENSIONS)),
+        settingsService.set("folder_watch_enabled", "false"),
       ]);
+      // Stop folder watch if active
+      scanService.stopFolderWatch().catch(() => {});
     } catch {
       // Best-effort: some DB settings may not have been stored yet
     }
@@ -382,6 +412,23 @@ export default function Settings() {
             <button className="settings-btn-primary" onClick={handleUgColumnSave}>
               {t("common.save")}
             </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{t("settings.autoMonitor")}</label>
+          <div className="settings-toggle-group">
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={autoMonitor}
+                onChange={(e) => handleAutoMonitorToggle(e.target.checked)}
+              />
+              <span className="settings-toggle-slider" />
+            </label>
+            <span className="settings-toggle-desc">
+              {t("settings.autoMonitorDesc")}
+            </span>
           </div>
         </div>
 

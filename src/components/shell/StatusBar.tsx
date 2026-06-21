@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../i18n/context";
 import { useServiceQuery } from "../../stores/hooks";
-import { pendingChangesAtom, invalidPathsAtom } from "../../stores/atoms";
+import { pendingChangesAtom, invalidPathsAtom, watchActiveAtom, watchPathCountAtom } from "../../stores/atoms";
 import * as libraryService from "../../services/libraryService";
 import * as scanService from "../../services/scanService";
 import type { SystemStats } from "../../services/types";
@@ -18,6 +18,8 @@ export function StatusBar() {
   const pendingChanges = useAtomValue(pendingChangesAtom);
   const setPendingChanges = useSetAtom(pendingChangesAtom);
   const invalidPaths = useAtomValue(invalidPathsAtom);
+  const watchActive = useAtomValue(watchActiveAtom);
+  const watchPathCount = useAtomValue(watchPathCountAtom);
 
   const hasChanges =
     pendingChanges &&
@@ -69,6 +71,11 @@ export function StatusBar() {
           {t("statusBar.pathsMissing", { count: invalidCount })}
         </button>
       )}
+      {watchActive && (
+        <span className="statusbar-item statusbar-watching" title={t("settings.autoMonitorDesc")}>
+          {t("statusBar.watching", { count: watchPathCount })}
+        </span>
+      )}
       {hasChanges ? (
         <button
           className="statusbar-item statusbar-changes"
@@ -79,7 +86,7 @@ export function StatusBar() {
         </button>
       ) : (
         <span className="statusbar-item statusbar-tasks">
-          {t("statusBar.tasks")}: {t("statusBar.idle")}
+          {t("statusBar.tasks")}: {watchActive ? t("statusBar.watching", { count: watchPathCount }) : t("statusBar.idle")}
         </span>
       )}
     </footer>

@@ -15,6 +15,7 @@ import type { ContextMenuItem } from "../components/shared/ContextMenu";
 import LazyThumbnail from "../components/shared/LazyThumbnail";
 import { Tooltip } from "../components/shared/Tooltip";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
+import ImageCompareModal from "../components/shared/ImageCompareModal";
 import { escapeEpochAtom, splashStateAtom, startupSearchPathAtom } from "../stores/atoms";
 import { useServiceQuery } from "../stores/hooks";
 import type { SystemStats } from "../services/types";
@@ -105,6 +106,7 @@ export default function Search() {
   const escapeEpoch = useAtomValue(escapeEpochAtom);
   const setSplash = useSetAtom(splashStateAtom);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [compareItems, setCompareItems] = useState<[SearchResultItem, SearchResultItem] | null>(null);
   const [filterText, setFilterText] = useState("");
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(0);
@@ -632,6 +634,15 @@ export default function Search() {
     addToast("success", t("search.batchPathsCopied", { count: String(selected.length) }));
   }, [getSelectedItems, t, addToast]);
 
+  const handleBatchCompare = useCallback(() => {
+    const selected = getSelectedItems();
+    if (selected.length !== 2) {
+      addToast("warning", t("search.compareNeedTwo"));
+      return;
+    }
+    setCompareItems([selected[0], selected[1]]);
+  }, [getSelectedItems, t, addToast]);
+
   const showDropZone = state === "idle" || state === "done" || state === "error";
 
   return (
@@ -950,6 +961,9 @@ export default function Search() {
                 <button className="search-batch-btn" onClick={handleBatchCopyPaths}>
                   {t("search.batchCopyPaths")}
                 </button>
+                <button className="search-batch-btn" onClick={handleBatchCompare}>
+                  {t("search.batchCompare")}
+                </button>
                 <button className="search-batch-btn" onClick={clearSelection}>
                   {t("search.batchClearSelection")}
                 </button>
@@ -1173,6 +1187,16 @@ export default function Search() {
             className="search-hover-preview-img"
           />
         </div>
+      )}
+
+      {/* Image compare modal */}
+      {compareItems && (
+        <ImageCompareModal
+          open={true}
+          itemA={compareItems[0]}
+          itemB={compareItems[1]}
+          onClose={() => setCompareItems(null)}
+        />
       )}
 
       {/* Context menu */}

@@ -40,6 +40,25 @@ export async function startScan(
   });
 }
 
+// ── Folder watch ──────────────────────────────────────────────
+
+export interface WatchStatus {
+  active: boolean;
+  paths: string[];
+}
+
+export async function startFolderWatch(paths: string[]): Promise<WatchStatus> {
+  return callTauri<WatchStatus>("start_folder_watch", { paths });
+}
+
+export async function stopFolderWatch(): Promise<{ status: string }> {
+  return callTauri<{ status: string }>("stop_folder_watch");
+}
+
+export async function getWatchStatus(): Promise<WatchStatus> {
+  return callTauri<WatchStatus>("get_watch_status");
+}
+
 export async function cancelScan(): Promise<{ cancelled: boolean }> {
   return callTauri<{ cancelled: boolean }>("cancel_scan");
 }
