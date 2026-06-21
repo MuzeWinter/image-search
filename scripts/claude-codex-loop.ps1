@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$ProjectRoot = "",
   [string]$QueueDir = "docs/claude-tasks/queue",
   [string]$DoneDir = "docs/claude-tasks/done",
@@ -60,7 +60,11 @@ function Move-TaskFile {
   Ensure-Directory $TargetDir
   $name = [System.IO.Path]::GetFileNameWithoutExtension($SourcePath)
   $target = Join-Path $TargetDir ("{0}-{1}.md" -f $name, $Suffix)
-  Move-Item -LiteralPath $SourcePath -Destination $target
+  if (Test-Path -LiteralPath $SourcePath) {
+    Move-Item -LiteralPath $SourcePath -Destination $target -ErrorAction Stop
+  } else {
+    Write-Host "  (task file already moved, skipping Move-Item)"
+  }
   $target
 }
 
@@ -219,3 +223,4 @@ while ($tasks.Count -gt 0) {
 }
 
 Write-Step "Loop finished. Processed tasks: $processed"
+
