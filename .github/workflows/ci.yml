@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  verify:
     name: Build & Verify (Windows)
     runs-on: windows-latest
 
@@ -15,6 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ---- Node.js / Frontend ----
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -24,18 +29,26 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: ESLint
+        run: npx eslint .
+
       - name: TypeScript type-check
         run: npx tsc --noEmit
 
       - name: Vite production build
         run: npx vite build
 
+      - name: Vitest (frontend tests)
+        run: npx vitest run
+
+      # ---- Rust / Tauri ----
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          components: clippy
 
-      - name: Cache Rust build
+      - name: Cache Rust
         uses: actions/cache@v4
         with:
           path: |
@@ -48,10 +61,30 @@ jobs:
       - name: Cargo build
         run: cargo build --manifest-path src-tauri/Cargo.toml
 
+      - name: Cargo clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+
+      - name: Cargo test
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      # ---- Python / Backend ----
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
 
       - name: Python syntax check
-        run: python -m py_compile backend/main.py
+        run: python -m py_compile backend/main.py && python -m compileall -q backend/
+
+      - name: mypy (static type check)
+        run: python -m mypy backend/
+
+      - name: pytest (backend tests)
+        run: python -m pytest backend/tests/ -v
