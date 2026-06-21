@@ -49,3 +49,6 @@ export const scanPhaseAtom = atom<ScanPhase>("idle");
 
 /** Whether the global search dialog (Ctrl+Shift+F) is open */
 export const globalSearchOpenAtom = atom(false);
+
+/** Whether the keyboard shortcuts help dialog (Ctrl+/) is open */
+export const shortcutsHelpOpenAtom = atom(false);

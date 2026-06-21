@@ -1,0 +1,97 @@
+.shortcuts-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.shortcuts-help-dialog {
+  width: 420px;
+  max-width: 92vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+
+.shortcuts-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.shortcuts-help-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+}
+
+.shortcuts-help-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.shortcuts-help-close:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.shortcuts-help-list {
+  padding: var(--space-3) var(--space-5);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.shortcuts-help-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.shortcuts-help-item:last-child {
+  border-bottom: none;
+}
+
+.shortcuts-help-keys {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--surface-raised);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  letter-spacing: 0.02em;
+}
+
+.shortcuts-help-label {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.shortcuts-help-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-width) solid var(--border);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  text-align: center;
+}

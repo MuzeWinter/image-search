@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSetAtom } from "jotai";
-import { escapeEpochAtom, globalSearchOpenAtom } from "../stores/atoms";
+import { escapeEpochAtom, globalSearchOpenAtom, shortcutsHelpOpenAtom } from "../stores/atoms";
 
 export function useKeyboardShortcuts() {
   const navigate = useNavigate();
   const fireEscape = useSetAtom(escapeEpochAtom);
   const setGlobalSearchOpen = useSetAtom(globalSearchOpenAtom);
+  const setShortcutsHelpOpen = useSetAtom(shortcutsHelpOpenAtom);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -19,14 +20,31 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Ctrl+/: toggle shortcuts help — works everywhere, even in inputs
+      if (ctrl && (e.key === "/" || e.code === "Slash")) {
+        e.preventDefault();
+        setShortcutsHelpOpen((prev) => !prev);
+        return;
+      }
+
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toLowerCase();
 
-      // Don't trigger shortcuts when focus is in an input field
-      if (tagName === "input" || tagName === "textarea" || tagName === "select") {
+      const isInput =
+        tagName === "input" ||
+        tagName === "textarea" ||
+        tagName === "select" ||
+        target.isContentEditable;
+
+      // ? key — open shortcuts help (only outside inputs)
+      if (e.key === "?" && !ctrl && !e.metaKey && !e.altKey && !isInput) {
+        e.preventDefault();
+        setShortcutsHelpOpen((prev) => !prev);
         return;
       }
-      if (target.isContentEditable) {
+
+      // Don't trigger remaining shortcuts when focus is in an input field
+      if (isInput) {
         return;
       }
 
@@ -47,5 +65,5 @@ export function useKeyboardShortcuts() {
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [navigate, fireEscape, setGlobalSearchOpen]);
+  }, [navigate, fireEscape, setGlobalSearchOpen, setShortcutsHelpOpen]);
 }

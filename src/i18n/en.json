@@ -321,5 +321,16 @@
     "step4Title": "Ready!",
     "step4Desc": "You are all set! You can:\n• Drag an image on the Search page for AI similarity search\n• Browse and manage all images in Library\n• Modify settings anytime",
     "step4Start": "Start Using"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "navSearch": "Go to Image Search",
+    "navLibrary": "Go to Library Manager",
+    "navSettings": "Go to Settings",
+    "pasteSearch": "Paste image to search",
+    "globalSearch": "Global file search",
+    "toggleHelp": "Toggle shortcuts help",
+    "escapeCancel": "Cancel / Close current action",
+    "footerHint": "Press Esc or click outside to close"
   }
 }

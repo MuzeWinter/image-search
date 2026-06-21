@@ -321,5 +321,16 @@
     "step4Title": "准备就绪！",
     "step4Desc": "一切就绪！您可以：\n• 在搜索页拖入图片进行 AI 相似搜索\n• 在资料库浏览和管理所有图片\n• 随时在设置中修改配置",
     "step4Start": "开始使用"
+  },
+  "shortcuts": {
+    "title": "键盘快捷键",
+    "navSearch": "打开图片检索页面",
+    "navLibrary": "打开资料库管理页面",
+    "navSettings": "打开系统设置页面",
+    "pasteSearch": "粘贴图片进行搜索",
+    "globalSearch": "全局文件搜索",
+    "toggleHelp": "显示/隐藏快捷键帮助",
+    "escapeCancel": "取消 / 关闭当前操作",
+    "footerHint": "按 Esc 或点击外部区域关闭"
   }
 }

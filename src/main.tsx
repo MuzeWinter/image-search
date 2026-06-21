@@ -12,6 +12,7 @@ import "./styles/splash.css";
 import "./styles/tooltip.css";
 import "./styles/image-compare.css";
 import "./styles/global-search.css";
+import "./styles/shortcuts-help.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
