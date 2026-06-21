@@ -1,9 +1,9 @@
 {
   "version": "0.1.0",
   "productName": "ZOOBET Search",
-  "buildTimestamp": "2026-06-21T10:42:50.368Z",
-  "buildDurationSeconds": 72.9,
-  "buildSucceeded": false,
+  "buildTimestamp": "2026-06-21T12:17:48.208Z",
+  "buildDurationSeconds": 36.6,
+  "buildSucceeded": true,
   "platform": "win32",
   "arch": "x64",
   "targets": [
@@ -11,16 +11,26 @@
     "nsis"
   ],
   "artifacts": {
+    "msi": {
+      "name": "ZOOBET Search_0.1.0_x64_zh-CN.msi",
+      "size": 5976064,
+      "sizeHuman": "5.70 MB"
+    },
+    "nsis": {
+      "name": "ZOOBET Search_0.1.0_x64-setup.exe",
+      "size": 4239201,
+      "sizeHuman": "4.04 MB"
+    },
     "binary": {
       "name": "zoobet-image-search.exe",
-      "size": 12210176,
-      "sizeHuman": "11.64 MB"
+      "size": 15613440,
+      "sizeHuman": "14.89 MB"
     }
   },
   "verification": {
     "artifactsExist": true,
     "sizeChecksPassed": true,
-    "artifactCount": 1,
+    "artifactCount": 3,
     "overall": "PASS"
   }
 }
