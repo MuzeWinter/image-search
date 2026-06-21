@@ -1,10 +1,12 @@
 ﻿import { useState, useRef, useCallback, useEffect } from "react";
+import { useAtomValue } from "jotai";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
 import { openFile, openFolder } from "../services/systemService";
+import { escapeEpochAtom } from "../stores/atoms";
 
 type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
 
@@ -51,6 +53,7 @@ export default function Search() {
   const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const escapeEpoch = useAtomValue(escapeEpochAtom);
 
   // Cleanup model poll on unmount
   useEffect(() => {
@@ -58,6 +61,18 @@ export default function Search() {
       if (modelPollRef.current) clearInterval(modelPollRef.current);
     };
   }, []);
+
+  // Respond to Escape key: cancel scan, clear search
+  useEffect(() => {
+    if (modelPollRef.current) {
+      clearInterval(modelPollRef.current);
+      modelPollRef.current = null;
+    }
+    setState("idle");
+    setResults(null);
+    setErrorMsg("");
+    setPreviewUrl("");
+  }, [escapeEpoch]);
 
   const waitForModel = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {

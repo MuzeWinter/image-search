@@ -142,7 +142,13 @@ def _extract_images(file_path: str, library_path: str = "") -> dict:
 
         for img in images:
             try:
-                pil_img = img.image
+                # openpyxl >= 3.1 dropped .image; use _data() as fallback
+                if hasattr(img, 'image'):
+                    pil_img = img.image
+                else:
+                    from io import BytesIO
+                    from PIL import Image as _PILImage
+                    pil_img = _PILImage.open(BytesIO(img._data()))
                 if pil_img is None:
                     continue
 
@@ -167,7 +173,16 @@ def _extract_images(file_path: str, library_path: str = "") -> dict:
                 pil_img.save(img_path, format=fmt)
 
                 img_size = os.path.getsize(img_path)
-                cell_ref = str(img.anchor) if hasattr(img, 'anchor') else ''
+                # Extract cell ref from anchor (avoid str() — broken in openpyxl 3.1+Python 3.13)
+                cell_ref = ''
+                if hasattr(img, 'anchor') and img.anchor is not None:
+                    try:
+                        a = img.anchor
+                        if hasattr(a, '_from'):
+                            col_letter = _col_letter(a._from.col + 1)
+                            cell_ref = f"{col_letter}{a._from.row + 1}"
+                    except Exception:
+                        pass
 
                 conn.execute(
                     """INSERT OR REPLACE INTO images

@@ -151,7 +151,13 @@ def _extract_excel_images(filepath: str, library_path: str) -> int:
 
         for img in images:
             try:
-                pil_img = img.image
+                # openpyxl >= 3.1 dropped .image; use _data() as fallback
+                if hasattr(img, 'image'):
+                    pil_img = img.image
+                else:
+                    from io import BytesIO
+                    from PIL import Image as _PILImage
+                    pil_img = _PILImage.open(BytesIO(img._data()))
                 if pil_img is None:
                     continue
 

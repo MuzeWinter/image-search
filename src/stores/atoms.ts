@@ -16,3 +16,6 @@ export const themeAtom = atomWithStorage<"light" | "dark" | "system">(
 );
 
 export const localeAtom = atomWithStorage<"zh" | "en">("locale", "zh");
+
+/** Incremented on each Escape keypress to signal cancel/clear to pages */
+export const escapeEpochAtom = atom(0);

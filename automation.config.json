@@ -21,6 +21,11 @@
       "required": true
     },
     {
+      "name": "Scan flow verification",
+      "command": "python backend/scripts/verify_scan_flow.py",
+      "required": true
+    },
+    {
       "name": "Git status",
       "command": "git status --short",
       "required": true
