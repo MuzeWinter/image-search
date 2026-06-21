@@ -164,7 +164,13 @@
     },
     "exportSuccess": "CSV 导出成功",
     "exportFailed": "导出失败",
-    "exportCancelled": "已取消导出"
+    "exportCancelled": "已取消导出",
+    "selectedCount": "已选择 {count} 项",
+    "batchOpenFolders": "批量打开文件夹",
+    "batchExportCsv": "导出选中",
+    "batchCopyPaths": "复制路径",
+    "batchClearSelection": "取消选择",
+    "batchPathsCopied": "已复制 {count} 个路径"
   },
   "libraries": {
     "add": "添加资料库",
@@ -211,7 +217,16 @@
     "autoIndexed": "自动索引",
     "emptyIcon": "📁",
     "emptyTitle": "暂无资料库",
-    "emptyDesc": "添加资料库文件夹以开始扫描和索引文件。"
+    "emptyDesc": "添加资料库文件夹以开始扫描和索引文件。",
+    "dropHint": "拖放文件夹以添加为资料库",
+    "alreadyExists": "资料库已存在: {path}"
+  },
+  "splash": {
+    "appName": "ZOOBET 智能检索",
+    "version": "v{version}",
+    "preparing": "正在准备 AI 模型...",
+    "loadingModel": "加载模型中",
+    "startingBackend": "正在启动后端服务..."
   },
   "welcome": {
     "step1Title": "欢迎使用 ZOOBET 智能检索",

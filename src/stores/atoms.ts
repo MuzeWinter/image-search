@@ -22,3 +22,10 @@ export const escapeEpochAtom = atom(0);
 
 /** Aggregated pending change counts across all libraries (auto-detected on startup) */
 export const pendingChangesAtom = atom<CheckChangesResult | null>(null);
+
+/** Splash screen state for model loading progress */
+export const splashStateAtom = atom<{
+  visible: boolean;
+  percent: number;
+  message: string;
+}>({ visible: false, percent: 0, message: "" });

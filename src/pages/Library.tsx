@@ -9,6 +9,7 @@ import { Skeleton } from "../components/shared/Skeleton";
 import { InlineError } from "../components/shared/InlineError";
 import { EmptyState, LibraryEmptyIcon } from "../components/shared/EmptyState";
 import type { UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
 
@@ -21,6 +22,9 @@ export default function LibraryPage() {
   const [scanPhase, setScanPhase] = useState<ScanPhase>("idle");
   const [scanProgress, setScanProgress] = useState<ScanProgress | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const dragOverRef = useRef(false);
   const unlistenRef = useRef<UnlistenFn | null>(null);
 
   const {
@@ -38,6 +42,43 @@ export default function LibraryPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    let dropUnlisten: UnlistenFn | undefined;
+    getCurrentWindow().onDragDropEvent(async (event) => {
+      const payload = event.payload;
+      if (payload.type === "drop") {
+        setDragOver(false);
+        dragOverRef.current = false;
+        if (!listRef.current) return;
+        const rect = listRef.current.getBoundingClientRect();
+        const sx = payload.position.x / window.devicePixelRatio;
+        const sy = payload.position.y / window.devicePixelRatio;
+        const overList = sx >= rect.left && sx <= rect.right && sy >= rect.top && sy <= rect.bottom;
+        if (!overList || payload.paths.length === 0) return;
+
+        for (const filePath of payload.paths) {
+          try {
+            await libraryService.add(filePath);
+            addToast("success", t("libraries.added"));
+            refetchLibs();
+          } catch (e) {
+            const errMsg = e instanceof Error ? e.message : String(e);
+            if (!errMsg.toLowerCase().includes("already exists") && !errMsg.includes("已存在")) {
+              addToast("error", errMsg);
+            } else {
+              addToast("warning", t("libraries.alreadyExists", { path: filePath }));
+            }
+          }
+        }
+      }
+    }).then((fn) => {
+      dropUnlisten = fn;
+    });
+    return () => {
+      if (dropUnlisten) dropUnlisten();
+    };
+  }, [t, addToast, refetchLibs]);
 
   const startListening = useCallback(async () => {
     if (unlistenRef.current) {
@@ -330,7 +371,35 @@ export default function LibraryPage() {
       )}
 
       {/* Library List */}
-      <section className="library-list-section">
+      <section
+        className={`library-list-section${dragOver ? " drag-over" : ""}`}
+        ref={listRef}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "link";
+          if (!dragOverRef.current) {
+            dragOverRef.current = true;
+            setDragOver(true);
+          }
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            dragOverRef.current = false;
+            setDragOver(false);
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          dragOverRef.current = false;
+          setDragOver(false);
+        }}
+      >
+        {dragOver && (
+          <div className="library-drop-overlay">
+            <span className="library-drop-icon">📁</span>
+            <p className="library-drop-text">{t("libraries.dropHint")}</p>
+          </div>
+        )}
         {libsLoading ? (
           <Skeleton variant="card" height={160} />
         ) : libraries && libraries.length > 0 ? (

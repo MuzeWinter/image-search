@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useCallback, useEffect } from "react";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useI18n } from "../i18n/context";
@@ -11,7 +11,7 @@ import { openFile, openFolder } from "../services/systemService";
 import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
-import { escapeEpochAtom } from "../stores/atoms";
+import { escapeEpochAtom, splashStateAtom } from "../stores/atoms";
 import {
   getHistory,
   addHistory,
@@ -74,6 +74,8 @@ export default function Search() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const escapeEpoch = useAtomValue(escapeEpochAtom);
+  const setSplash = useSetAtom(splashStateAtom);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [ctxMenu, setCtxMenu] = useState<{
     visible: boolean;
     x: number;
@@ -87,6 +89,15 @@ export default function Search() {
       if (modelPollRef.current) clearInterval(modelPollRef.current);
     };
   }, []);
+
+  // Sync model-loading state to splash screen atom
+  useEffect(() => {
+    if (state === "model-loading") {
+      setSplash({ visible: true, percent: modelPercent, message: modelMsg });
+    } else {
+      setSplash((prev) => (prev.visible ? { visible: false, percent: 0, message: "" } : prev));
+    }
+  }, [state, modelPercent, modelMsg, setSplash]);
 
   // Respond to Escape key: cancel scan, clear search
   useEffect(() => {
@@ -133,6 +144,7 @@ export default function Search() {
     setPreviewUrl(displayUrl);
     setErrorMsg("");
     setResults(null);
+    setSelectedIds(new Set());
 
     // Check model status first
     try {
@@ -286,6 +298,89 @@ export default function Search() {
       addToast("error", t("search.exportFailed"));
     }
   }, [results, t, addToast]);
+
+  const toggleSelect = useCallback((imgId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(imgId)) {
+        next.delete(imgId);
+      } else {
+        next.add(imgId);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const getSelectedItems = useCallback((): SearchResultItem[] => {
+    if (!results) return [];
+    return results.results.filter((item) => selectedIds.has(item.img_id));
+  }, [results, selectedIds]);
+
+  const handleBatchOpenFolders = useCallback(async () => {
+    const selected = getSelectedItems();
+    for (const item of selected) {
+      openFolder(extractDir(item.image_path));
+    }
+  }, [getSelectedItems]);
+
+  const handleBatchExportCsv = useCallback(async () => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+
+    const filePath = await save({
+      defaultPath: "search_results.csv",
+      filters: [{ name: "CSV Files", extensions: ["csv"] }],
+    });
+
+    if (!filePath) return;
+
+    try {
+      const headers = [
+        t("search.csvColumn.rank"),
+        t("search.csvColumn.imageId"),
+        t("search.csvColumn.sourceType"),
+        t("search.csvColumn.similarity"),
+        t("search.csvColumn.filePath"),
+        t("search.csvColumn.ugNumber"),
+        t("search.csvColumn.sheet"),
+        t("search.csvColumn.row"),
+      ];
+
+      const rows = selected.map((item, idx) => [
+        String(idx + 1),
+        item.img_id,
+        sourceTypeLabel(item.source_type),
+        formatSimilarity(item.similarity),
+        item.image_path,
+        item.ug_ref ?? "",
+        item.sheet_name ?? "",
+        item.row_number != null ? String(item.row_number) : "",
+      ]);
+
+      const bom = "﻿";
+      const csvLines = [
+        headers.map(escapeCsvField).join(","),
+        ...rows.map((row) => row.map(escapeCsvField).join(",")),
+      ];
+      const csvContent = bom + csvLines.join("\n");
+
+      await callTauri("write_text_file", { path: filePath, content: csvContent });
+      addToast("success", t("search.exportSuccess"));
+    } catch (e) {
+      addToast("error", t("search.exportFailed"));
+    }
+  }, [getSelectedItems, t, addToast]);
+
+  const handleBatchCopyPaths = useCallback(async () => {
+    const selected = getSelectedItems();
+    const paths = selected.map((item) => item.image_path).join("\n");
+    await navigator.clipboard.writeText(paths);
+    addToast("success", t("search.batchPathsCopied", { count: String(selected.length) }));
+  }, [getSelectedItems, t, addToast]);
 
   const showDropZone = state === "idle" || state === "done" || state === "error";
 
@@ -454,9 +549,41 @@ export default function Search() {
               {t("search.exportCsv")}
             </button>
           </div>
+
+          {/* Batch toolbar */}
+          {selectedIds.size > 0 && (
+            <div className="search-batch-toolbar">
+              <span className="search-batch-count">
+                {t("search.selectedCount", { count: String(selectedIds.size) })}
+              </span>
+              <div className="search-batch-actions">
+                <button className="search-batch-btn" onClick={handleBatchOpenFolders}>
+                  {t("search.batchOpenFolders")}
+                </button>
+                <button className="search-batch-btn" onClick={handleBatchExportCsv}>
+                  {t("search.batchExportCsv")}
+                </button>
+                <button className="search-batch-btn" onClick={handleBatchCopyPaths}>
+                  {t("search.batchCopyPaths")}
+                </button>
+                <button className="search-batch-btn" onClick={clearSelection}>
+                  {t("search.batchClearSelection")}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="search-results-list">
             {results.results.map((item: SearchResultItem, idx: number) => (
-              <div key={item.img_id} className="search-result-item"
+              <div
+                key={item.img_id}
+                className={`search-result-item ${selectedIds.has(item.img_id) ? "selected" : ""}`}
+                onClick={(e) => {
+                  if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    toggleSelect(item.img_id);
+                  }
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setCtxMenu({ visible: true, x: e.clientX, y: e.clientY, item });
@@ -465,7 +592,14 @@ export default function Search() {
                 <div className="search-result-rank">#{idx + 1}</div>
                 <div
                   className="search-result-thumb"
-                  onClick={() => openFile(item.image_path)}
+                  onClick={(e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                      e.preventDefault();
+                      toggleSelect(item.img_id);
+                    } else {
+                      openFile(item.image_path);
+                    }
+                  }}
                   title={t("search.openImage")}
                 >
                   {(() => {

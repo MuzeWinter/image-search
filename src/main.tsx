@@ -8,6 +8,7 @@ import "./styles/search.css";
 import "./styles/toast.css";
 import "./styles/context-menu.css";
 import "./styles/welcome.css";
+import "./styles/splash.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

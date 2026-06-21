@@ -1,6 +1,6 @@
-﻿import { Suspense, lazy, useCallback, useEffect } from "react";
+﻿import { Suspense, lazy, useCallback, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "./i18n/context";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -9,9 +9,11 @@ import { WelcomeGuide, useWelcomeState } from "./components/shared/WelcomeGuide"
 import { AppShell } from "./AppShell";
 import { Skeleton } from "./components/shared/Skeleton";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
-import { pendingChangesAtom } from "./stores/atoms";
+import { SplashScreen } from "./components/SplashScreen";
+import { pendingChangesAtom, splashStateAtom } from "./stores/atoms";
 import * as libraryService from "./services/libraryService";
 import * as scanService from "./services/scanService";
+import * as searchService from "./services/searchService";
 import type { CheckChangesResult } from "./services/types";
 
 const Search = lazy(() => import("./pages/Search"));
@@ -126,7 +128,77 @@ function StartupChangeDetector() {
   return null;
 }
 
+function ModelLoadingGate() {
+  const setSplash = useSetAtom(splashStateAtom);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      try {
+        const status = await searchService.getModelStatus();
+        if (cancelled) return;
+
+        if (status.status === "ready") return;
+
+        setSplash({
+          visible: true,
+          percent: status.percent,
+          message: status.message || "",
+        });
+
+        if (status.status === "error") {
+          // Model errored — hide splash after a brief display
+          const timer = setTimeout(() => {
+            if (!cancelled) setSplash({ visible: false, percent: 0, message: "" });
+          }, 3000);
+          return () => clearTimeout(timer);
+        }
+
+        // Poll until ready
+        pollRef.current = setInterval(async () => {
+          if (cancelled) return;
+          try {
+            const s = await searchService.getModelStatus();
+            if (cancelled) return;
+            setSplash({ visible: true, percent: s.percent, message: s.message || "" });
+            if (s.status === "ready" || s.status === "error") {
+              if (pollRef.current) clearInterval(pollRef.current);
+              pollRef.current = null;
+              if (s.status === "ready") {
+                setTimeout(() => {
+                  if (!cancelled) setSplash({ visible: false, percent: 0, message: "" });
+                }, 600);
+              } else {
+                setTimeout(() => {
+                  if (!cancelled) setSplash({ visible: false, percent: 0, message: "" });
+                }, 3000);
+              }
+            }
+          } catch {
+            // Backend not reachable — ignore
+          }
+        }, 500);
+      } catch {
+        // Backend not ready yet — that's fine, it'll be checked on first search
+      }
+    }
+
+    const timer = setTimeout(check, 400);
+    return () => {
+      cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+      clearTimeout(timer);
+    };
+  }, [setSplash]);
+
+  return null;
+}
+
 export function App() {
+  const splash = useAtomValue(splashStateAtom);
+
   return (
     <ThemeProvider>
       <I18nProvider>
@@ -134,6 +206,7 @@ export function App() {
           <BrowserRouter>
             <ErrorBoundary>
               <StartupChangeDetector />
+              <ModelLoadingGate />
               <WelcomeGate />
               <Routes>
                 <Route path="/" element={<AppShell />}>
@@ -145,6 +218,9 @@ export function App() {
             </ErrorBoundary>
           </BrowserRouter>
           <ToastContainer />
+          {splash.visible && (
+            <SplashScreen percent={splash.percent} message={splash.message} />
+          )}
         </ToastProvider>
       </I18nProvider>
     </ThemeProvider>

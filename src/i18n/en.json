@@ -164,7 +164,13 @@
     },
     "exportSuccess": "CSV exported successfully",
     "exportFailed": "Export failed",
-    "exportCancelled": "Export cancelled"
+    "exportCancelled": "Export cancelled",
+    "selectedCount": "{count} selected",
+    "batchOpenFolders": "Open Folders",
+    "batchExportCsv": "Export Selected",
+    "batchCopyPaths": "Copy Paths",
+    "batchClearSelection": "Clear",
+    "batchPathsCopied": "{count} paths copied"
   },
   "libraries": {
     "add": "Add Library",
@@ -211,7 +217,16 @@
     "autoIndexed": "Auto Indexed",
     "emptyIcon": "📁",
     "emptyTitle": "No Libraries",
-    "emptyDesc": "Add a library folder to start scanning and indexing your files."
+    "emptyDesc": "Add a library folder to start scanning and indexing your files.",
+    "dropHint": "Drop folder to add as library",
+    "alreadyExists": "Library already exists: {path}"
+  },
+  "splash": {
+    "appName": "ZOOBET Search",
+    "version": "v{version}",
+    "preparing": "Preparing AI model...",
+    "loadingModel": "Loading model",
+    "startingBackend": "Starting backend service..."
   },
   "welcome": {
     "step1Title": "Welcome to ZOOBET Search",

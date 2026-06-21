@@ -1,0 +1,76 @@
+/* === Splash Screen === */
+
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.splash-card {
+  text-align: center;
+  padding: var(--space-12);
+  max-width: 420px;
+  width: 100%;
+}
+
+.splash-brand {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-1);
+}
+
+.splash-version {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-bottom: var(--space-8);
+}
+
+.splash-progress-container {
+  width: 100%;
+  margin-bottom: var(--space-3);
+}
+
+.splash-progress-track {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.splash-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.splash-progress-pct {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin-top: var(--space-2);
+  text-align: right;
+}
+
+.splash-status {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  min-height: 1.5em;
+}
+
+/* Fade-out transition */
+.splash-overlay.fade-out {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
