@@ -489,6 +489,8 @@ export default function Search() {
   const [prtDirFilter, setPrtDirFilter] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [deleteConfirming, setDeleteConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [focusedResultIdx, setFocusedResultIdx] = useState(-1);
   const PAGE_SIZE = 20;
   const VIRTUAL_SCROLL_THRESHOLD = 200;
@@ -729,6 +731,9 @@ export default function Search() {
     setFilterText("");
     setPrtDirFilter(null);
     setPrtFileMap({});
+    setSelectedIds(new Set());
+    setDeleteConfirming(false);
+    setDeleting(false);
   }, [escapeEpoch]);
 
   const waitForModel = useCallback((): Promise<void> => {
@@ -781,6 +786,8 @@ export default function Search() {
     setErrorMsg("");
     setResults(null);
     setSelectedIds(new Set());
+    setDeleteConfirming(false);
+    setDeleting(false);
     setFilterText("");
     setPrtDirFilter(null);
     setPrtFileMap({});
@@ -850,6 +857,8 @@ export default function Search() {
     setErrorMsg("");
     setResults(null);
     setSelectedIds(new Set());
+    setDeleteConfirming(false);
+    setDeleting(false);
     setFilterText("");
     setPrtDirFilter(null);
     setPrtFileMap({});
@@ -953,6 +962,8 @@ export default function Search() {
     setErrorMsg("");
     setResults(null);
     setSelectedIds(new Set());
+    setDeleteConfirming(false);
+    setDeleting(false);
     setFilterText("");
     setPrtDirFilter(null);
     setPrtFileMap({});
@@ -1246,6 +1257,91 @@ export default function Search() {
     }
     setCompareItems([selected[0], selected[1]]);
   }, [getSelectedItems, t, addToast]);
+
+  const handleSelectAll = useCallback(() => {
+    const ids = new Set(filteredResults.map((item) => item.img_id));
+    setSelectedIds(ids);
+  }, [filteredResults]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBatchBookmark = useCallback(() => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      for (const item of selected) {
+        next.add(item.img_id);
+      }
+      return next;
+    });
+    addToast("success", t("search.batchBookmarkSuccess", { count: String(selected.length) }));
+    setSelectedIds(new Set());
+  }, [getSelectedItems, t, addToast]);
+
+  const handleBatchUnbookmark = useCallback(() => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      for (const item of selected) {
+        next.delete(item.img_id);
+      }
+      return next;
+    });
+    addToast("success", t("search.batchUnbookmarkSuccess", { count: String(selected.length) }));
+    setSelectedIds(new Set());
+  }, [getSelectedItems, t, addToast]);
+
+  const handleBatchDelete = useCallback(() => {
+    if (getSelectedItems().length === 0) return;
+    setDeleteConfirming(true);
+  }, [getSelectedItems]);
+
+  const handleBatchDeleteConfirm = useCallback(async () => {
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    setDeleteConfirming(false);
+    setDeleting(true);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const item of selected) {
+      try {
+        await searchService.deleteEmbedding(item.img_id);
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    setDeleting(false);
+
+    if (successCount > 0) {
+      addToast("success", t("search.batchDeleteSuccess", { count: String(successCount) }));
+    }
+    if (failCount > 0) {
+      addToast("error", t("search.batchDeleteFailed", { error: String(failCount) }));
+    }
+
+    // Remove deleted items from results
+    if (results) {
+      const deletedIds = new Set(selected.map((item) => item.img_id));
+      setResults({
+        ...results,
+        results: results.results.filter((item) => !deletedIds.has(item.img_id)),
+        count: results.count - successCount,
+      });
+    }
+    setSelectedIds(new Set());
+  }, [getSelectedItems, results, t, addToast]);
+
+  const handleBatchDeleteCancel = useCallback(() => {
+    setDeleteConfirming(false);
+  }, []);
 
   const makeExportItems = useCallback((items: SearchResultItem[]): exportService.ExportItemInput[] => {
     return items.map((item) => ({
@@ -1781,12 +1877,19 @@ export default function Search() {
           </div>
 
           {/* Batch toolbar */}
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && !deleteConfirming && (
             <div className="search-batch-toolbar">
               <span className="search-batch-count">
                 {t("search.selectedCount", { count: String(selectedIds.size) })}
               </span>
               <div className="search-batch-actions">
+                <button className="search-batch-btn" onClick={handleSelectAll} aria-label={t("search.selectAll")}>
+                  {t("search.selectAll")}
+                </button>
+                <button className="search-batch-btn" onClick={handleDeselectAll} aria-label={t("search.deselectAll")}>
+                  {t("search.deselectAll")}
+                </button>
+                <span className="search-batch-sep" />
                 <button className="search-batch-btn" onClick={handleBatchOpenFolders} aria-label={t("search.batchOpenFolders")}>
                   {t("search.batchOpenFolders")}
                 </button>
@@ -1805,8 +1908,46 @@ export default function Search() {
                 <button className="search-batch-btn" onClick={handleBatchCompare} aria-label={t("search.batchCompare")}>
                   {t("search.batchCompare")}
                 </button>
+                <span className="search-batch-sep" />
+                <button className="search-batch-btn" onClick={handleBatchBookmark} aria-label={t("search.batchBookmark")}>
+                  {t("search.batchBookmark")}
+                </button>
+                <button className="search-batch-btn" onClick={handleBatchUnbookmark} aria-label={t("search.batchUnbookmark")}>
+                  {t("search.batchUnbookmark")}
+                </button>
+                <button className="search-batch-btn search-batch-delete-btn" onClick={handleBatchDelete} aria-label={t("search.batchDelete")}>
+                  {t("search.batchDelete")}
+                </button>
+                <span className="search-batch-sep" />
                 <button className="search-batch-btn" onClick={clearSelection} aria-label={t("search.batchClearSelection")}>
                   {t("search.batchClearSelection")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Delete confirmation */}
+          {deleteConfirming && (
+            <div className="search-batch-toolbar search-batch-confirm">
+              <span className="search-batch-confirm-text">
+                {t("search.batchDeleteConfirm", { count: String(selectedIds.size) })}
+              </span>
+              <div className="search-batch-actions">
+                <button
+                  className="search-batch-btn search-batch-delete-confirm-btn"
+                  onClick={handleBatchDeleteConfirm}
+                  disabled={deleting}
+                  aria-label={t("common.confirm")}
+                >
+                  {deleting ? t("common.loading") : t("common.confirm")}
+                </button>
+                <button
+                  className="search-batch-btn"
+                  onClick={handleBatchDeleteCancel}
+                  disabled={deleting}
+                  aria-label={t("common.cancel")}
+                >
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
