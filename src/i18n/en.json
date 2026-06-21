@@ -114,7 +114,8 @@
     "imgId": "IMG",
     "sheet": "Sheet",
     "row": "Row",
-    "ugRef": "UG Ref"
+    "ugRef": "UG Ref",
+    "noPreview": "No preview"
   },
   "libraries": {
     "add": "Add Library",

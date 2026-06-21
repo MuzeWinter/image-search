@@ -17,7 +17,8 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-function fileToUrl(filePath: string): string {
+function fileToUrl(filePath: string): string | null {
+  if (!filePath || !filePath.trim()) return null;
   return convertFileSrc(filePath);
 }
 
@@ -47,6 +48,7 @@ export default function Search() {
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [modelPercent, setModelPercent] = useState(0);
   const [modelMsg, setModelMsg] = useState("");
+  const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -293,14 +295,27 @@ export default function Search() {
                   onClick={() => openFile(item.image_path)}
                   title={t("search.openImage")}
                 >
-                  <img
-                    src={fileToUrl(item.image_path)}
-                    alt={item.img_id}
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
+                  {(() => {
+                    const url = fileToUrl(item.image_path);
+                    if (!url || brokenImgs.has(item.img_id)) {
+                      return <div className="img-placeholder">{t("search.noPreview")}</div>;
+                    }
+                    return (
+                      <img
+                        src={url}
+                        alt={item.img_id}
+                        loading="lazy"
+                        onError={() => {
+                          setBrokenImgs((prev) => {
+                            if (prev.has(item.img_id)) return prev;
+                            const next = new Set(prev);
+                            next.add(item.img_id);
+                            return next;
+                          });
+                        }}
+                      />
+                    );
+                  })()}
                 </div>
                 <div className="search-result-info">
                   <div className="search-result-header">

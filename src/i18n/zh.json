@@ -114,7 +114,8 @@
     "imgId": "图片编号",
     "sheet": "工作表",
     "row": "行",
-    "ugRef": "UG编号"
+    "ugRef": "UG编号",
+    "noPreview": "无预览"
   },
   "libraries": {
     "add": "添加资料库",
