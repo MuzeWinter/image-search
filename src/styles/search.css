@@ -561,6 +561,21 @@
   font-weight: 500;
 }
 
+.search-result-meta-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+}
+
+.search-result-meta-info .meta-sep {
+  color: var(--border);
+  margin: 0 1px;
+}
+
 .search-result-tags {
   display: flex;
   gap: var(--space-1);

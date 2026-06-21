@@ -13,7 +13,7 @@ serviceRegistry.register({
 
 export interface SearchResultItem {
   img_id: string;
-  source_type: "excel-embedded" | "ug-preview";
+  source_type: "excel-embedded" | "ug-preview" | "file_image";
   image_path: string;
   origin_path: string;
   sheet_name: string | null;
@@ -21,6 +21,10 @@ export interface SearchResultItem {
   ug_ref: string | null;
   similarity: number;
   ocr_text?: string;
+  size_bytes?: number | null;
+  width?: number | null;
+  height?: number | null;
+  format?: string;
 }
 
 export interface SearchResults {

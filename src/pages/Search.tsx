@@ -67,6 +67,14 @@ function extractFilename(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+function formatFileSize(bytes: number | null | undefined): string {
+  if (bytes == null) return "";
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)}GB`;
+}
+
 function extractDir(filePath: string): string {
   const parts = filePath.replace(/\\/g, "/").split("/");
   parts.pop();
@@ -1081,6 +1089,25 @@ export default function Search() {
                       {extractFilename(item.origin_path)}
                     </span>
                   </div>
+                  {(item.width != null || item.format || item.size_bytes != null) && (
+                    <div className="search-result-meta-info">
+                      {item.width != null && item.height != null && (
+                        <span>{item.width}×{item.height}</span>
+                      )}
+                      {item.width != null && item.height != null && item.format && (
+                        <span className="meta-sep">·</span>
+                      )}
+                      {item.format && (
+                        <span>{item.format}</span>
+                      )}
+                      {item.format && item.size_bytes != null && (
+                        <span className="meta-sep">·</span>
+                      )}
+                      {item.size_bytes != null && (
+                        <span>{formatFileSize(item.size_bytes)}</span>
+                      )}
+                    </div>
+                  )}
                   {/* OCR text */}
                   {item.ocr_text && (
                     <div className="search-result-detail">

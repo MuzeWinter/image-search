@@ -117,12 +117,20 @@ def _insert_image_record(conn, filepath: str, info: dict):
     filename = os.path.basename(filepath)
     now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(filepath)))
+    width = None
+    height = None
+    try:
+        from PIL import Image
+        with Image.open(filepath) as im:
+            width, height = im.size
+    except Exception:
+        pass
 
     conn.execute(
         """INSERT OR REPLACE INTO images
            (img_id, source_type, file_path, folder, filename, size_bytes, width, height, file_hash, status, last_modified, indexed_at)
-           VALUES (?, 'file_image', ?, ?, ?, ?, NULL, NULL, ?, 'normal', ?, ?)""",
-        (info["hash"], filepath, folder, filename, info["size"], info["hash"], mtime, now)
+           VALUES (?, 'file_image', ?, ?, ?, ?, ?, ?, ?, 'normal', ?, ?)""",
+        (info["hash"], filepath, folder, filename, info["size"], width, height, info["hash"], mtime, now)
     )
 
 
