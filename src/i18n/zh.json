@@ -1,0 +1,58 @@
+{
+  "sidebar": {
+    "brand": "ZOOBET检索",
+    "groups": {
+      "search": "检索",
+      "browse": "浏览",
+      "manage": "管理",
+      "classify": "分类",
+      "system": "系统"
+    },
+    "nav": {
+      "search": "图片检索",
+      "imageLibrary": "图片资料库",
+      "cadFiles": "CAD 文件",
+      "excelRecords": "Excel 记录",
+      "pdfFiles": "PDF 文件",
+      "library": "资料库管理",
+      "scanReport": "扫描报告",
+      "matchManagement": "匹配管理",
+      "tags": "标签管理",
+      "favorites": "收藏夹",
+      "settings": "系统设置",
+      "changelog": "更新日志"
+    },
+    "version": "版本"
+  },
+  "header": {
+    "searchPlaceholder": "搜索图片、标签、文件名..."
+  },
+  "window": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "还原",
+    "close": "关闭"
+  },
+  "statusBar": {
+    "libraries": "资料库",
+    "images": "已索引图片",
+    "tasks": "后台任务",
+    "idle": "空闲"
+  },
+  "home": {
+    "welcome": "欢迎使用 ZOOBET 智能检索",
+    "subtitle": "本地 AI 视觉搜索引擎 — 专为产品设计师打造",
+    "quickLinks": "功能导航"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "出错了",
+    "retry": "重试",
+    "empty": "暂无内容"
+  }
+}

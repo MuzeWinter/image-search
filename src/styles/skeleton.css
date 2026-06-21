@@ -1,0 +1,43 @@
+/* === Skeleton Loading Placeholders === */
+
+.skeleton {
+  background: var(--border);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+.skeleton-text {
+  height: 0.875em;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text-group {
+  width: 100%;
+}
+
+.skeleton-card {
+  width: 100%;
+  border-radius: var(--radius-md);
+  min-height: 120px;
+}
+
+.skeleton-image {
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+@keyframes skeleton-pulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Dark theme adaptation: use lighter pulse for dark backgrounds */
+[data-theme="dark"] .skeleton {
+  background: oklch(35% 0.012 85);
+}

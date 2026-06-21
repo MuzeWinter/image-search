@@ -13,6 +13,13 @@ Desktop.ini
 docs/claude-tasks/logs/
 .codex-review/
 
+# Node.js
+node_modules/
+dist/
+
+# Rust
+src-tauri/target/
+
 # IDE
 *.suo
 *.user

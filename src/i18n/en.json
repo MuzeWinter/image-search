@@ -1,0 +1,58 @@
+{
+  "sidebar": {
+    "brand": "ZOOBET Search",
+    "groups": {
+      "search": "Search",
+      "browse": "Browse",
+      "manage": "Manage",
+      "classify": "Classify",
+      "system": "System"
+    },
+    "nav": {
+      "search": "Image Search",
+      "imageLibrary": "Image Library",
+      "cadFiles": "CAD Files",
+      "excelRecords": "Excel Records",
+      "pdfFiles": "PDF Files",
+      "library": "Library Manager",
+      "scanReport": "Scan Reports",
+      "matchManagement": "Match Manager",
+      "tags": "Tags",
+      "favorites": "Favorites",
+      "settings": "Settings",
+      "changelog": "Changelog"
+    },
+    "version": "Version"
+  },
+  "header": {
+    "searchPlaceholder": "Search images, tags, filenames..."
+  },
+  "window": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
+  },
+  "statusBar": {
+    "libraries": "Libraries",
+    "images": "Indexed Images",
+    "tasks": "Background Tasks",
+    "idle": "Idle"
+  },
+  "home": {
+    "welcome": "Welcome to ZOOBET Intelligent Search",
+    "subtitle": "Local AI Visual Search Engine — Built for Product Designers",
+    "quickLinks": "Quick Navigation"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "empty": "No content"
+  }
+}

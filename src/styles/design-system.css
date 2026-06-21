@@ -1,0 +1,148 @@
+/* === Design System — ZOOBET Retrieval === */
+/* Direction: editorial-monocle (adapted for desktop tool) */
+
+:root {
+  /* Palette */
+  --bg:      oklch(98% 0.004 95);
+  --surface: oklch(100% 0.002 95);
+  --fg:      oklch(20% 0.018 70);
+  --muted:   oklch(48% 0.012 70);
+  --border:  oklch(90% 0.006 95);
+  --accent:  oklch(52% 0.10 28);
+
+  /* Semantic */
+  --success: oklch(54% 0.12 155);
+  --warning: oklch(62% 0.14 75);
+  --danger:  oklch(48% 0.16 22);
+  --info:    oklch(52% 0.08 240);
+
+  /* Surfaces */
+  --surface-hover: oklch(96% 0.006 95);
+  --surface-active: oklch(93% 0.008 95);
+  --surface-raised: oklch(100% 0.003 95);
+
+  /* Typography */
+  --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+  /* Type scale */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-md:   1.125rem;
+  --text-lg:   1.375rem;
+  --text-xl:   1.75rem;
+  --text-2xl:  2.25rem;
+  --text-3xl:  3rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Layout */
+  --sidebar-w: 260px;
+  --header-h: 56px;
+  --statusbar-h: 30px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  /* Borders */
+  --border-width: 1px;
+  --border-heavy: 2px;
+
+  /* Shadows */
+  --shadow-overlay: 0 4px 24px oklch(0% 0 0 / 0.12);
+  --shadow-modal: 0 8px 40px oklch(0% 0 0 / 0.18);
+}
+
+/* === Dark Theme === */
+[data-theme="dark"] {
+  --bg:      oklch(18% 0.010 85);
+  --surface: oklch(22% 0.012 85);
+  --fg:      oklch(90% 0.006 90);
+  --muted:   oklch(60% 0.014 85);
+  --border:  oklch(30% 0.014 85);
+  --accent:  oklch(62% 0.16 35);
+
+  --success: oklch(62% 0.15 155);
+  --warning: oklch(70% 0.17 80);
+  --danger:  oklch(58% 0.20 25);
+  --info:    oklch(60% 0.10 240);
+
+  --surface-hover: oklch(25% 0.012 85);
+  --surface-active: oklch(30% 0.014 85);
+  --surface-raised: oklch(24% 0.012 85);
+
+  --shadow-overlay: 0 4px 24px oklch(0% 0 0 / 0.5);
+  --shadow-modal: 0 8px 40px oklch(0% 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+/* === Reset === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-wrap: pretty;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+input {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* === Utility === */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-muted { color: var(--muted); }
+.text-mono { font-family: var(--font-mono); font-size: var(--text-sm); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-full { width: 100%; }
+.hidden { display: none !important; }
