@@ -295,7 +295,8 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", lib
             "pdf_info": pdf_info,
         })
 
-    return results
+    # Truncate to requested top_k after scope/library filtering
+    return results[:top_k]
 
 
 def _build_index_from_images():
