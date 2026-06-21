@@ -24,6 +24,7 @@ export interface SearchResultItem {
   size_bytes?: number | null;
   width?: number | null;
   height?: number | null;
+  last_modified?: string | null;
   format?: string;
   source_query_indices?: number[];
   prt_files?: string[];

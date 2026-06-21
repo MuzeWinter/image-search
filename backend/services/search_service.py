@@ -316,6 +316,7 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", lib
             "size_bytes": img_data.get("size_bytes"),
             "width": img_data.get("width"),
             "height": img_data.get("height"),
+            "last_modified": img_data.get("last_modified"),
             "format": os.path.splitext(img_data.get("filename") or img_data.get("file_path") or "")[1].upper().lstrip("."),
             "tags": img_data["tags"],
             "favorite": bool(img_data.get("favorite")),

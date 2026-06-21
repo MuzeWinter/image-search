@@ -33,7 +33,7 @@ import {
 import type { SearchHistoryItem } from "../services/searchHistoryStore";
 
 type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
-type SortKey = "similarity" | "filename" | "ug_ref";
+type SortKey = "similarity" | "filename" | "ug_ref" | "date" | "filesize";
 
 interface QueryImage {
   base64: string;
@@ -495,7 +495,12 @@ export default function Search() {
   const PAGE_SIZE = 20;
   const VIRTUAL_SCROLL_THRESHOLD = 200;
   const [page, setPage] = useState(0);
-  const [sortBy, setSortBy] = useState<SortKey>("similarity");
+  const [sortBy, setSortBy] = useState<SortKey>(() => {
+    return (localStorage.getItem("searchSortBy") as SortKey | null) || "similarity";
+  });
+  const [sortAsc, setSortAsc] = useState<boolean>(() => {
+    return localStorage.getItem("searchSortAsc") === "true";
+  });
   const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
     return (localStorage.getItem("searchViewMode") as "list" | "grid" | null) || "list";
   });
@@ -512,6 +517,14 @@ export default function Search() {
   useEffect(() => {
     localStorage.setItem("searchThumbSize", thumbSize);
   }, [thumbSize]);
+
+  useEffect(() => {
+    localStorage.setItem("searchSortBy", sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem("searchSortAsc", String(sortAsc));
+  }, [sortAsc]);
 
   // Virtual scroll: container measurement
   const virtContainerRef = useRef<HTMLDivElement>(null);
@@ -621,35 +634,53 @@ export default function Search() {
     items = items.filter(item => item.similarity >= threshold);
 
     const sorted = [...items];
+    const dir = sortAsc ? 1 : -1;
     switch (sortBy) {
       case "filename":
         sorted.sort((a, b) => {
           const fa = extractFilename(a.origin_path).toLowerCase();
           const fb = extractFilename(b.origin_path).toLowerCase();
-          return fa.localeCompare(fb);
+          return dir * fa.localeCompare(fb);
         });
         break;
       case "ug_ref":
         sorted.sort((a, b) => {
           const ua = (a.ug_ref || "").toLowerCase();
           const ub = (b.ug_ref || "").toLowerCase();
-          return ua.localeCompare(ub) || b.similarity - a.similarity;
+          return dir * (ua.localeCompare(ub) || b.similarity - a.similarity);
+        });
+        break;
+      case "date":
+        sorted.sort((a, b) => {
+          const da = a.last_modified || "";
+          const db = b.last_modified || "";
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return dir * da.localeCompare(db);
+        });
+        break;
+      case "filesize":
+        sorted.sort((a, b) => {
+          const sa = a.size_bytes ?? -1;
+          const sb = b.size_bytes ?? -1;
+          return dir * (sa - sb);
         });
         break;
       case "similarity":
       default:
-        sorted.sort((a, b) => b.similarity - a.similarity);
+        sorted.sort((a, b) => dir * (a.similarity - b.similarity));
         break;
     }
 
     return sorted;
-  }, [results, filterText, sortBy, bookmarkFilter, bookmarkedIds, similarityThreshold, prtDirFilter]);
+  }, [results, filterText, sortBy, sortAsc, bookmarkFilter, bookmarkedIds, similarityThreshold, prtDirFilter]);
 
   // Reset page when filter, sort, or results change
   useEffect(() => {
     setPage(0);
     setFocusedResultIdx(-1);
-  }, [filterText, sortBy, results]);
+  }, [filterText, sortBy, sortAsc, results]);
 
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE));
   const pagedResults = filteredResults.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -1805,16 +1836,39 @@ export default function Search() {
             <h3 className="search-results-title">{t("search.results")}</h3>
             <div className="search-sort-group">
               <label className="search-sort-label">{t("search.sortLabel")}</label>
-              <select
-                className="search-sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortKey)}
-                aria-label={t("search.sortLabel")}
-              >
-                <option value="similarity">{t("search.sortSimilarity")}</option>
-                <option value="filename">{t("search.sortFilename")}</option>
-                <option value="ug_ref">{t("search.sortUgRef")}</option>
-              </select>
+              <div className="search-sort-bar" role="radiogroup" aria-label={t("search.sortLabel")}>
+                {(["similarity", "filename", "ug_ref", "date", "filesize"] as SortKey[]).map((key) => {
+                  const isActive = sortBy === key;
+                  const labelKey = (() => {
+                    if (key === "ug_ref") return "search.sortUgRef";
+                    if (key === "filesize") return "search.sortFileSize";
+                    return `search.sort${key.charAt(0).toUpperCase() + key.slice(1)}`;
+                  })();
+                  return (
+                    <button
+                      key={key}
+                      className={`search-sort-btn ${isActive ? "active" : ""}`}
+                      onClick={() => {
+                        if (isActive) {
+                          setSortAsc(!sortAsc);
+                        } else {
+                          setSortBy(key);
+                        }
+                      }}
+                      role="radio"
+                      aria-checked={isActive}
+                      aria-label={t(labelKey)}
+                    >
+                      <span className="search-sort-btn-label">{t(labelKey)}</span>
+                      {isActive && (
+                        <span className="search-sort-arrow" aria-hidden="true">
+                          {sortAsc ? "▲" : "▼"}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="search-view-toggle">
               <Tooltip content={t("search.viewList")}>
