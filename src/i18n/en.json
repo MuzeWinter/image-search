@@ -20,7 +20,9 @@
     "tasks": "Background Tasks",
     "idle": "Idle",
     "changesDetected": "{count} file changes detected",
-    "changesHint": "Click to run incremental scan"
+    "changesHint": "Click to run incremental scan",
+    "pathsMissing": "{count} path(s) unavailable",
+    "pathsMissingHint": "Go to Library Manager"
   },
   "theme": {
     "light": "Light",
@@ -155,6 +157,8 @@
     "scopeAll": "All",
     "scopeExcelOnly": "Excel Embedded",
     "scopeUgOnly": "UG Preview",
+    "scopeLibraryLabel": "Library:",
+    "scopeLibraryAll": "All Libraries",
     "modelLoading": "Loading AI model...",
     "modelProgress": "Model loading: {percent}%",
     "modelReady": "Model ready",
@@ -253,7 +257,10 @@
     "emptyTitle": "No Libraries",
     "emptyDesc": "Add a library folder to start scanning and indexing your files.",
     "dropHint": "Drop folder to add as library",
-    "alreadyExists": "Library already exists: {path}"
+    "alreadyExists": "Library already exists: {path}",
+    "pathNotFound": "Library path does not exist. It may have been moved or deleted.",
+    "pathNotFoundDetail": "The following {count} library path(s) are unavailable:",
+    "unavailable": "Unavailable"
   },
   "splash": {
     "appName": "ZOOBET Search",

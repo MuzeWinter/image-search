@@ -7,6 +7,8 @@ import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
 import { callTauri } from "../services/ipc";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
+import type { Library } from "../services/types";
+import * as libraryService from "../services/libraryService";
 import { openFile, openFolder } from "../services/systemService";
 import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
@@ -77,6 +79,8 @@ export default function Search() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
+  const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(null);
+  const [libraries, setLibraries] = useState<Library[]>([]);
   const [modelPercent, setModelPercent] = useState(0);
   const [modelMsg, setModelMsg] = useState("");
   const [brokenImgs, setBrokenImgs] = useState<Set<string>>(new Set());
@@ -219,6 +223,11 @@ export default function Search() {
     });
   }, []);
 
+  // Fetch libraries for the selector dropdown
+  useEffect(() => {
+    libraryService.list().then(setLibraries).catch(() => {});
+  }, []);
+
   const doSearch = useCallback(async (base64: string, displayUrl: string) => {
     setPreviewUrl(displayUrl);
     setErrorMsg("");
@@ -242,7 +251,7 @@ export default function Search() {
     setState("searching");
 
     try {
-      const searchResults = await searchService.searchByImage(base64, 30, searchScope);
+      const searchResults = await searchService.searchByImage(base64, 30, searchScope, selectedLibraryId ?? undefined);
       setResults(searchResults);
       setState("done");
 
@@ -268,7 +277,7 @@ export default function Search() {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       addToast("error", e instanceof Error ? e.message : String(e));
     }
-  }, [searchScope, waitForModel, addToast]);
+  }, [searchScope, selectedLibraryId, waitForModel, addToast]);
 
   const doSearchByPath = useCallback(async (filePath: string) => {
     setPreviewUrl(fileToUrl(filePath) || "");
@@ -292,7 +301,7 @@ export default function Search() {
     setState("searching");
 
     try {
-      const searchResults = await searchService.searchByPath(filePath, 30, searchScope);
+      const searchResults = await searchService.searchByPath(filePath, 30, searchScope, selectedLibraryId ?? undefined);
       setResults(searchResults);
       setState("done");
 
@@ -307,7 +316,7 @@ export default function Search() {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       addToast("error", e instanceof Error ? e.message : String(e));
     }
-  }, [searchScope, waitForModel, addToast]);
+  }, [searchScope, selectedLibraryId, waitForModel, addToast]);
 
   // Respond to --search CLI arg
   const startupSearchPath = useAtomValue(startupSearchPathAtom);
@@ -614,6 +623,22 @@ export default function Search() {
 
       {/* Search scope filter */}
       <div className="search-scope-bar">
+        <span className="search-scope-label">{t("search.scopeLibraryLabel")}</span>
+        <select
+          className="search-library-select"
+          value={selectedLibraryId ?? ""}
+          onChange={(e) => {
+            const val = e.target.value;
+            setSelectedLibraryId(val ? Number(val) : null);
+          }}
+        >
+          <option value="">{t("search.scopeLibraryAll")}</option>
+          {libraries.map((lib) => (
+            <option key={lib.id} value={lib.id}>
+              {lib.label || lib.path}
+            </option>
+          ))}
+        </select>
         <span className="search-scope-label">Filter:</span>
         <div className="search-scope-options">
           {([

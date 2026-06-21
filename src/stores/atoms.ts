@@ -32,3 +32,6 @@ export const splashStateAtom = atom<{
 
 /** Startup --search argument: file path for automatic search on launch */
 export const startupSearchPathAtom = atom<string | null>(null);
+
+/** Set of library IDs whose paths do not exist on disk (checked at startup) */
+export const invalidPathsAtom = atom<Set<number>>(new Set<number>());

@@ -55,39 +55,54 @@ export async function searchByImage(
   imageBase64: string,
   topK?: number,
   scope?: SearchScope,
+  libraryId?: number,
 ): Promise<SearchResults> {
   await serviceRegistry.ensureReady("searchService");
-  return callBackend<SearchResults>("search.searchByImage", {
+  const params: Record<string, unknown> = {
     image_base64: imageBase64,
     top_k: topK ?? 20,
     scope: scope ?? "all",
-  });
+  };
+  if (libraryId != null) {
+    params.library_id = libraryId;
+  }
+  return callBackend<SearchResults>("search.searchByImage", params);
 }
 
 export async function searchByPath(
   filePath: string,
   topK?: number,
   scope?: SearchScope,
+  libraryId?: number,
 ): Promise<SearchByPathResults> {
   await serviceRegistry.ensureReady("searchService");
-  return callBackend<SearchByPathResults>("search.searchByPath", {
+  const params: Record<string, unknown> = {
     file_path: filePath,
     top_k: topK ?? 20,
     scope: scope ?? "all",
-  });
+  };
+  if (libraryId != null) {
+    params.library_id = libraryId;
+  }
+  return callBackend<SearchByPathResults>("search.searchByPath", params);
 }
 
 export async function searchByVector(
   vector: number[],
   topK?: number,
   scope?: SearchScope,
+  libraryId?: number,
 ): Promise<SearchResults> {
   await serviceRegistry.ensureReady("searchService");
-  return callBackend<SearchResults>("search.searchByVector", {
+  const params: Record<string, unknown> = {
     vector,
     top_k: topK ?? 20,
     scope: scope ?? "all",
-  });
+  };
+  if (libraryId != null) {
+    params.library_id = libraryId;
+  }
+  return callBackend<SearchResults>("search.searchByVector", params);
 }
 
 export async function buildIndex(): Promise<{

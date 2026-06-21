@@ -20,7 +20,9 @@
     "tasks": "后台任务",
     "idle": "空闲",
     "changesDetected": "检测到 {count} 个文件变更",
-    "changesHint": "点击执行增量扫描"
+    "changesHint": "点击执行增量扫描",
+    "pathsMissing": "{count} 个路径不可用",
+    "pathsMissingHint": "点击跳转到资料库管理"
   },
   "theme": {
     "light": "浅色",
@@ -155,6 +157,8 @@
     "scopeAll": "全部",
     "scopeExcelOnly": "Excel 内嵌",
     "scopeUgOnly": "UG 预览",
+    "scopeLibraryLabel": "资料库：",
+    "scopeLibraryAll": "全部资料库",
     "modelLoading": "正在加载 AI 模型...",
     "modelProgress": "模型加载中: {percent}%",
     "modelReady": "模型已就绪",
@@ -253,7 +257,10 @@
     "emptyTitle": "暂无资料库",
     "emptyDesc": "添加资料库文件夹以开始扫描和索引文件。",
     "dropHint": "拖放文件夹以添加为资料库",
-    "alreadyExists": "资料库已存在: {path}"
+    "alreadyExists": "资料库已存在: {path}",
+    "pathNotFound": "资料库路径不存在，可能已被移动或删除",
+    "pathNotFoundDetail": "以下 {count} 个资料库路径不可用:",
+    "unavailable": "不可用"
   },
   "splash": {
     "appName": "ZOOBET 智能检索",

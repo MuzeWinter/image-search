@@ -1,20 +1,23 @@
 import { useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../i18n/context";
 import { useServiceQuery } from "../../stores/hooks";
-import { pendingChangesAtom } from "../../stores/atoms";
+import { pendingChangesAtom, invalidPathsAtom } from "../../stores/atoms";
 import * as libraryService from "../../services/libraryService";
 import * as scanService from "../../services/scanService";
 import type { SystemStats } from "../../services/types";
 
 export function StatusBar() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { data: stats } = useServiceQuery<SystemStats>(
     "dbService",
     "db.getStats",
   );
   const pendingChanges = useAtomValue(pendingChangesAtom);
   const setPendingChanges = useSetAtom(pendingChangesAtom);
+  const invalidPaths = useAtomValue(invalidPathsAtom);
 
   const hasChanges =
     pendingChanges &&
@@ -27,6 +30,8 @@ export function StatusBar() {
       pendingChanges.modified +
       pendingChanges.moved
     : 0;
+
+  const invalidCount = invalidPaths.size;
 
   const handleIncrementalScan = useCallback(async () => {
     try {
@@ -42,6 +47,10 @@ export function StatusBar() {
     }
   }, [setPendingChanges]);
 
+  const handleGoToLibrary = useCallback(() => {
+    navigate("/library");
+  }, [navigate]);
+
   return (
     <footer className="statusbar">
       <span className="statusbar-item">
@@ -51,6 +60,15 @@ export function StatusBar() {
         {t("statusBar.images")}: {stats?.images ?? 0}
       </span>
       <span className="statusbar-spacer" />
+      {invalidCount > 0 && (
+        <button
+          className="statusbar-item statusbar-warning"
+          onClick={handleGoToLibrary}
+          title={t("statusBar.pathsMissingHint")}
+        >
+          {t("statusBar.pathsMissing", { count: invalidCount })}
+        </button>
+      )}
       {hasChanges ? (
         <button
           className="statusbar-item statusbar-changes"

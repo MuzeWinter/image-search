@@ -155,8 +155,8 @@ def _index_single(img_id: str, vector: list):
     _log(f"Indexed image {img_id}, total={len(_index_img_ids)}")
 
 
-def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all"):
-    """搜索相似图片，支持搜索范围过滤"""
+def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", library_id: int | None = None):
+    """搜索相似图片，支持搜索范围过滤和资料库过滤"""
     _load_index()
 
     if _index_status["count"] == 0:
@@ -172,6 +172,17 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all"):
     results = []
     conn = get_connection()
 
+    # Resolve library path if filtering by library
+    library_path = None
+    if library_id is not None:
+        lib_row = conn.execute(
+            "SELECT path FROM libraries WHERE id = ?", (library_id,)
+        ).fetchone()
+        if lib_row is None:
+            _log(f"Library not found: {library_id}")
+            return []
+        library_path = lib_row["path"].replace("\\", "/").rstrip("/") + "/"
+
     for dist, idx in zip(distances[0], indices[0]):
         if idx < 0 or idx >= len(_index_img_ids):
             continue
@@ -185,6 +196,12 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all"):
             continue
 
         img_data = dict(img_row)
+
+        # Apply library filter (by folder path prefix)
+        if library_path is not None:
+            img_folder = (img_data.get("folder") or "").replace("\\", "/")
+            if not (img_folder + "/").startswith(library_path):
+                continue
 
         # Apply scope filter
         if scope == "excel_only" and img_data.get("source_type") != "excel_embedded":
@@ -352,11 +369,12 @@ def _handle_search_by_vector(params: dict):
     vector = params.get("vector", [])
     top_k = params.get("top_k", 20)
     scope = params.get("scope", "all")
+    library_id = params.get("library_id")
     if not vector:
         raise ValueError("vector is required")
 
     start = time.time()
-    results = _search_similar(vector, top_k, scope)
+    results = _search_similar(vector, top_k, scope, library_id)
     duration_ms = int((time.time() - start) * 1000)
 
     _add_activity_log("info", "search", f"Vector search: {len(results)} results in {duration_ms}ms (scope={scope})")
@@ -378,6 +396,7 @@ def _handle_search_by_image(params: dict):
         raise ValueError("image_base64 is required")
     top_k = params.get("top_k", 20)
     scope = params.get("scope", "all")
+    library_id = params.get("library_id")
 
     # Decode image
     if "," in image_b64 and image_b64.startswith("data:"):
@@ -397,7 +416,7 @@ def _handle_search_by_image(params: dict):
 
     # Search
     start = time.time()
-    results = _search_similar(vector.tolist(), top_k, scope)
+    results = _search_similar(vector.tolist(), top_k, scope, library_id)
     duration_ms = int((time.time() - start) * 1000)
 
     # Record search history
@@ -430,6 +449,7 @@ def _handle_search_by_path(params: dict):
         raise ValueError(f"File not found: {file_path}")
     top_k = params.get("top_k", 20)
     scope = params.get("scope", "all")
+    library_id = params.get("library_id")
 
     with open(file_path, "rb") as f:
         image_bytes = f.read()
@@ -445,7 +465,7 @@ def _handle_search_by_path(params: dict):
     vector = _extract_features(tensor)
 
     start = time.time()
-    results = _search_similar(vector.tolist(), top_k, scope)
+    results = _search_similar(vector.tolist(), top_k, scope, library_id)
     duration_ms = int((time.time() - start) * 1000)
 
     # Record search history

@@ -484,6 +484,12 @@ fn write_text_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn check_path(path: String) -> Result<serde_json::Value, String> {
+    let p = std::path::Path::new(&path);
+    Ok(serde_json::json!({ "exists": p.exists() }))
+}
+
+#[tauri::command]
 fn open_file(path: String) -> Result<(), String> {
     let p = std::path::Path::new(&path);
     if !p.exists() {
@@ -534,6 +540,7 @@ fn main() {
             call_backend,
             scan_library,
             cancel_scan,
+            check_path,
             open_file,
             open_folder,
             write_text_file,

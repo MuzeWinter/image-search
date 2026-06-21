@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "./i18n/context";
+import { useI18n } from "./i18n/context";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/shared/Toast";
 import { WelcomeGuide, useWelcomeState } from "./components/shared/WelcomeGuide";
@@ -10,7 +11,7 @@ import { AppShell } from "./AppShell";
 import { Skeleton } from "./components/shared/Skeleton";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 import { SplashScreen } from "./components/SplashScreen";
-import { pendingChangesAtom, splashStateAtom, startupSearchPathAtom } from "./stores/atoms";
+import { pendingChangesAtom, splashStateAtom, startupSearchPathAtom, invalidPathsAtom } from "./stores/atoms";
 import * as libraryService from "./services/libraryService";
 import * as scanService from "./services/scanService";
 import * as searchService from "./services/searchService";
@@ -125,6 +126,59 @@ function StartupChangeDetector() {
       clearTimeout(timer);
     };
   }, [setPendingChanges]);
+
+  return null;
+}
+
+function StartupPathValidator() {
+  const setInvalidPaths = useSetAtom(invalidPathsAtom);
+  const { addToast } = useToast();
+  const { t } = useI18n();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function validate() {
+      try {
+        const libs = await libraryService.list();
+        if (cancelled || libs.length === 0) return;
+
+        const invalid = new Set<number>();
+        const invalidPaths: string[] = [];
+
+        for (const lib of libs) {
+          if (cancelled) return;
+          try {
+            const res = await callTauri<{ exists: boolean }>("check_path", { path: lib.path });
+            if (!res.exists) {
+              invalid.add(lib.id);
+              invalidPaths.push(lib.path);
+            }
+          } catch {
+            // Tauri command unavailable — skip
+          }
+        }
+
+        if (cancelled) return;
+
+        if (invalid.size > 0) {
+          setInvalidPaths(invalid);
+          addToast("warning", t("libraries.pathNotFoundDetail", { count: invalid.size }));
+          for (const p of invalidPaths) {
+            addToast("warning", p);
+          }
+        }
+      } catch {
+        // No libraries or service not ready — fine
+      }
+    }
+
+    const timer = setTimeout(validate, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [setInvalidPaths, addToast, t]);
 
   return null;
 }
@@ -250,6 +304,7 @@ export function App() {
           <BrowserRouter>
             <ErrorBoundary>
               <StartupChangeDetector />
+              <StartupPathValidator />
               <ModelLoadingGate />
               <StartupArgHandler />
               <WelcomeGate />

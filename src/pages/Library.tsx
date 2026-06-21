@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAtomValue } from "jotai";
 import { useI18n } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import { useServiceQuery } from "../stores/hooks";
+import { invalidPathsAtom } from "../stores/atoms";
 import * as libraryService from "../services/libraryService";
 import * as scanService from "../services/scanService";
 import type { Library, ScanProgress, ScanResult } from "../services/types";
@@ -16,6 +18,7 @@ type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
 export default function LibraryPage() {
   const { t } = useI18n();
   const { addToast } = useToast();
+  const invalidPaths = useAtomValue(invalidPathsAtom);
   const [libPath, setLibPath] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
   const [scanningLibId, setScanningLibId] = useState<number | null>(null);
@@ -419,17 +422,27 @@ export default function LibraryPage() {
               <tbody>
                 {libraries.map((lib) => {
                   const isActiveScan = scanningLibId === lib.id && scanPhase === "scanning";
+                  const isUnavailable = invalidPaths.has(lib.id);
                   return (
-                    <tr key={lib.id} className={isActiveScan ? "lib-row-scanning" : ""}>
+                    <tr
+                      key={lib.id}
+                      className={
+                        isActiveScan ? "lib-row-scanning" : isUnavailable ? "lib-row-unavailable" : ""
+                      }
+                    >
                       <td className="lib-col-status">
-                        {isActiveScan ? (
+                        {isUnavailable ? (
+                          <span className="lib-status-dot unavailable" title={t("libraries.unavailable")} />
+                        ) : isActiveScan ? (
                           <span className="lib-status-dot scanning" />
                         ) : (
                           statusDot(lib.status)
                         )}
                       </td>
                       <td className="lib-col-path" title={lib.path}>
-                        <span className="lib-label">{lib.label || lib.path}</span>
+                        <span className={isUnavailable ? "lib-label-unavailable" : "lib-label"}>
+                          {lib.label || lib.path}
+                        </span>
                         <span className="lib-path-sub text-muted text-xs">{lib.path}</span>
                       </td>
                       <td className="lib-col-count text-mono">{lib.file_count}</td>
@@ -451,7 +464,7 @@ export default function LibraryPage() {
                           className="lib-action-btn lib-action-scan"
                           onClick={() => handleScanLibrary(lib)}
                           title={t("libraries.scan")}
-                          disabled={scanPhase === "scanning"}
+                          disabled={scanPhase === "scanning" || isUnavailable}
                         >
                           {t("libraries.scan")}
                         </button>
