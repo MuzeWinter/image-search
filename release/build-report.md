@@ -3,8 +3,8 @@
 | Field | Value |
 |-------|-------|
 | Version | 0.1.0 |
-| Build time | 2026-06-21T12:17:48.208Z |
-| Duration | 36.6s |
+| Build time | 2026-06-21T13:11:40.378Z |
+| Duration | 34.8s |
 | Platform | win32 (x64) |
 | Targets | MSI, NSIS |
 | Tauri build | SUCCESS |
@@ -15,7 +15,7 @@
 | Type | File | Size |
 |------|------|------|
 | msi | ZOOBET Search_0.1.0_x64_zh-CN.msi | 5.70 MB |
-| nsis | ZOOBET Search_0.1.0_x64-setup.exe | 4.04 MB |
+| nsis | ZOOBET Search_0.1.0_x64-setup.exe | 4.05 MB |
 | binary | zoobet-image-search.exe | 14.89 MB |
 
 ## Verification
