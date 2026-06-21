@@ -22,6 +22,7 @@ import {
 import type { SearchHistoryItem } from "../services/searchHistoryStore";
 
 type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
+type SortKey = "similarity" | "filename" | "ug_ref";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -84,6 +85,16 @@ export default function Search() {
   const setSplash = useSetAtom(splashStateAtom);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filterText, setFilterText] = useState("");
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(0);
+  const [sortBy, setSortBy] = useState<SortKey>("similarity");
+  const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
+    return (localStorage.getItem("searchViewMode") as "list" | "grid" | null) || "list";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("searchViewMode", viewMode);
+  }, [viewMode]);
   const [ctxMenu, setCtxMenu] = useState<{
     visible: boolean;
     x: number;
@@ -93,15 +104,50 @@ export default function Search() {
 
   const filteredResults = useMemo(() => {
     if (!results) return [];
-    if (!filterText.trim()) return results.results;
-    const q = filterText.trim().toLowerCase();
-    return results.results.filter(item =>
-      item.img_id.toLowerCase().includes(q) ||
-      item.origin_path.toLowerCase().includes(q) ||
-      (item.ug_ref && item.ug_ref.toLowerCase().includes(q)) ||
-      (item.sheet_name && item.sheet_name.toLowerCase().includes(q))
-    );
-  }, [results, filterText]);
+    let items = results.results;
+
+    if (filterText.trim()) {
+      const q = filterText.trim().toLowerCase();
+      items = items.filter(item =>
+        item.img_id.toLowerCase().includes(q) ||
+        item.origin_path.toLowerCase().includes(q) ||
+        (item.ug_ref && item.ug_ref.toLowerCase().includes(q)) ||
+        (item.sheet_name && item.sheet_name.toLowerCase().includes(q))
+      );
+    }
+
+    const sorted = [...items];
+    switch (sortBy) {
+      case "filename":
+        sorted.sort((a, b) => {
+          const fa = extractFilename(a.origin_path).toLowerCase();
+          const fb = extractFilename(b.origin_path).toLowerCase();
+          return fa.localeCompare(fb);
+        });
+        break;
+      case "ug_ref":
+        sorted.sort((a, b) => {
+          const ua = (a.ug_ref || "").toLowerCase();
+          const ub = (b.ug_ref || "").toLowerCase();
+          return ua.localeCompare(ub) || b.similarity - a.similarity;
+        });
+        break;
+      case "similarity":
+      default:
+        sorted.sort((a, b) => b.similarity - a.similarity);
+        break;
+    }
+
+    return sorted;
+  }, [results, filterText, sortBy]);
+
+  // Reset page when filter, sort, or results change
+  useEffect(() => {
+    setPage(0);
+  }, [filterText, sortBy, results]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE));
+  const pagedResults = filteredResults.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -640,6 +686,34 @@ export default function Search() {
         <div className="search-results">
           <div className="search-results-header">
             <h3 className="search-results-title">{t("search.results")}</h3>
+            <div className="search-sort-group">
+              <label className="search-sort-label">{t("search.sortLabel")}</label>
+              <select
+                className="search-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+              >
+                <option value="similarity">{t("search.sortSimilarity")}</option>
+                <option value="filename">{t("search.sortFilename")}</option>
+                <option value="ug_ref">{t("search.sortUgRef")}</option>
+              </select>
+            </div>
+            <div className="search-view-toggle">
+              <button
+                className={`search-view-btn ${viewMode === "list" ? "active" : ""}`}
+                onClick={() => setViewMode("list")}
+                title={t("search.viewList")}
+              >
+                {t("search.viewList")}
+              </button>
+              <button
+                className={`search-view-btn ${viewMode === "grid" ? "active" : ""}`}
+                onClick={() => setViewMode("grid")}
+                title={t("search.viewGrid")}
+              >
+                {t("search.viewGrid")}
+              </button>
+            </div>
             <button className="search-export-btn" onClick={handleExportCsv}>
               {t("search.exportCsv")}
             </button>
@@ -673,8 +747,8 @@ export default function Search() {
               {t("search.noFilterMatches")}
             </div>
           ) : (
-            <div className="search-results-list">
-            {filteredResults.map((item: SearchResultItem, idx: number) => (
+            <div className={`search-results-list ${viewMode === "grid" ? "grid-view" : ""}`}>
+            {pagedResults.map((item: SearchResultItem, idx: number) => (
               <div
                 key={item.img_id}
                 className={`search-result-item ${selectedIds.has(item.img_id) ? "selected" : ""}`}
@@ -689,7 +763,7 @@ export default function Search() {
                   setCtxMenu({ visible: true, x: e.clientX, y: e.clientY, item });
                 }}
               >
-                <div className="search-result-rank">#{idx + 1}</div>
+                <div className="search-result-rank">#{page * PAGE_SIZE + idx + 1}</div>
                 <div
                   className="search-result-thumb"
                   onMouseEnter={(e) => {
@@ -815,6 +889,32 @@ export default function Search() {
               </div>
             ))}
           </div>
+          )}
+
+          {filteredResults.length > PAGE_SIZE && (
+            <div className="search-pagination">
+              <button
+                className="search-pagination-btn"
+                disabled={page === 0}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                {t("search.pagePrev")}
+              </button>
+              <span className="search-pagination-info">
+                {t("search.pageInfo", {
+                  page: String(page + 1),
+                  total: String(totalPages),
+                  count: String(filteredResults.length),
+                })}
+              </span>
+              <button
+                className="search-pagination-btn"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                {t("search.pageNext")}
+              </button>
+            </div>
           )}
         </div>
       )}

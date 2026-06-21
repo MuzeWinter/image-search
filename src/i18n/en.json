@@ -189,7 +189,16 @@
     "batchClearSelection": "Clear",
     "batchPathsCopied": "{count} paths copied",
     "filterPlaceholder": "Filter by keyword...",
-    "noFilterMatches": "No matching results"
+    "noFilterMatches": "No matching results",
+    "sortLabel": "Sort by",
+    "sortSimilarity": "Similarity",
+    "sortFilename": "Filename A-Z",
+    "sortUgRef": "UG Number A-Z",
+    "viewGrid": "Grid",
+    "viewList": "List",
+    "pageInfo": "Page {page}/{total}, {count} results",
+    "pagePrev": "Prev",
+    "pageNext": "Next"
   },
   "libraries": {
     "add": "Add Library",
