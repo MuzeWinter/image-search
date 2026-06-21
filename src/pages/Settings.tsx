@@ -17,6 +17,15 @@ const SIMILARITY_THRESHOLD_KEY = "similarityThreshold";
 const SCAN_OCR_KEY = "scan_ocr_enabled";
 const SCAN_UG_PREVIEW_KEY = "scan_ug_preview_enabled";
 const SCAN_EXTENSIONS_KEY = "scan_extensions_local";
+const ACCENT_COLOR_KEY = "accentColor";
+
+const ACCENT_PRESETS = [
+  { key: "blue",   color: "oklch(55% 0.16 250)", labelKey: "settings.accentBlue" },
+  { key: "green",  color: "oklch(55% 0.16 150)", labelKey: "settings.accentGreen" },
+  { key: "purple", color: "oklch(52% 0.17 300)", labelKey: "settings.accentPurple" },
+  { key: "orange", color: "oklch(58% 0.17 45)",  labelKey: "settings.accentOrange" },
+  { key: "red",    color: "oklch(52% 0.19 20)",  labelKey: "settings.accentRed" },
+];
 
 type DiagStatus = "ok" | "warn" | "error";
 
@@ -79,6 +88,14 @@ function getSavedScanExtensions(): string[] {
   return [".xlsx", ".xls", ".prt"];
 }
 
+function getSavedAccentColor(): string | null {
+  try {
+    const saved = localStorage.getItem(ACCENT_COLOR_KEY);
+    if (saved && ACCENT_PRESETS.some((p) => p.key === saved)) return saved;
+  } catch { /* localStorage unavailable */ }
+  return null;
+}
+
 export default function Settings() {
   const { t, locale, setLocale } = useI18n();
   const { addToast } = useToast();
@@ -102,6 +119,30 @@ export default function Settings() {
   const [logLoading, setLogLoading] = useState(false);
   const [diagLoading, setDiagLoading] = useState(false);
   const [diagResults, setDiagResults] = useState<DiagResult | null>(null);
+  const [accentColor, setAccentColor] = useState<string | null>(getSavedAccentColor);
+
+  const applyAccentColor = (key: string | null) => {
+    if (key) {
+      const preset = ACCENT_PRESETS.find((p) => p.key === key);
+      if (preset) {
+        document.documentElement.style.setProperty("--accent", preset.color);
+      }
+    } else {
+      document.documentElement.style.removeProperty("--accent");
+    }
+  };
+
+  const handleAccentChange = (key: string) => {
+    setAccentColor(key);
+    try { localStorage.setItem(ACCENT_COLOR_KEY, key); } catch {}
+    applyAccentColor(key);
+  };
+
+  // Restore accent color on mount
+  useEffect(() => {
+    const saved = getSavedAccentColor();
+    if (saved) applyAccentColor(saved);
+  }, []);
 
   useEffect(() => {
     // Load scan extensions: localStorage first, fallback to backend DB
@@ -407,6 +448,8 @@ export default function Settings() {
       localStorage.removeItem(SCAN_OCR_KEY);
       localStorage.removeItem(SCAN_UG_PREVIEW_KEY);
       localStorage.removeItem(SCAN_EXTENSIONS_KEY);
+      localStorage.removeItem(ACCENT_COLOR_KEY);
+      document.documentElement.style.removeProperty("--accent");
       // Reset DB settings to defaults
       await Promise.all([
         settingsService.set("theme", "light"),
@@ -471,6 +514,22 @@ export default function Settings() {
               >
                 {t(opt.labelKey)}
               </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{t("settings.accentColor")}</label>
+          <div className="settings-accent-swatches">
+            {ACCENT_PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                className={`settings-accent-swatch ${accentColor === preset.key ? "active" : ""}`}
+                style={{ backgroundColor: preset.color }}
+                onClick={() => handleAccentChange(preset.key)}
+                title={t(preset.labelKey)}
+                aria-label={t(preset.labelKey)}
+              />
             ))}
           </div>
         </div>
@@ -856,6 +915,7 @@ export default function Settings() {
                 <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemLocale")}</li>
                 <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemUgColumn")}</li>
                 <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemExtensions")}</li>
+                <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemAccent")}</li>
                 <li className="reset-confirm-list-item">{t("settings.resetDefaultsItemCache")}</li>
               </ul>
               <div className="reset-confirm-actions">

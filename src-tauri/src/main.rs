@@ -366,6 +366,161 @@ fn try_call_backend(
     Ok(response)
 }
 
+fn format_timestamp() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let secs = dur.as_secs();
+
+    let mut days = (secs / 86400) as i64;
+    let time_secs = secs % 86400;
+
+    let mut year = 1970i64;
+    loop {
+        let days_in_year = if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+            366
+        } else {
+            365
+        };
+        if days < days_in_year {
+            break;
+        }
+        days -= days_in_year;
+        year += 1;
+    }
+
+    let month_days: [i64; 12] = if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+
+    let mut month = 1i64;
+    for &md in &month_days {
+        if days < md {
+            break;
+        }
+        days -= md;
+        month += 1;
+    }
+    let day = days + 1;
+
+    let h = time_secs / 3600;
+    let m = (time_secs % 3600) / 60;
+    let s = time_secs % 60;
+
+    format!("{}{:02}{:02}-{:02}{:02}{:02}", year, month, day, h, m, s)
+}
+
+fn cleanup_old_backups(backups_dir: &std::path::Path, keep: usize) {
+    let mut files: Vec<(std::time::SystemTime, std::path::PathBuf)> =
+        match std::fs::read_dir(backups_dir) {
+            Ok(entries) => entries
+                .filter_map(|e| e.ok())
+                .filter(|e| {
+                    e.path()
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|n| n.starts_with("zoobet-") && n.ends_with(".db"))
+                        .unwrap_or(false)
+                })
+                .filter_map(|e| {
+                    let modified = e.metadata().ok()?.modified().ok()?;
+                    Some((modified, e.path()))
+                })
+                .collect(),
+            Err(_) => return,
+        };
+
+    if files.len() <= keep {
+        return;
+    }
+
+    files.sort_by(|a, b| b.0.cmp(&a.0));
+
+    for (_time, path) in files.iter().skip(keep) {
+        if let Some(stem) = path.file_stem() {
+            if let Some(parent) = path.parent() {
+                for suffix in &["db-wal", "db-shm"] {
+                    let mut companion = parent.join(stem);
+                    companion.set_extension(suffix);
+                    if companion.exists() {
+                        let _ = std::fs::remove_file(&companion);
+                    }
+                }
+            }
+        }
+        if let Err(e) = std::fs::remove_file(path) {
+            eprintln!("[rust] backup: failed to delete old backup {:?}: {}", path, e);
+        } else {
+            eprintln!("[rust] backup: deleted old backup {:?}", path);
+        }
+    }
+}
+
+fn backup_db_on_exit(app_handle: &tauri::AppHandle) {
+    let backend_dir = match resolve_backend_dir(app_handle) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("[rust] backup: cannot resolve backend dir: {}", e);
+            return;
+        }
+    };
+
+    let backups_dir = backend_dir.join("data").join("backups");
+    let timestamp = format_timestamp();
+    let backup_path = backups_dir.join(format!("zoobet-{}.db", timestamp));
+
+    let python = find_python();
+    let backend_path = match resolve_backend_path(app_handle) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("[rust] backup: cannot resolve backend path: {}", e);
+            return;
+        }
+    };
+
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "settings.backup",
+        "params": {"target_path": backup_path.to_string_lossy()},
+    });
+    let request_str = match serde_json::to_string(&request) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[rust] backup: json serialize error: {}", e);
+            return;
+        }
+    };
+
+    let _guard = match PYTHON_LOCK.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            eprintln!("[rust] backup: lock error: {}", e);
+            return;
+        }
+    };
+
+    match try_call_backend(python, &backend_path, &request_str) {
+        Ok(response) => {
+            if let Some(error) = response.get("error") {
+                let err_msg = error
+                    .get("message")
+                    .and_then(|m| m.as_str())
+                    .unwrap_or("unknown backend error");
+                eprintln!("[rust] backup: backend error: {}", err_msg);
+            } else {
+                eprintln!("[rust] backup: saved to {:?}", backup_path);
+            }
+        }
+        Err(e) => {
+            eprintln!("[rust] backup: call failed: {}", e);
+        }
+    }
+
+    cleanup_old_backups(&backups_dir, 5);
+}
+
 #[tauri::command]
 fn call_backend(
     app_handle: tauri::AppHandle,
@@ -811,6 +966,7 @@ fn main() {
                             }
                         }
                         "quit" => {
+                            backup_db_on_exit(app_handle);
                             app_handle.exit(0);
                         }
                         _ => {}

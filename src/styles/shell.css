@@ -503,6 +503,32 @@
   color: var(--bg-primary);
 }
 
+/* Accent color swatches */
+.settings-accent-swatches {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.settings-accent-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+  flex-shrink: 0;
+}
+
+.settings-accent-swatch:hover {
+  transform: scale(1.15);
+  border-color: var(--muted);
+}
+
+.settings-accent-swatch.active {
+  border-color: var(--fg);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+}
+
 .settings-input-group {
   display: flex;
   gap: var(--space-2);
