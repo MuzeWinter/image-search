@@ -24,7 +24,7 @@ export function Header() {
         <input
           type="text"
           className="header-search-input"
-          placeholder={t("header.searchPlaceholder")}
+          placeholder={t("search.searchPlaceholder")}
           disabled
         />
       </div>

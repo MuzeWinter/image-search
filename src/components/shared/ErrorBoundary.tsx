@@ -62,7 +62,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
               color: "var(--color-text-primary, #1a1a1a)",
             }}
           >
-            {this.props.t("errorBoundary.title")}
+            {this.props.t("common.errorBoundaryTitle")}
           </h2>
           <p
             style={{
@@ -73,7 +73,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
               lineHeight: 1.6,
             }}
           >
-            {this.props.t("errorBoundary.description")}
+            {this.props.t("common.errorBoundaryDesc")}
           </p>
           <button
             onClick={this.handleRetry}

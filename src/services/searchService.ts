@@ -11,48 +11,15 @@ serviceRegistry.register({
     callBackend<T>(method, params),
 });
 
-export interface ExcelInfo {
-  ex_id: string;
-  file_path: string;
-  filename: string;
-  sheet_name: string;
-  row_number: number;
-  column_name: string;
-  cell_value: string;
-}
-
-export interface CadInfo {
-  cad_id: string;
-  file_path: string;
-  filename: string;
-  extension: string;
-}
-
-export interface PdfInfo {
-  doc_id: string;
-  file_path: string;
-  filename: string;
-  page_count: number;
-}
-
 export interface SearchResultItem {
   img_id: string;
-  source_type: string;
-  file_path: string;
-  folder: string | null;
-  filename: string | null;
-  size_bytes: number | null;
-  width: number | null;
-  height: number | null;
-  tags: string[];
-  favorite: boolean;
+  source_type: "excel-embedded" | "ug-preview";
+  image_path: string;
+  origin_path: string;
+  sheet_name: string | null;
+  row_number: number | null;
+  ug_ref: string | null;
   similarity: number;
-  ex_ref: string | null;
-  excel_info: ExcelInfo | null;
-  cad_ref: string | null;
-  cad_info: CadInfo | null;
-  pdf_ref: string | null;
-  pdf_info: PdfInfo | null;
 }
 
 export interface SearchResults {
@@ -81,7 +48,7 @@ export interface EmbeddingItem {
   source_type: string | null;
 }
 
-export type SearchScope = "all" | "excel_only" | "images_only" | "with_cad" | "favorites_only";
+export type SearchScope = "all" | "excel_only" | "ug_only";
 
 export async function searchByImage(
   imageBase64: string,
@@ -175,6 +142,18 @@ export async function listEmbeddings(
     "search.listEmbeddings",
     { limit: limit ?? 100, offset: offset ?? 0 },
   );
+}
+
+export interface ModelStatus {
+  status: "idle" | "loading" | "ready" | "error";
+  percent: number;
+  message: string;
+  device: string | null;
+  error: string | null;
+}
+
+export async function getModelStatus(): Promise<ModelStatus> {
+  return callBackend<ModelStatus>("ai_search.getModelStatus");
 }
 
 export async function deleteEmbedding(

@@ -25,7 +25,7 @@ export default function LibraryPage() {
     loading: libsLoading,
     error: libsError,
     refetch: refetchLibs,
-  } = useServiceQuery<Library[]>("libraryService", "library.list");
+  } = useServiceQuery<Library[]>("libraryService", "libraries.list");
 
   useEffect(() => {
     return () => {
@@ -58,7 +58,7 @@ export default function LibraryPage() {
     try {
       await libraryService.add(path);
       setLibPath("");
-      setSaveMsg(t("library.added"));
+      setSaveMsg(t("libraries.added"));
       refetchLibs();
       setTimeout(() => setSaveMsg(""), 3000);
     } catch (e) {
@@ -71,7 +71,7 @@ export default function LibraryPage() {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
         directory: true,
-        title: t("library.selectFolder"),
+        title: t("libraries.selectFolder"),
       });
       if (selected && typeof selected === "string") {
         setLibPath(selected);
@@ -120,11 +120,11 @@ export default function LibraryPage() {
   };
 
   const handleRemoveLibrary = async (lib: Library) => {
-    if (!window.confirm(t("library.deleteConfirm", { path: lib.label || lib.path }))) return;
+    if (!window.confirm(t("libraries.deleteConfirm", { path: lib.label || lib.path }))) return;
     try {
       await libraryService.remove(lib.id);
       refetchLibs();
-      setSaveMsg(t("library.deleted"));
+      setSaveMsg(t("libraries.deleted"));
       setTimeout(() => setSaveMsg(""), 3000);
     } catch (e) {
       setSaveMsg(e instanceof Error ? e.message : String(e));
@@ -136,25 +136,25 @@ export default function LibraryPage() {
       const { open } = await import("@tauri-apps/plugin-shell");
       await open(lib.path);
     } catch {
-      setSaveMsg(t("library.cannotOpen"));
+      setSaveMsg(t("libraries.cannotOpen"));
     }
   };
 
   const statusDot = (status: string) => {
     switch (status) {
-      case "scanning": return <span className="lib-status-dot scanning" title={t("library.scanning")} />;
-      case "ready": return <span className="lib-status-dot ready" title={t("library.ready")} />;
-      case "error": return <span className="lib-status-dot error" title={t("library.error")} />;
-      default: return <span className="lib-status-dot idle" title={t("library.idle")} />;
+      case "scanning": return <span className="lib-status-dot scanning" title={t("libraries.scanning")} />;
+      case "ready": return <span className="lib-status-dot ready" title={t("libraries.ready")} />;
+      case "error": return <span className="lib-status-dot error" title={t("libraries.error")} />;
+      default: return <span className="lib-status-dot idle" title={t("libraries.idle")} />;
     }
   };
 
   const phaseLabel = (phase: string) => {
     switch (phase) {
-      case "collecting": return t("library.phaseCollecting");
-      case "hashing": return t("library.phaseHashing");
-      case "comparing": return t("library.phaseComparing");
-      case "saving": return t("library.phaseSaving");
+      case "collecting": return t("libraries.phaseCollecting");
+      case "hashing": return t("libraries.phaseHashing");
+      case "comparing": return t("libraries.phaseComparing");
+      case "saving": return t("libraries.phaseSaving");
       default: return "";
     }
   };
@@ -178,7 +178,7 @@ export default function LibraryPage() {
           <input
             type="text"
             className="settings-input"
-            placeholder={t("library.pathHint")}
+            placeholder={t("libraries.pathHint")}
             value={libPath}
             onChange={(e) => setLibPath(e.target.value)}
             onKeyDown={(e) => {
@@ -186,10 +186,10 @@ export default function LibraryPage() {
             }}
           />
           <button className="settings-btn-primary" onClick={handleOpenFolderDialog}>
-            {t("library.browse")}
+            {t("libraries.browse")}
           </button>
           <button className="settings-btn-primary" onClick={handleAddLibrary}>
-            {t("library.add")}
+            {t("libraries.add")}
           </button>
         </div>
         {saveMsg && (
@@ -204,11 +204,11 @@ export default function LibraryPage() {
         <section className="scan-progress-panel">
           <div className="scan-progress-header">
             <span className="scan-progress-title">
-              {scanPhase === "scanning" ? t("library.scanning") : t("library.scanComplete")}
+              {scanPhase === "scanning" ? t("libraries.scanning") : t("libraries.scanComplete")}
             </span>
             {scanPhase === "scanning" && (
               <button className="settings-btn-danger" onClick={handleCancelScan}>
-                {t("library.cancelScan")}
+                {t("libraries.cancelScan")}
               </button>
             )}
           </div>
@@ -239,31 +239,31 @@ export default function LibraryPage() {
             <div className="scan-result-stats">
               <div className="scan-result-stat">
                 <span className="scan-result-num">{scanResult.total_files}</span>
-                <span className="scan-result-label">{t("library.totalFiles")}</span>
+                <span className="scan-result-label">{t("libraries.totalFiles")}</span>
               </div>
               <div className="scan-result-stat added">
                 <span className="scan-result-num">+{scanResult.added}</span>
-                <span className="scan-result-label">{t("library.addedFiles")}</span>
+                <span className="scan-result-label">{t("libraries.addedFiles")}</span>
               </div>
               <div className="scan-result-stat modified">
                 <span className="scan-result-num">{scanResult.modified}</span>
-                <span className="scan-result-label">{t("library.modifiedFiles")}</span>
+                <span className="scan-result-label">{t("libraries.modifiedFiles")}</span>
               </div>
               <div className="scan-result-stat removed">
                 <span className="scan-result-num">{scanResult.removed}</span>
-                <span className="scan-result-label">{t("library.removedFiles")}</span>
+                <span className="scan-result-label">{t("libraries.removedFiles")}</span>
               </div>
               <div className="scan-result-stat moved">
                 <span className="scan-result-num">{scanResult.moved}</span>
-                <span className="scan-result-label">{t("library.movedFiles")}</span>
+                <span className="scan-result-label">{t("libraries.movedFiles")}</span>
               </div>
               <div className="scan-result-stat">
                 <span className="scan-result-num">{scanResult.duration_sec}s</span>
-                <span className="scan-result-label">{t("library.duration")}</span>
+                <span className="scan-result-label">{t("libraries.duration")}</span>
               </div>
               <div className="scan-result-stat">
                 <span className="scan-result-num">{scanResult.image_count}</span>
-                <span className="scan-result-label">{t("library.images")}</span>
+                <span className="scan-result-label">{t("libraries.images")}</span>
               </div>
               <div className="scan-result-stat">
                 <span className="scan-result-num">{scanResult.excel_count}</span>
@@ -280,19 +280,19 @@ export default function LibraryPage() {
               {scanResult.excel_image_count !== undefined && scanResult.excel_image_count > 0 && (
                 <div className="scan-result-stat">
                   <span className="scan-result-num">{scanResult.excel_image_count}</span>
-                  <span className="scan-result-label">{t("library.excelImages")}</span>
+                  <span className="scan-result-label">{t("libraries.excelImages")}</span>
                 </div>
               )}
               {scanResult.auto_matches !== undefined && scanResult.auto_matches > 0 && (
                 <div className="scan-result-stat match">
                   <span className="scan-result-num">{scanResult.auto_matches}</span>
-                  <span className="scan-result-label">{t("library.autoMatches")}</span>
+                  <span className="scan-result-label">{t("libraries.autoMatches")}</span>
                 </div>
               )}
               {scanResult.auto_indexed !== undefined && scanResult.auto_indexed > 0 && (
                 <div className="scan-result-stat indexed">
                   <span className="scan-result-num">{scanResult.auto_indexed}</span>
-                  <span className="scan-result-label">{t("library.autoIndexed")}</span>
+                  <span className="scan-result-label">{t("libraries.autoIndexed")}</span>
                 </div>
               )}
             </div>
@@ -310,11 +310,12 @@ export default function LibraryPage() {
               <thead>
                 <tr>
                   <th className="lib-col-status"></th>
-                  <th className="lib-col-path">{t("library.path")}</th>
-                  <th className="lib-col-count">{t("library.files")}</th>
-                  <th className="lib-col-count">{t("library.images")}</th>
-                  <th className="lib-col-time">{t("library.lastScan")}</th>
-                  <th className="lib-col-actions">{t("library.actions")}</th>
+                  <th className="lib-col-path">{t("libraries.path")}</th>
+                  <th className="lib-col-count">{t("libraries.files")}</th>
+                  <th className="lib-col-count">{t("libraries.images")}</th>
+                  <th className="lib-col-count">{t("libraries.prt")}</th>
+                  <th className="lib-col-time">{t("libraries.lastScan")}</th>
+                  <th className="lib-col-actions">{t("libraries.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -335,6 +336,7 @@ export default function LibraryPage() {
                       </td>
                       <td className="lib-col-count text-mono">{lib.file_count}</td>
                       <td className="lib-col-count text-mono">{lib.image_count}</td>
+                      <td className="lib-col-count text-mono">{lib.prt_count}</td>
                       <td className="lib-col-time text-muted text-xs">
                         {lib.last_scan ?? "-"}
                       </td>
@@ -342,23 +344,23 @@ export default function LibraryPage() {
                         <button
                           className="lib-action-btn"
                           onClick={() => handleOpenFolder(lib)}
-                          title={t("library.openFolder")}
+                          title={t("libraries.openFolder")}
                           disabled={isActiveScan}
                         >
-                          {t("library.open")}
+                          {t("libraries.open")}
                         </button>
                         <button
                           className="lib-action-btn lib-action-scan"
                           onClick={() => handleScanLibrary(lib)}
-                          title={t("library.scan")}
+                          title={t("libraries.scan")}
                           disabled={scanPhase === "scanning"}
                         >
-                          {t("library.scan")}
+                          {t("libraries.scan")}
                         </button>
                         <button
                           className="lib-action-btn lib-action-delete"
                           onClick={() => handleRemoveLibrary(lib)}
-                          title={t("library.delete")}
+                          title={t("libraries.delete")}
                           disabled={isActiveScan}
                         >
                           {t("common.delete")}
@@ -372,9 +374,9 @@ export default function LibraryPage() {
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-state-icon">{t("library.emptyIcon")}</div>
-            <div className="empty-state-title">{t("library.emptyTitle")}</div>
-            <div className="empty-state-description">{t("library.emptyDesc")}</div>
+            <div className="empty-state-icon">{t("libraries.emptyIcon")}</div>
+            <div className="empty-state-title">{t("libraries.emptyTitle")}</div>
+            <div className="empty-state-description">{t("libraries.emptyDesc")}</div>
           </div>
         )}
       </section>

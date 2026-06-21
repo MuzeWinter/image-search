@@ -1,51 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useI18n, type Locale } from "../i18n/context";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
-import { useServiceQuery } from "../stores/hooks";
 import * as settingsService from "../services/settingsService";
-import * as libraryService from "../services/libraryService";
-import * as ocrService from "../services/ocrService";
-import type { Library } from "../services/types";
-import { Skeleton } from "../components/shared/Skeleton";
 import { open, save } from "@tauri-apps/plugin-dialog";
+
+const UG_COLUMN_KEY = "ugColumnName";
+
+function getSavedUgColumn(): string {
+  try {
+    const saved = localStorage.getItem(UG_COLUMN_KEY);
+    if (saved) return saved;
+  } catch { /* localStorage unavailable */ }
+  return "图号";
+}
 
 export default function Settings() {
   const { t, locale, setLocale } = useI18n();
   const { theme, setTheme } = useTheme();
-  const [libPath, setLibPath] = useState("");
-  const [saveMsg, setSaveMsg] = useState("");
-  const [ocrEnabled, setOcrEnabled] = useState(false);
+  const [ugColumnName, setUgColumnName] = useState(getSavedUgColumn);
+  const [ugSaveMsg, setUgSaveMsg] = useState("");
   const [maintMsg, setMaintMsg] = useState("");
   const [maintLoading, setMaintLoading] = useState("");
-
-  const {
-    data: libraries,
-    loading: libsLoading,
-    error: libsError,
-    refetch: refetchLibs,
-  } = useServiceQuery<Library[]>("libraryService", "library.list");
-
-  useEffect(() => {
-    ocrService.getOcrStatus().then((s) => setOcrEnabled(s.enabled)).catch(() => {});
-  }, []);
-
-  const handleOcrToggle = async () => {
-    const next = !ocrEnabled;
-    setOcrEnabled(next);
-    try {
-      await ocrService.setOcrEnabled(next);
-      await settingsService.set("ocr.enabled", next ? "1" : "0");
-    } catch {
-      // best-effort
-    }
-  };
 
   const handleThemeChange = async (newTheme: Theme) => {
     setTheme(newTheme);
     try {
       await settingsService.set("theme", newTheme);
     } catch {
-      // Settings saved to localStorage via ThemeContext, DB save is best-effort
+      // Theme saved to localStorage via ThemeContext, DB save is best-effort
     }
   };
 
@@ -54,42 +36,17 @@ export default function Settings() {
     try {
       await settingsService.set("locale", newLocale);
     } catch {
-      // Settings saved to localStorage via I18nContext, DB save is best-effort
+      // Locale saved to localStorage via I18nContext, DB save is best-effort
     }
   };
 
-  const handleBrowse = async () => {
+  const handleUgColumnSave = () => {
     try {
-      const selected = await open({ directory: true, multiple: false, title: t("library.selectFolder") });
-      if (selected && typeof selected === "string") {
-        setLibPath(selected);
-      }
+      localStorage.setItem(UG_COLUMN_KEY, ugColumnName.trim() || "图号");
+      setUgSaveMsg(t("settings.ugColumnNameSaved"));
+      setTimeout(() => setUgSaveMsg(""), 2000);
     } catch {
-      // dialog cancelled or error
-    }
-  };
-
-  const handleAddLibrary = async () => {
-    const path = libPath.trim();
-    if (!path) return;
-    try {
-      await libraryService.add(path);
-      setLibPath("");
-      setSaveMsg(t("common.saved"));
-      refetchLibs();
-      setTimeout(() => setSaveMsg(""), 2000);
-    } catch (e) {
-      setSaveMsg(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const handleRemoveLibrary = async (id: number, path: string) => {
-    if (!window.confirm(t("library.deleteConfirm", { path }))) return;
-    try {
-      await libraryService.remove(id);
-      refetchLibs();
-    } catch (e) {
-      setSaveMsg(e instanceof Error ? e.message : String(e));
+      setUgSaveMsg("Failed to save");
     }
   };
 
@@ -211,87 +168,30 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* AI Features */}
-      <section className="settings-section">
-        <h3>AI</h3>
-
-        <div className="settings-row">
-          <label className="settings-label">{t("ocr.enable")}</label>
-          <div className="settings-options">
-            <button
-              className={`settings-option-btn ${ocrEnabled ? "active" : ""}`}
-              onClick={handleOcrToggle}
-            >
-              ON
-            </button>
-            <button
-              className={`settings-option-btn ${!ocrEnabled ? "active" : ""}`}
-              onClick={handleOcrToggle}
-            >
-              OFF
-            </button>
-          </div>
-        </div>
-        <p className="text-sm text-muted" style={{ marginTop: 4 }}>{t("ocr.enableDesc")}</p>
-      </section>
-
-      {/* Data */}
+      {/* UG Column Name */}
       <section className="settings-section">
         <h3>{t("settings.data")}</h3>
 
         <div className="settings-row">
-          <label className="settings-label">{t("settings.libraryPath")}</label>
+          <label className="settings-label">{t("settings.ugColumnName")}</label>
           <div className="settings-input-group">
             <input
               type="text"
               className="settings-input"
-              placeholder={t("settings.libraryPathHint")}
-              value={libPath}
-              onChange={(e) => setLibPath(e.target.value)}
+              placeholder={t("settings.ugColumnNameHint")}
+              value={ugColumnName}
+              onChange={(e) => setUgColumnName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddLibrary();
+                if (e.key === "Enter") handleUgColumnSave();
               }}
             />
-            <button className="settings-btn-secondary" onClick={handleBrowse}>
-              {t("settings.browseBtn")}
-            </button>
-            <button className="settings-btn-primary" onClick={handleAddLibrary}>
-              {t("settings.addLibrary")}
+            <button className="settings-btn-primary" onClick={handleUgColumnSave}>
+              {t("common.save")}
             </button>
           </div>
         </div>
 
-        {saveMsg && <p className="settings-msg">{saveMsg}</p>}
-
-        <div className="settings-libraries">
-          <h4>{t("settings.libraries")}</h4>
-          {libsLoading ? (
-            <Skeleton variant="text" lines={3} />
-          ) : libsError ? (
-            <p className="settings-error">{libsError}</p>
-          ) : libraries && libraries.length > 0 ? (
-            <ul className="settings-lib-list">
-              {libraries.map((lib) => (
-                <li key={lib.id} className="settings-lib-item">
-                  <span className="settings-lib-path" title={lib.path}>
-                    {lib.label || lib.path}
-                  </span>
-                  <span className="settings-lib-meta">
-                    {lib.image_count} {t("statusBar.images")}
-                  </span>
-                  <button
-                    className="settings-btn-danger"
-                    onClick={() => handleRemoveLibrary(lib.id, lib.label || lib.path)}
-                  >
-                    {t("common.delete")}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="settings-empty">{t("settings.noLibraries")}</p>
-          )}
-        </div>
+        {ugSaveMsg && <p className="settings-msg">{ugSaveMsg}</p>}
       </section>
 
       {/* Maintenance */}

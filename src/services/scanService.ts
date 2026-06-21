@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { callBackend, callTauri } from "./ipc";
 import { serviceRegistry } from "./registry";

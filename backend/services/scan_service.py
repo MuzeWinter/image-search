@@ -587,7 +587,18 @@ def scan_library(library_id: int, library_path: str):
                 sys.stderr.write(f"[scan] excel error {filepath}: {e}\n")
                 sys.stderr.flush()
 
-    # Phase 5: Auto-associate images with CAD/Excel/PDF
+    # Phase 5: UG preview extraction
+    emit_progress("ug_preview", 0, 0, "")
+    ug_extracted = 0
+    try:
+        from backend.services.ug_service import process_directory as ug_process
+        ug_result = ug_process(library_path)
+        ug_extracted = ug_result.get("extracted", 0)
+    except Exception as e:
+        sys.stderr.write(f"[scan] UG preview error: {e}\n")
+        sys.stderr.flush()
+
+    # Phase 6: Auto-associate images with CAD/Excel/PDF
     emit_progress("matching", 0, 0, "")
     try:
         auto_matches = _auto_associate(conn, library_path)
@@ -596,7 +607,7 @@ def scan_library(library_id: int, library_path: str):
         sys.stderr.flush()
         auto_matches = 0
 
-    # Phase 6: Auto-index new images (extract CLIP features → FAISS)
+    # Phase 7: Auto-index new images (extract CLIP features → FAISS)
     emit_progress("indexing", 0, 0, "")
     try:
         auto_indexed = _auto_index_images(conn, limit=200)
@@ -639,6 +650,7 @@ def scan_library(library_id: int, library_path: str):
         "excel_image_count": excel_image_count,
         "auto_matches": auto_matches,
         "auto_indexed": auto_indexed,
+        "ug_extracted": ug_extracted,
     })
 
 

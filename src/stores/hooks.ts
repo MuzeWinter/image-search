@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { serviceRegistry } from "../services/registry";
-import type { ServiceQueryResult } from "../services/types";
+
+export interface ServiceQueryResult<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
 
 export function useServiceQuery<T>(
   serviceName: string,

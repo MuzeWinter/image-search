@@ -40,13 +40,11 @@ def _get_stats():
     conn = get_connection()
     lib_count = conn.execute("SELECT COUNT(*) as n FROM libraries").fetchone()["n"]
     img_count = conn.execute("SELECT COUNT(*) as n FROM images").fetchone()["n"]
-    excel_count = conn.execute("SELECT COUNT(*) as n FROM excel_records").fetchone()["n"]
-    cad_count = conn.execute("SELECT COUNT(*) as n FROM cad_files").fetchone()["n"]
-    pdf_count = conn.execute("SELECT COUNT(*) as n FROM pdf_files").fetchone()["n"]
+    embedded_count = conn.execute("SELECT COUNT(*) as n FROM images WHERE source_type='excel-embedded'").fetchone()["n"]
+    ug_count = conn.execute("SELECT COUNT(*) as n FROM images WHERE source_type='ug-preview'").fetchone()["n"]
     return {
         "libraries": lib_count,
         "images": img_count,
-        "excelRecords": excel_count,
-        "cadFiles": cad_count,
-        "pdfFiles": pdf_count,
+        "excelEmbedded": embedded_count,
+        "ugPreviews": ug_count,
     }

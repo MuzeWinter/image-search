@@ -1,13 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useI18n } from "../i18n/context";
 import * as searchService from "../services/searchService";
-import type { SearchScope } from "../services/searchService";
-import * as aiService from "../services/aiService";
-import * as ocrService from "../services/ocrService";
-import type { SearchResultItem, SearchResults } from "../services/searchService";
-import type { ModelStatus } from "../services/aiService";
+import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
+import { openFile, openFolder } from "../services/systemService";
 
-type SearchState = "idle" | "loading-model" | "searching" | "done" | "error";
+type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -22,80 +19,87 @@ function fileToUrl(filePath: string): string {
   return `asset://localhost/${encodeURI(filePath.replace(/\\/g, "/"))}`;
 }
 
-async function openFile(filePath: string) {
-  try {
-    const { open } = await import("@tauri-apps/plugin-shell");
-    await open(filePath);
-  } catch {
-    // silently fail
-  }
-}
-
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    // silently fail
-  }
-}
-
 function formatSimilarity(sim: number): string {
   return `${(sim * 100).toFixed(1)}%`;
 }
 
-function formatFileSize(bytes: number | null): string {
-  if (bytes === null || bytes === undefined) return "-";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function similarityClass(sim: number): string {
+  if (sim > 0.8) return "high";
+  if (sim > 0.5) return "mid";
+  return "low";
+}
+
+function extractFilename(path: string): string {
+  const parts = path.replace(/\\/g, "/").split("/");
+  return parts[parts.length - 1] || path;
 }
 
 export default function Search() {
   const { t } = useI18n();
   const [state, setState] = useState<SearchState>("idle");
-  const [modelStatus, setModelStatus] = useState<ModelStatus>({ status: "idle", percent: 0, message: "", device: null, error: null });
   const [results, setResults] = useState<SearchResults | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [dragOver, setDragOver] = useState(false);
-  const [ocrEnabled, setOcrEnabled] = useState(false);
-  const [ocrText, setOcrText] = useState("");
-  const [copiedPath, setCopiedPath] = useState("");
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
+  const [modelPercent, setModelPercent] = useState(0);
+  const [modelMsg, setModelMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const modelPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Check OCR status on mount
+  // Cleanup model poll on unmount
   useEffect(() => {
-    ocrService.getOcrStatus().then((s) => setOcrEnabled(s.enabled)).catch(() => {});
+    return () => {
+      if (modelPollRef.current) clearInterval(modelPollRef.current);
+    };
+  }, []);
+
+  const waitForModel = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const poll = async () => {
+        try {
+          const status = await searchService.getModelStatus();
+          setModelPercent(status.percent);
+          setModelMsg(status.message);
+          if (status.status === "ready") {
+            if (modelPollRef.current) clearInterval(modelPollRef.current);
+            modelPollRef.current = null;
+            resolve();
+          } else if (status.status === "error") {
+            if (modelPollRef.current) clearInterval(modelPollRef.current);
+            modelPollRef.current = null;
+            reject(new Error(status.error || status.message || "Model load failed"));
+          }
+        } catch (e) {
+          if (modelPollRef.current) clearInterval(modelPollRef.current);
+          modelPollRef.current = null;
+          reject(e);
+        }
+      };
+
+      // Poll immediately, then every 500ms
+      poll();
+      modelPollRef.current = setInterval(poll, 500);
+    });
   }, []);
 
   const doSearch = useCallback(async (base64: string, displayUrl: string) => {
     setPreviewUrl(displayUrl);
-    setState("loading-model");
     setErrorMsg("");
     setResults(null);
-    setOcrText("");
 
-    // Start model loading
+    // Check model status first
     try {
-      await aiService.loadModel();
+      const initialStatus = await searchService.getModelStatus();
+      if (initialStatus.status !== "ready") {
+        setState("model-loading");
+        setModelPercent(initialStatus.percent);
+        setModelMsg(initialStatus.message);
+        await waitForModel();
+      }
     } catch {
-      // Model may already be loaded or will load during search
+      // If can't reach backend for status, try search anyway
     }
-
-    // Poll model status
-    const pollModel = () => {
-      aiService.getModelStatus().then((s) => {
-        setModelStatus(s);
-        if (s.status === "error") {
-          setState("error");
-          setErrorMsg(s.error || s.message);
-        }
-      }).catch(() => {});
-    };
-    pollModel();
-    pollRef.current = setInterval(pollModel, 500);
 
     setState("searching");
 
@@ -103,34 +107,15 @@ export default function Search() {
       const searchResults = await searchService.searchByImage(base64, 30, searchScope);
       setResults(searchResults);
       setState("done");
-
-      // Optional OCR
-      if (ocrEnabled) {
-        ocrService.recognize(base64).then((r) => {
-          setOcrText(r.text);
-        }).catch(() => {});
-      }
     } catch (e) {
       setState("error");
       setErrorMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
     }
-  }, [ocrEnabled, searchScope]);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
+  }, [searchScope, waitForModel]);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setErrorMsg(t("aiSearch.invalidFileType"));
+      setErrorMsg(t("search.invalidFileType"));
       return;
     }
     const base64 = await fileToBase64(file);
@@ -176,31 +161,12 @@ export default function Search() {
     }
   };
 
-  const handleCopyPath = async (path: string) => {
-    await copyToClipboard(path);
-    setCopiedPath(path);
-    setTimeout(() => setCopiedPath(""), 2000);
+  const sourceTypeLabel = (sourceType: string): string => {
+    if (sourceType === "excel-embedded") return t("search.sourceExcelEmbedded");
+    if (sourceType === "ug-preview") return t("search.sourceUgPreview");
+    return sourceType;
   };
 
-  const handleOpenImage = (filePath: string) => {
-    openFile(filePath);
-  };
-
-  const handleOpenExcel = (exId: string) => {
-    // Navigate is not available directly; use display for now
-    // The file_path from excel_info can be opened
-  };
-
-  const sourceTypeLabel = (type: string): string => {
-    switch (type) {
-      case "file_image": return t("aiSearch.sourceFileImage");
-      case "excel_embedded": return t("aiSearch.sourceExcelEmbedded");
-      default: return type;
-    }
-  };
-
-  const isModelLoading = modelStatus.status === "loading";
-  const showProgress = state === "loading-model" || state === "searching";
   const showDropZone = state === "idle" || state === "done" || state === "error";
 
   return (
@@ -217,8 +183,8 @@ export default function Search() {
       >
         <div className="search-dropzone-content">
           <div className="search-dropzone-icon">+</div>
-          <p className="search-dropzone-text">{t("aiSearch.dropHint")}</p>
-          <p className="search-dropzone-sub">{t("aiSearch.dropSubHint")}</p>
+          <p className="search-dropzone-text">{t("search.dropHint")}</p>
+          <p className="search-dropzone-sub">{t("search.dropSubHint")}</p>
         </div>
         <input
           ref={fileInputRef}
@@ -231,14 +197,12 @@ export default function Search() {
 
       {/* Search scope filter */}
       <div className="search-scope-bar">
-        <span className="search-scope-label">{t("aiSearch.scopeAll")}:</span>
+        <span className="search-scope-label">Filter:</span>
         <div className="search-scope-options">
           {([
-            ["all", "aiSearch.scopeAll"],
-            ["excel_only", "aiSearch.scopeExcelOnly"],
-            ["images_only", "aiSearch.scopeImagesOnly"],
-            ["with_cad", "aiSearch.scopeWithCad"],
-            ["favorites_only", "aiSearch.scopeFavorites"],
+            ["all", "search.scopeAll"],
+            ["excel_only", "search.scopeExcelOnly"],
+            ["ug_only", "search.scopeUgOnly"],
           ] as const).map(([val, labelKey]) => (
             <button
               key={val}
@@ -252,21 +216,37 @@ export default function Search() {
       </div>
 
       {/* Model loading progress */}
-      {showProgress && (
-        <div className="search-progress">
-          {isModelLoading && (
-            <div className="search-progress-bar-container">
-              <div className="search-progress-bar" style={{ width: `${modelStatus.percent}%` }} />
-            </div>
-          )}
-          <p className="search-progress-text">
-            {isModelLoading
-              ? `${t("aiSearch.loadingModel")} (${modelStatus.percent}%)`
-              : t("aiSearch.searching")}
+      {state === "model-loading" && (
+        <div className="search-model-progress">
+          <p className="search-model-progress-text">
+            {modelMsg || t("search.modelLoading")}
           </p>
-          {modelStatus.device && (
-            <p className="search-progress-device">{t("aiSearch.device")}: {modelStatus.device}</p>
-          )}
+          <div className="search-model-progress-bar-container">
+            <div
+              className="search-model-progress-bar"
+              style={{ width: `${Math.max(modelPercent, 2)}%` }}
+            />
+          </div>
+          <p className="search-model-progress-pct">{modelPercent}%</p>
+        </div>
+      )}
+
+      {/* Searching skeleton */}
+      {state === "searching" && (
+        <div className="search-results">
+          <h3 className="search-results-title">{t("search.searching")}</h3>
+          <div className="search-results-list">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="search-result-skeleton">
+                <div className="skeleton skeleton-image" style={{ width: 80, height: 80 }} />
+                <div className="search-result-skeleton-info">
+                  <div className="skeleton skeleton-text" style={{ width: "40%" }} />
+                  <div className="skeleton skeleton-text" style={{ width: "30%" }} />
+                  <div className="skeleton skeleton-text" style={{ width: "60%" }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -286,37 +266,31 @@ export default function Search() {
           <img src={previewUrl} alt="Query" className="search-query-img" />
           <div className="search-query-meta">
             <p className="search-result-count">
-              {t("aiSearch.foundResults", { count: String(results?.count ?? 0) })}
+              {t("search.foundResults", { count: String(results?.count ?? 0) })}
             </p>
             {results?.duration_ms !== undefined && (
-              <p className="search-duration">{t("aiSearch.duration", { ms: String(results.duration_ms) })}</p>
+              <p className="search-duration">{t("search.duration", { ms: String(results.duration_ms) })}</p>
             )}
           </div>
         </div>
       )}
 
-      {/* OCR text */}
-      {ocrText && (
-        <div className="search-ocr-text">
-          <span className="search-ocr-label">OCR:</span> {ocrText}
-        </div>
-      )}
-
       {/* Results */}
-      {results && results.results.length > 0 && (
+      {results && results.results.length > 0 && state === "done" && (
         <div className="search-results">
-          <h3 className="search-results-title">{t("aiSearch.results")}</h3>
+          <h3 className="search-results-title">{t("search.results")}</h3>
           <div className="search-results-list">
-            {results.results.map((item: SearchResultItem) => (
+            {results.results.map((item: SearchResultItem, idx: number) => (
               <div key={item.img_id} className="search-result-item">
+                <div className="search-result-rank">#{idx + 1}</div>
                 <div
                   className="search-result-thumb"
-                  onClick={() => handleOpenImage(item.file_path)}
-                  title={t("aiSearch.openImage")}
+                  onClick={() => openFile(item.image_path)}
+                  title={t("search.openImage")}
                 >
                   <img
-                    src={fileToUrl(item.file_path)}
-                    alt={item.filename ?? item.img_id}
+                    src={fileToUrl(item.image_path)}
+                    alt={item.img_id}
                     loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
@@ -326,91 +300,63 @@ export default function Search() {
                 <div className="search-result-info">
                   <div className="search-result-header">
                     <span className="search-result-id" title={item.img_id}>
-                      {item.filename || item.img_id}
+                      {item.img_id}
                     </span>
-                    <span
-                      className={`search-result-similarity ${item.similarity > 0.8 ? "high" : item.similarity > 0.5 ? "mid" : "low"}`}
-                    >
+                    <span className={`search-result-similarity ${similarityClass(item.similarity)}`}>
                       {formatSimilarity(item.similarity)}
                     </span>
                   </div>
                   <div className="search-result-meta">
-                    <span className="search-result-source">
+                    <span className={`search-result-source-badge ${item.source_type}`}>
                       {sourceTypeLabel(item.source_type)}
                     </span>
-                    {item.width && item.height && (
-                      <span className="search-result-dim">{item.width}x{item.height}</span>
-                    )}
-                    {item.size_bytes !== null && (
-                      <span className="search-result-size">{formatFileSize(item.size_bytes)}</span>
-                    )}
+                    <span className="search-result-path" title={item.origin_path}>
+                      {extractFilename(item.origin_path)}
+                    </span>
                   </div>
-                  <div className="search-result-tags">
-                    {item.tags.map((tag) => (
-                      <span key={tag} className="search-result-tag">{tag}</span>
-                    ))}
-                  </div>
-                  {/* Excel association */}
-                  {item.excel_info && (
-                    <div className="search-result-assoc">
-                      <span className="assoc-label">EX:</span>
-                      <span className="assoc-value">{item.excel_info.ex_id}</span>
-                      <span className="assoc-detail">
-                        {item.excel_info.sheet_name} / {item.excel_info.filename}
-                      </span>
-                      <button
-                        className="assoc-open-btn"
-                        onClick={() => openFile(item.excel_info!.file_path)}
-                      >
-                        {t("aiSearch.openExcel")}
-                      </button>
+                  {/* Excel info */}
+                  {item.source_type === "excel-embedded" && item.sheet_name && (
+                    <div className="search-result-detail">
+                      <span className="detail-label">{t("search.sheet")}:</span>
+                      <span className="detail-value">{item.sheet_name}</span>
+                      {item.row_number != null && (
+                        <>
+                          <span className="detail-label">{t("search.row")}:</span>
+                          <span className="detail-value">R{item.row_number}</span>
+                        </>
+                      )}
                     </div>
                   )}
-                  {/* CAD association */}
-                  {item.cad_info && (
-                    <div className="search-result-assoc">
-                      <span className="assoc-label">CAD:</span>
-                      <span className="assoc-value">{item.cad_info.cad_id}</span>
-                      <span className="assoc-detail">{item.cad_info.filename}</span>
-                      <button
-                        className="assoc-open-btn"
-                        onClick={() => openFile(item.cad_info!.file_path)}
-                      >
-                        {t("aiSearch.openCad")}
-                      </button>
-                    </div>
-                  )}
-                  {/* PDF association */}
-                  {item.pdf_info && (
-                    <div className="search-result-assoc">
-                      <span className="assoc-label">PDF:</span>
-                      <span className="assoc-value">{item.pdf_info.doc_id}</span>
-                      <span className="assoc-detail">
-                        {item.pdf_info.filename} ({item.pdf_info.page_count} {t("aiSearch.pages")})
-                      </span>
-                      <button
-                        className="assoc-open-btn"
-                        onClick={() => openFile(item.pdf_info!.file_path)}
-                      >
-                        {t("aiSearch.openPdf")}
-                      </button>
+                  {/* UG ref */}
+                  {item.ug_ref && (
+                    <div className="search-result-detail">
+                      <span className="detail-label">UG:</span>
+                      <span className="detail-value">{item.ug_ref}</span>
                     </div>
                   )}
                 </div>
                 <div className="search-result-actions">
+                  {item.source_type === "excel-embedded" && (
+                    <button
+                      className="search-action-btn search-action-primary"
+                      onClick={() => openFile(item.origin_path)}
+                    >
+                      {t("search.openExcel")}
+                    </button>
+                  )}
+                  {item.source_type === "ug-preview" && (
+                    <button
+                      className="search-action-btn search-action-primary"
+                      onClick={() => openFolder(item.origin_path)}
+                    >
+                      {t("search.openUgFolder")}
+                    </button>
+                  )}
                   <button
                     className="search-action-btn"
-                    onClick={() => handleOpenImage(item.file_path)}
-                    title={t("aiSearch.openImage")}
+                    onClick={() => openFile(item.image_path)}
                   >
-                    {t("aiSearch.openImage")}
-                  </button>
-                  <button
-                    className="search-action-btn"
-                    onClick={() => handleCopyPath(item.file_path)}
-                    title={t("aiSearch.copyPath")}
-                  >
-                    {copiedPath === item.file_path ? t("aiSearch.copied") : t("aiSearch.copyPath")}
+                    {t("search.openImage")}
                   </button>
                 </div>
               </div>
@@ -422,9 +368,9 @@ export default function Search() {
       {/* No results */}
       {results && results.results.length === 0 && state === "done" && (
         <div className="search-empty">
-          <p className="search-empty-icon">🔍</p>
-          <p className="search-empty-title">{t("aiSearch.noResults")}</p>
-          <p className="search-empty-desc">{t("aiSearch.noResultsDesc")}</p>
+          <p className="search-empty-icon">&#x1F50D;</p>
+          <p className="search-empty-title">{t("search.noResults")}</p>
+          <p className="search-empty-desc">{t("search.noResultsDesc")}</p>
         </div>
       )}
     </div>
