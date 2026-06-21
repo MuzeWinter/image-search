@@ -29,3 +29,6 @@ export const splashStateAtom = atom<{
   percent: number;
   message: string;
 }>({ visible: false, percent: 0, message: "" });
+
+/** Startup --search argument: file path for automatic search on launch */
+export const startupSearchPathAtom = atom<string | null>(null);

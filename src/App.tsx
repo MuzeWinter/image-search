@@ -1,19 +1,20 @@
 ﻿import { Suspense, lazy, useCallback, useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "./i18n/context";
-import { ToastProvider } from "./contexts/ToastContext";
+import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/shared/Toast";
 import { WelcomeGuide, useWelcomeState } from "./components/shared/WelcomeGuide";
 import { AppShell } from "./AppShell";
 import { Skeleton } from "./components/shared/Skeleton";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 import { SplashScreen } from "./components/SplashScreen";
-import { pendingChangesAtom, splashStateAtom } from "./stores/atoms";
+import { pendingChangesAtom, splashStateAtom, startupSearchPathAtom } from "./stores/atoms";
 import * as libraryService from "./services/libraryService";
 import * as scanService from "./services/scanService";
 import * as searchService from "./services/searchService";
+import { callTauri } from "./services/ipc";
 import type { CheckChangesResult } from "./services/types";
 
 const Search = lazy(() => import("./pages/Search"));
@@ -196,6 +197,49 @@ function ModelLoadingGate() {
   return null;
 }
 
+function StartupArgHandler() {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  const setStartupSearchPath = useSetAtom(startupSearchPathAtom);
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    if (handledRef.current) return;
+    handledRef.current = true;
+
+    async function handle() {
+      let args: { scanPath?: string | null; searchPath?: string | null };
+      try {
+        args = await callTauri<{ scanPath: string | null; searchPath: string | null }>(
+          "get_startup_args",
+        );
+      } catch {
+        return;
+      }
+
+      if (args.scanPath) {
+        try {
+          const lib = await libraryService.add(args.scanPath);
+          addToast("success", `已添加资料库并开始扫描: ${args.scanPath}`);
+          await scanService.startScan(lib.id, lib.path);
+        } catch (e) {
+          addToast("error", `添加资料库失败: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+
+      if (args.searchPath) {
+        setStartupSearchPath(args.searchPath);
+        navigate("/");
+      }
+    }
+
+    const timer = setTimeout(handle, 600);
+    return () => clearTimeout(timer);
+  }, [addToast, navigate, setStartupSearchPath]);
+
+  return null;
+}
+
 export function App() {
   const splash = useAtomValue(splashStateAtom);
 
@@ -207,6 +251,7 @@ export function App() {
             <ErrorBoundary>
               <StartupChangeDetector />
               <ModelLoadingGate />
+              <StartupArgHandler />
               <WelcomeGate />
               <Routes>
                 <Route path="/" element={<AppShell />}>

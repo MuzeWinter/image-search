@@ -14,7 +14,7 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from backend.services import db_service, settings_service, library_service, excel_service, search_service, ug_service, scan_service, system_service
+from backend.services import db_service, settings_service, library_service, excel_service, search_service, ug_service, scan_service, system_service, error_report_service
 
 ROUTES = {
     "db": db_service,
@@ -25,6 +25,7 @@ ROUTES = {
     "ug": ug_service,
     "scan": scan_service,
     "system": system_service,
+    "errorReport": error_report_service,
 }
 
 
@@ -98,6 +99,16 @@ def main():
         log("Database initialized")
     except Exception as e:
         log(f"Database init failed: {e}")
+        # Database corruption detected — generate error report
+        try:
+            report = error_report_service.generate_report(
+                trigger="db-corruption",
+                context=f"Database init failed at startup: {e}",
+                db_available=False,
+            )
+            log(f"Error report generated: {report.get('path', 'unknown')}")
+        except Exception as re:
+            log(f"Failed to generate error report: {re}")
 
     for line in sys.stdin:
         line = line.strip()

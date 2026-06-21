@@ -4,9 +4,45 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, Command, Stdio};
+use std::panic;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
+
+#[derive(Debug, Default)]
+struct StartupArgs {
+    scan_path: Option<String>,
+    search_path: Option<String>,
+}
+
+fn parse_startup_args() -> StartupArgs {
+    let args: Vec<String> = std::env::args().collect();
+    let mut result = StartupArgs::default();
+    let mut i = 0;
+    while i < args.len() {
+        if args[i] == "--scan" && i + 1 < args.len() {
+            i += 1;
+            result.scan_path = Some(args[i].clone());
+        } else if args[i] == "--search" && i + 1 < args.len() {
+            i += 1;
+            result.search_path = Some(args[i].clone());
+        }
+        i += 1;
+    }
+    result
+}
+
+#[tauri::command]
+fn get_startup_args(
+    state: tauri::State<'_, Mutex<StartupArgs>>,
+) -> serde_json::Value {
+    let mut args = state.lock().unwrap();
+    serde_json::json!({
+        "scanPath": args.scan_path.take(),
+        "searchPath": args.search_path.take(),
+    })
+}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 struct WindowState {
@@ -116,6 +152,7 @@ fn is_position_on_screen(
 
 static PYTHON_LOCK: Mutex<()> = Mutex::new(());
 static SCAN_CHILD: Mutex<Option<Child>> = Mutex::new(None);
+static BACKEND_FAILURES: Mutex<u32> = Mutex::new(0);
 
 fn resolve_backend_path(app_handle: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let resource_dir = app_handle
@@ -153,6 +190,129 @@ fn find_python() -> &'static str {
     }
 }
 
+fn find_error_report_script() -> Option<PathBuf> {
+    let cwd = std::env::current_dir().ok()?;
+    let dev_path = cwd
+        .join("backend")
+        .join("services")
+        .join("error_report_service.py");
+    if dev_path.exists() {
+        return Some(dev_path);
+    }
+    let exe = std::env::current_exe().ok()?;
+    if let Some(exe_dir) = exe.parent() {
+        let pkg_path = exe_dir
+            .join("backend")
+            .join("services")
+            .join("error_report_service.py");
+        if pkg_path.exists() {
+            return Some(pkg_path);
+        }
+        let res_path = exe_dir
+            .join("_up_")
+            .join("backend")
+            .join("services")
+            .join("error_report_service.py");
+        if res_path.exists() {
+            return Some(res_path);
+        }
+    }
+    None
+}
+
+fn spawn_error_report(trigger: &str, context: &str) {
+    let script = match find_error_report_script() {
+        Some(s) => s,
+        None => {
+            eprintln!("[rust] Cannot find error_report_service.py, skipping error report");
+            return;
+        }
+    };
+    let python = find_python();
+    match Command::new(python)
+        .arg(&script)
+        .arg("--trigger")
+        .arg(trigger)
+        .arg("--context")
+        .arg(context)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+    {
+        Ok(mut child) => {
+            let _ = child.wait();
+        }
+        Err(e) => {
+            eprintln!("[rust] Failed to spawn error report: {}", e);
+        }
+    }
+}
+
+fn backend_failure_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("app data dir error: {}", e))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("create app data dir error: {}", e))?;
+    Ok(dir.join("backend_failures.json"))
+}
+
+fn load_failure_count(app_handle: &tauri::AppHandle) -> u32 {
+    let path = match backend_failure_path(app_handle) {
+        Ok(p) => p,
+        Err(_) => return 0,
+    };
+    if !path.exists() {
+        return 0;
+    }
+    match std::fs::read_to_string(&path) {
+        Ok(content) => {
+            let v: serde_json::Value = serde_json::from_str(&content).unwrap_or_default();
+            v.get("count").and_then(|c| c.as_u64()).unwrap_or(0) as u32
+        }
+        Err(_) => 0,
+    }
+}
+
+fn save_failure_count(app_handle: &tauri::AppHandle, count: u32) {
+    let path = match backend_failure_path(app_handle) {
+        Ok(p) => p,
+        Err(_) => return,
+    };
+    let json = serde_json::json!({"count": count});
+    if let Ok(s) = serde_json::to_string(&json) {
+        let _ = std::fs::write(&path, s);
+    }
+}
+
+fn track_backend_failure(app_handle: &tauri::AppHandle) {
+    let mut count_guard = match BACKEND_FAILURES.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+    let saved = load_failure_count(app_handle);
+    let current = if saved > *count_guard { saved } else { *count_guard };
+    let new_count = current + 1;
+    *count_guard = new_count;
+    save_failure_count(app_handle, new_count);
+
+    if new_count >= 3 {
+        spawn_error_report(
+            "startup-failure",
+            &format!("Python backend failed to start {} consecutive times", new_count),
+        );
+        *count_guard = 0;
+        save_failure_count(app_handle, 0);
+    }
+}
+
+fn reset_backend_failures(app_handle: &tauri::AppHandle) {
+    if let Ok(mut guard) = BACKEND_FAILURES.lock() {
+        *guard = 0;
+    }
+    save_failure_count(app_handle, 0);
+}
+
 #[tauri::command]
 fn call_backend(
     app_handle: tauri::AppHandle,
@@ -178,7 +338,11 @@ fn call_backend(
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .spawn()
-        .map_err(|e| format!("Failed to start Python backend: {}", e))?;
+        .map_err(|e| {
+            let msg = format!("Failed to start Python backend: {}", e);
+            track_backend_failure(&app_handle);
+            msg
+        })?;
 
     if let Some(ref mut stdin) = child.stdin {
         stdin
@@ -196,7 +360,10 @@ fn call_backend(
     let response_line = reader
         .lines()
         .next()
-        .ok_or("no response from backend")?
+        .ok_or_else(|| {
+            track_backend_failure(&app_handle);
+            "no response from backend".to_string()
+        })?
         .map_err(|e| format!("read error: {}", e))?;
 
     let _ = child.wait();
@@ -214,6 +381,7 @@ fn call_backend(
             .to_string());
     }
 
+    reset_backend_failures(&app_handle);
     Ok(response
         .get("result")
         .cloned()
@@ -343,10 +511,26 @@ fn open_folder(path: String) -> Result<(), String> {
 }
 
 fn main() {
+    panic::set_hook(Box::new(|info| {
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            format!("{}", info)
+        };
+        let location = info.location().map(|l| format!("{}:{}", l.file(), l.line())).unwrap_or_default();
+        spawn_error_report("panic", &format!("{} at {}", msg, location));
+    }));
+
+    let startup_args = parse_startup_args();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(Mutex::new(startup_args))
         .invoke_handler(tauri::generate_handler![
+            get_startup_args,
             call_backend,
             scan_library,
             cancel_scan,
@@ -358,6 +542,14 @@ fn main() {
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
+
+            // Restore persisted backend failure count from disk
+            let saved_failures = load_failure_count(app.handle());
+            if saved_failures > 0 {
+                if let Ok(mut guard) = BACKEND_FAILURES.lock() {
+                    *guard = saved_failures;
+                }
+            }
 
             // Restore saved window state
             let saved = read_window_states(app.handle());

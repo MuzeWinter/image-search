@@ -11,7 +11,7 @@ import { openFile, openFolder } from "../services/systemService";
 import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
-import { escapeEpochAtom, splashStateAtom } from "../stores/atoms";
+import { escapeEpochAtom, splashStateAtom, startupSearchPathAtom } from "../stores/atoms";
 import {
   getHistory,
   addHistory,
@@ -212,6 +212,56 @@ export default function Search() {
       addToast("error", e instanceof Error ? e.message : String(e));
     }
   }, [searchScope, waitForModel, addToast]);
+
+  const doSearchByPath = useCallback(async (filePath: string) => {
+    setPreviewUrl(fileToUrl(filePath) || "");
+    setErrorMsg("");
+    setResults(null);
+    setSelectedIds(new Set());
+    setFilterText("");
+
+    try {
+      const initialStatus = await searchService.getModelStatus();
+      if (initialStatus.status !== "ready") {
+        setState("model-loading");
+        setModelPercent(initialStatus.percent);
+        setModelMsg(initialStatus.message);
+        await waitForModel();
+      }
+    } catch {
+      // If can't reach backend for status, try search anyway
+    }
+
+    setState("searching");
+
+    try {
+      const searchResults = await searchService.searchByPath(filePath, 30, searchScope);
+      setResults(searchResults);
+      setState("done");
+
+      const updated = addHistory({
+        thumbnail: "",
+        timestamp: Date.now(),
+        resultCount: searchResults.count,
+      });
+      setHistory(updated);
+    } catch (e) {
+      setState("error");
+      setErrorMsg(e instanceof Error ? e.message : String(e));
+      addToast("error", e instanceof Error ? e.message : String(e));
+    }
+  }, [searchScope, waitForModel, addToast]);
+
+  // Respond to --search CLI arg
+  const startupSearchPath = useAtomValue(startupSearchPathAtom);
+  const setStartupSearchPath = useSetAtom(startupSearchPathAtom);
+
+  useEffect(() => {
+    if (!startupSearchPath) return;
+    const path = startupSearchPath;
+    setStartupSearchPath(null);
+    doSearchByPath(path);
+  }, [startupSearchPath, doSearchByPath, setStartupSearchPath]);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
