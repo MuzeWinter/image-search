@@ -19,6 +19,7 @@ import LazyThumbnail from "../components/shared/LazyThumbnail";
 import { Tooltip } from "../components/shared/Tooltip";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
 import ImageCompareModal from "../components/shared/ImageCompareModal";
+import SearchDetailPanel from "../components/shared/SearchDetailPanel";
 import { escapeEpochAtom, splashStateAtom, startupSearchPathAtom } from "../stores/atoms";
 import { useServiceQuery } from "../stores/hooks";
 import type { SystemStats } from "../services/types";
@@ -371,6 +372,7 @@ export default function Search() {
   const setSplash = useSetAtom(splashStateAtom);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [compareItems, setCompareItems] = useState<[SearchResultItem, SearchResultItem] | null>(null);
+  const [detailItem, setDetailItem] = useState<SearchResultItem | null>(null);
   const [filterText, setFilterText] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
@@ -1128,7 +1130,7 @@ export default function Search() {
         e.preventDefault();
         toggleSelect(item.img_id);
       } else {
-        openFile(item.image_path);
+        setDetailItem(item);
       }
     },
     onImgError: (imgId: string) => {
@@ -1582,7 +1584,7 @@ export default function Search() {
                       e.preventDefault();
                       toggleSelect(item.img_id);
                     } else {
-                      openFile(item.image_path);
+                      setDetailItem(item);
                     }
                   }}
                   title={t("search.openImage")}
@@ -1789,6 +1791,13 @@ export default function Search() {
           onClose={() => setCompareItems(null)}
         />
       )}
+
+      {/* Search detail panel */}
+      <SearchDetailPanel
+        open={detailItem !== null}
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
+      />
 
       {/* Context menu */}
       {ctxMenu.visible && ctxMenu.item && (() => {

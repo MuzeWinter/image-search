@@ -11,6 +11,7 @@ import "./styles/welcome.css";
 import "./styles/splash.css";
 import "./styles/tooltip.css";
 import "./styles/image-compare.css";
+import "./styles/search-detail.css";
 import "./styles/global-search.css";
 import "./styles/shortcuts-help.css";
 
