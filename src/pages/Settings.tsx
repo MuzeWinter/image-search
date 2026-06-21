@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n, type Locale } from "../i18n/context";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
 import { useServiceQuery } from "../stores/hooks";
 import * as settingsService from "../services/settingsService";
 import * as libraryService from "../services/libraryService";
+import * as ocrService from "../services/ocrService";
 import type { Library } from "../services/types";
 import { Skeleton } from "../components/shared/Skeleton";
 
@@ -12,6 +13,7 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [libPath, setLibPath] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
+  const [ocrEnabled, setOcrEnabled] = useState(false);
 
   const {
     data: libraries,
@@ -19,6 +21,21 @@ export default function Settings() {
     error: libsError,
     refetch: refetchLibs,
   } = useServiceQuery<Library[]>("libraryService", "library.list");
+
+  useEffect(() => {
+    ocrService.getOcrStatus().then((s) => setOcrEnabled(s.enabled)).catch(() => {});
+  }, []);
+
+  const handleOcrToggle = async () => {
+    const next = !ocrEnabled;
+    setOcrEnabled(next);
+    try {
+      await ocrService.setOcrEnabled(next);
+      await settingsService.set("ocr.enabled", next ? "1" : "0");
+    } catch {
+      // best-effort
+    }
+  };
 
   const handleThemeChange = async (newTheme: Theme) => {
     setTheme(newTheme);
@@ -109,6 +126,30 @@ export default function Settings() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* AI Features */}
+      <section className="settings-section">
+        <h3>AI</h3>
+
+        <div className="settings-row">
+          <label className="settings-label">{t("ocr.enable")}</label>
+          <div className="settings-options">
+            <button
+              className={`settings-option-btn ${ocrEnabled ? "active" : ""}`}
+              onClick={handleOcrToggle}
+            >
+              ON
+            </button>
+            <button
+              className={`settings-option-btn ${!ocrEnabled ? "active" : ""}`}
+              onClick={handleOcrToggle}
+            >
+              OFF
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-muted" style={{ marginTop: 4 }}>{t("ocr.enableDesc")}</p>
       </section>
 
       {/* Data */}
