@@ -16,6 +16,9 @@
   --danger:  oklch(48% 0.16 22);
   --info:    oklch(52% 0.08 240);
 
+  /* Focus ring */
+  --focus-ring: oklch(52% 0.10 28 / 0.65);
+
   /* Surfaces */
   --surface-hover: oklch(96% 0.006 95);
   --surface-active: oklch(93% 0.008 95);
@@ -56,6 +59,9 @@
   --radius-md: 4px;
   --radius-lg: 6px;
 
+  /* Skeleton */
+  --skeleton-bg: oklch(90% 0.006 95);
+
   /* Borders */
   --border-width: 1px;
   --border-heavy: 2px;
@@ -79,9 +85,13 @@
   --danger:  oklch(58% 0.20 25);
   --info:    oklch(60% 0.10 240);
 
+  --focus-ring: oklch(62% 0.16 35 / 0.75);
+
   --surface-hover: oklch(25% 0.012 85);
   --surface-active: oklch(30% 0.014 85);
   --surface-raised: oklch(24% 0.012 85);
+
+  --skeleton-bg: oklch(35% 0.012 85);
 
   --shadow-overlay: 0 4px 24px oklch(0% 0 0 / 0.5);
   --shadow-modal: 0 8px 40px oklch(0% 0 0 / 0.6);
@@ -124,6 +134,25 @@ button {
 input {
   font-family: var(--font-body);
   font-size: var(--text-base);
+}
+
+/* === Focus Visible (keyboard accessibility) === */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible,
+details summary:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="link"]:focus-visible,
+[role="checkbox"]:focus-visible,
+[role="radio"]:focus-visible,
+[role="switch"]:focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px;
 }
 
 /* === Scrollbar === */

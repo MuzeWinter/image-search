@@ -1242,13 +1242,9 @@
 .lazy-thumb-skeleton {
   width: 100%;
   height: 100%;
-  background: var(--border);
+  background: var(--skeleton-bg);
   border-radius: var(--radius-sm);
   animation: skeleton-pulse 1.8s ease-in-out infinite;
-}
-
-[data-theme="dark"] .lazy-thumb-skeleton {
-  background: oklch(35% 0.012 85);
 }
 
 .search-pagination-info {

@@ -1,7 +1,7 @@
 /* === Skeleton Loading Placeholders === */
 
 .skeleton {
-  background: var(--border);
+  background: var(--skeleton-bg);
   border-radius: var(--radius-sm);
   animation: skeleton-pulse 1.8s ease-in-out infinite;
 }
@@ -37,7 +37,20 @@
   100% { opacity: 1; }
 }
 
-/* Dark theme adaptation: use lighter pulse for dark backgrounds */
-[data-theme="dark"] .skeleton {
-  background: oklch(35% 0.012 85);
+/* === Button Loading Spinner === */
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--fg);
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: var(--space-2);
 }

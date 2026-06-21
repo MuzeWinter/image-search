@@ -445,35 +445,35 @@ export default function Settings() {
             onClick={handleBackup}
             disabled={maintLoading !== ""}
           >
-            {maintLoading === "backup" ? `${t("common.loading")}` : t("settings.backupDb")}
+            {maintLoading === "backup" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.backupDb")}
           </button>
           <button
             className="settings-btn-secondary"
             onClick={handleRestore}
             disabled={maintLoading !== ""}
           >
-            {maintLoading === "restore" ? `${t("common.loading")}` : t("settings.restoreDb")}
+            {maintLoading === "restore" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.restoreDb")}
           </button>
           <button
             className="settings-btn-secondary"
             onClick={handleRebuildIndex}
             disabled={maintLoading !== ""}
           >
-            {maintLoading === "rebuild" ? `${t("common.loading")}` : t("settings.rebuildIndex")}
+            {maintLoading === "rebuild" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.rebuildIndex")}
           </button>
           <button
             className="settings-btn-secondary"
             onClick={handleClearCache}
             disabled={maintLoading !== ""}
           >
-            {maintLoading === "clear" ? `${t("common.loading")}` : t("settings.clearCache")}
+            {maintLoading === "clear" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.clearCache")}
           </button>
           <button
             className="settings-btn-secondary"
             onClick={handleOptimize}
             disabled={maintLoading !== ""}
           >
-            {maintLoading === "optimize" ? `${t("common.loading")}` : t("settings.optimizeDb")}
+            {maintLoading === "optimize" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.optimizeDb")}
           </button>
         </div>
 
@@ -510,7 +510,7 @@ export default function Settings() {
             disabled={logLoading}
             style={{ marginLeft: "auto" }}
           >
-            {logLoading ? t("common.loading") : t("common.retry")}
+            {logLoading ? <><span className="btn-spinner" />{t("common.loading")}</> : t("common.retry")}
           </button>
         </div>
 
@@ -542,7 +542,7 @@ export default function Settings() {
           onClick={handleDiagnostics}
           disabled={diagLoading}
         >
-          {diagLoading ? t("settings.diagnosticsRunning") : t("settings.diagnosticsRun")}
+          {diagLoading ? <><span className="btn-spinner" />{t("settings.diagnosticsRunning")}</> : t("settings.diagnosticsRun")}
         </button>
 
         {diagResults && (
