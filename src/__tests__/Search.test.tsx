@@ -168,7 +168,7 @@ describe("Search — state flow", () => {
 
     // Drop zone — actual i18n English text
     expect(screen.getByText("Drop an image here to search")).toBeInTheDocument();
-    expect(screen.getByText("Drag & drop, paste (Ctrl+V), or click to select an image")).toBeInTheDocument();
+    expect(screen.getByText("Drag multiple images, paste (Ctrl+V), or click to select for batch search")).toBeInTheDocument();
 
     // Summary cards
     expect(screen.getByText("Libraries")).toBeInTheDocument();

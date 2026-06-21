@@ -35,6 +35,12 @@ import type { SearchHistoryItem } from "../services/searchHistoryStore";
 type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
 type SortKey = "similarity" | "filename" | "ug_ref";
 
+interface QueryImage {
+  base64: string;
+  url: string;
+  name: string;
+}
+
 interface VirtualRowData {
   items: SearchResultItem[];
   selectedIds: Set<string>;
@@ -106,6 +112,15 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
             <span className="search-result-id" title={item.img_id}>{item.img_id}</span>
             <span className={`search-result-similarity ${simClass}`}>{formatSimilarity(item.similarity)}</span>
           </div>
+          {item.source_query_indices && item.source_query_indices.length > 0 && (
+            <div className="search-result-source-queries">
+              {item.source_query_indices.map((qi) => (
+                <span key={qi} className="search-source-query-badge" title={t("search.matchedSource", { index: String(qi + 1) })}>
+                  #{qi + 1}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="search-result-meta">
             <span className={`search-result-source-badge ${item.source_type}`}>
               {item.source_type === "excel-embedded" ? t("search.sourceExcelEmbedded") : item.source_type === "ug-preview" ? t("search.sourceUgPreview") : item.source_type}
@@ -236,6 +251,15 @@ function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brok
             <span className="search-result-id" title={item.img_id} style={{ fontSize: "var(--text-xs)", fontWeight: 600 }}>{item.img_id}</span>
             <span className={`search-result-similarity ${simClass}`} style={{ fontSize: 10 }}>{formatSimilarity(item.similarity)}</span>
           </div>
+          {item.source_query_indices && item.source_query_indices.length > 0 && (
+            <div className="search-result-source-queries">
+              {item.source_query_indices.map((qi) => (
+                <span key={qi} className="search-source-query-badge" title={t("search.matchedSource", { index: String(qi + 1) })}>
+                  #{qi + 1}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="search-result-meta" style={{ gap: "var(--space-2)" }}>
             <span className={`search-result-source-badge ${item.source_type}`} style={{ fontSize: 10 }}>
               {item.source_type === "excel-embedded" ? t("search.sourceExcelEmbedded") : item.source_type === "ug-preview" ? t("search.sourceUgPreview") : item.source_type}
@@ -349,6 +373,8 @@ export default function Search() {
   const [results, setResults] = useState<SearchResults | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [queryImages, setQueryImages] = useState<QueryImage[]>([]);
+  const [isBatchSearch, setIsBatchSearch] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(null);
@@ -658,6 +684,8 @@ export default function Search() {
 
   const doSearch = useCallback(async (base64: string, displayUrl: string) => {
     setPreviewUrl(displayUrl);
+    setQueryImages([]);
+    setIsBatchSearch(false);
     setErrorMsg("");
     setResults(null);
     setSelectedIds(new Set());
@@ -818,14 +846,121 @@ export default function Search() {
     doSearch(base64, url);
   }, [doSearch, t, addToast]);
 
+  const doBatchSearch = useCallback(async (images: QueryImage[]) => {
+    setPreviewUrl("");
+    setQueryImages(images);
+    setIsBatchSearch(true);
+    setErrorMsg("");
+    setResults(null);
+    setSelectedIds(new Set());
+    setFilterText("");
+
+    let modelFailed = false;
+    try {
+      const initialStatus = await searchService.getModelStatus();
+      if (initialStatus.status !== "ready") {
+        setState("model-loading");
+        setModelPercent(initialStatus.percent);
+        setModelMsg(initialStatus.message);
+        try {
+          await waitForModel();
+        } catch (modelErr) {
+          modelFailed = true;
+          setState("error");
+          const msg = modelErr instanceof Error ? modelErr.message : String(modelErr);
+          setErrorMsg(msg);
+          addToast("error", msg === "MODEL_TIMEOUT" ? t("search.modelTimeout") : msg);
+          return;
+        }
+      }
+    } catch {
+      // If can't reach backend for status, try search anyway
+    }
+
+    if (modelFailed) return;
+
+    setState("searching");
+
+    try {
+      const base64List = images.map((img) => img.base64);
+      const batchResults = await searchService.batchSearchByImages(
+        base64List, 30, searchScope, selectedLibraryId ?? undefined,
+      );
+      setResults(batchResults);
+      setState("done");
+
+      // Save first query image as search history thumbnail
+      if (images.length > 0) {
+        createThumbnail(images[0].base64).then((thumb) => {
+          const updated = addHistory({
+            thumbnail: thumb,
+            timestamp: Date.now(),
+            resultCount: batchResults.count,
+          });
+          setHistory(updated);
+        }).catch(() => {
+          const updated = addHistory({
+            thumbnail: "",
+            timestamp: Date.now(),
+            resultCount: batchResults.count,
+          });
+          setHistory(updated);
+        });
+      }
+    } catch (e) {
+      setState("error");
+      setErrorMsg(e instanceof Error ? e.message : String(e));
+      addToast("error", e instanceof Error ? e.message : String(e));
+    }
+  }, [searchScope, selectedLibraryId, waitForModel, addToast, t]);
+
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
+    const imageFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length === 0) {
+      setErrorMsg(t("search.invalidFileType"));
+      addToast("warning", t("search.invalidFileType"));
+      return;
+    }
+    if (imageFiles.length === 1) {
+      handleFile(imageFiles[0]);
+      return;
+    }
+
+    // Multi-image batch search
+    const images: QueryImage[] = [];
+    for (const file of imageFiles) {
+      try {
+        const base64 = await fileToBase64(file);
+        const url = URL.createObjectURL(file);
+        images.push({ base64, url, name: file.name || `Image ${images.length + 1}` });
+      } catch {
+        addToast("warning", t("search.batchImageReadFailed", { name: file.name }));
+      }
+    }
+
+    if (images.length === 0) return;
+    if (images.length === 1) {
+      doSearch(images[0].base64, images[0].url);
+      return;
+    }
+
+    doBatchSearch(images);
+  }, [handleFile, doSearch, doBatchSearch, t, addToast]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFile(files[0]);
+      handleFiles(files);
     }
-  }, [handleFile]);
+  }, [handleFiles]);
 
   const handlePaste = useCallback((e: ClipboardEvent) => {
     const items = e.clipboardData?.items;
@@ -849,7 +984,7 @@ export default function Search() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      handleFile(files[0]);
+      handleFiles(files);
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -1223,6 +1358,7 @@ export default function Search() {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           style={{ display: "none" }}
           onChange={handleFileSelect}
           aria-label={t("search.dropHint")}
@@ -1382,12 +1518,34 @@ export default function Search() {
       )}
 
       {/* Query preview */}
-      {previewUrl && state === "done" && (
+      {previewUrl && !isBatchSearch && state === "done" && (
         <div className="search-query-preview">
           <img src={previewUrl} alt="Query" className="search-query-img" />
           <div className="search-query-meta">
             <p className="search-result-count">
               {t("search.foundResults", { count: String(results?.count ?? 0) })}
+            </p>
+            {results?.duration_ms !== undefined && (
+              <p className="search-duration">{t("search.duration", { ms: String(results.duration_ms) })}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Batch query preview */}
+      {isBatchSearch && queryImages.length > 0 && state === "done" && (
+        <div className="search-query-preview search-batch-query-preview">
+          <div className="search-batch-query-strip">
+            {queryImages.map((img, idx) => (
+              <div key={idx} className="search-batch-query-thumb-wrapper" title={img.name}>
+                <img src={img.url} alt={img.name} className="search-batch-query-thumb" />
+                <span className="search-batch-query-index">{idx + 1}</span>
+              </div>
+            ))}
+          </div>
+          <div className="search-query-meta">
+            <p className="search-result-count">
+              {t("search.batchFoundResults", { count: String(results?.count ?? 0), qcount: String(queryImages.length) })}
             </p>
             {results?.duration_ms !== undefined && (
               <p className="search-duration">{t("search.duration", { ms: String(results.duration_ms) })}</p>
@@ -1676,6 +1834,15 @@ export default function Search() {
                       {formatSimilarity(item.similarity)}
                     </span>
                   </div>
+                  {item.source_query_indices && item.source_query_indices.length > 0 && (
+                    <div className="search-result-source-queries">
+                      {item.source_query_indices.map((qi) => (
+                        <span key={qi} className="search-source-query-badge" title={t("search.matchedSource", { index: String(qi + 1) })}>
+                          #{qi + 1}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="search-result-meta">
                     <span className={`search-result-source-badge ${item.source_type}`}>
                       {sourceTypeLabel(item.source_type)}

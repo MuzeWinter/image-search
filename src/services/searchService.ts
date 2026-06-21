@@ -25,12 +25,25 @@ export interface SearchResultItem {
   width?: number | null;
   height?: number | null;
   format?: string;
+  source_query_indices?: number[];
 }
 
 export interface SearchResults {
   results: SearchResultItem[];
   count: number;
   duration_ms: number;
+}
+
+export interface PerQueryStat {
+  query_index: number;
+  results: number;
+  duration_ms: number;
+  error?: string;
+}
+
+export interface BatchSearchResults extends SearchResults {
+  query_count: number;
+  per_query_stats: PerQueryStat[];
 }
 
 export interface SearchByPathResults extends SearchResults {
@@ -89,6 +102,24 @@ export async function searchByPath(
     params.library_id = libraryId;
   }
   return callBackend<SearchByPathResults>("search.searchByPath", params);
+}
+
+export async function batchSearchByImages(
+  imagesBase64: string[],
+  topK?: number,
+  scope?: SearchScope,
+  libraryId?: number,
+): Promise<BatchSearchResults> {
+  await serviceRegistry.ensureReady("searchService");
+  const params: Record<string, unknown> = {
+    images_base64: imagesBase64,
+    top_k: topK ?? 20,
+    scope: scope ?? "all",
+  };
+  if (libraryId != null) {
+    params.library_id = libraryId;
+  }
+  return callBackend<BatchSearchResults>("search.batchSearchByImages", params);
 }
 
 export async function searchByVector(

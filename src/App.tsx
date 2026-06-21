@@ -121,7 +121,7 @@ function StartupChangeDetector() {
           setPendingChanges(aggregated);
         }
       } catch {
-        // No libraries yet or service not ready ！ that's fine
+        // No libraries yet or service not ready - that's fine
       }
     }
 
@@ -161,7 +161,7 @@ function StartupPathValidator() {
               invalidPaths.push(lib.path);
             }
           } catch {
-            // Tauri command unavailable ！ skip
+            // Tauri command unavailable - skip
           }
         }
 
@@ -175,7 +175,7 @@ function StartupPathValidator() {
           }
         }
       } catch {
-        // No libraries or service not ready ！ fine
+        // No libraries or service not ready - fine
       }
     }
 
@@ -210,7 +210,7 @@ function ModelLoadingGate() {
         });
 
         if (status.status === "error") {
-          // Model errored ！ hide splash after a brief display
+          // Model errored - hide splash after a brief display
           const timer = setTimeout(() => {
             if (!cancelled) setSplash({ visible: false, percent: 0, message: "" });
           }, 3000);
@@ -238,11 +238,11 @@ function ModelLoadingGate() {
               }
             }
           } catch {
-            // Backend not reachable ！ ignore
+            // Backend not reachable - ignore
           }
         }, 500);
       } catch {
-        // Backend not ready yet ！ that's fine, it'll be checked on first search
+        // Backend not ready yet - that's fine, it'll be checked on first search
       }
     }
 
@@ -351,7 +351,7 @@ function FolderWatchManager() {
     };
   }, [setWatchActive, setWatchPathCount]);
 
-  // Listen for file changes ★ trigger auto-scan
+  // Listen for file changes - trigger auto-scan
   useEffect(() => {
     let scanInProgress = false;
 
@@ -379,7 +379,7 @@ function FolderWatchManager() {
           }
         }
       } catch {
-        // Silently fail ！ scan errors shown via scan progress UI
+        // Silently fail - scan errors shown via scan progress UI
       } finally {
         scanInProgress = false;
       }

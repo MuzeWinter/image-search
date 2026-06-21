@@ -345,6 +345,111 @@ def _build_index_from_images():
     return {"ok": True, "count": len(img_ids), "dim": dim}
 
 
+def _handle_batch_search_by_images(params: dict):
+    """通过多张 base64 图片批量搜索，结果合并去重"""
+    import base64
+
+    images_b64 = params.get("images_base64", [])
+    if not images_b64 or not isinstance(images_b64, list) or len(images_b64) == 0:
+        raise ValueError("images_base64 must be a non-empty list")
+    if len(images_b64) > 20:
+        raise ValueError("Maximum 20 images per batch search")
+
+    top_k = params.get("top_k", 20)
+    scope = params.get("scope", "all")
+    library_id = params.get("library_id")
+
+    from backend.services.ai_service import _load_model, _preprocess_image, _extract_features
+
+    try:
+        _load_model()
+    except Exception as e:
+        raise RuntimeError(f"Model not available: {e}")
+
+    overall_start = time.time()
+    all_results_map: dict[str, dict] = {}  # img_id -> merged result
+    per_query_stats: list[dict] = []
+
+    for q_idx, image_b64 in enumerate(images_b64):
+        if not image_b64:
+            per_query_stats.append({"query_index": q_idx, "results": 0, "duration_ms": 0, "error": "Empty image data"})
+            continue
+
+        q_start = time.time()
+        try:
+            # Decode image
+            b64_data = image_b64
+            if "," in b64_data and b64_data.startswith("data:"):
+                b64_data = b64_data.split(",", 1)[1]
+            image_bytes = base64.b64decode(b64_data)
+
+            # Extract features
+            tensor = _preprocess_image(image_bytes)
+            vector = _extract_features(tensor)
+
+            # Search
+            query_results = _search_similar(vector.tolist(), top_k, scope, library_id)
+            q_duration_ms = int((time.time() - q_start) * 1000)
+
+            # Merge into global results map
+            for result in query_results:
+                img_id = result["img_id"]
+                sim = result["similarity"]
+                if img_id in all_results_map:
+                    existing = all_results_map[img_id]
+                    if sim > existing["similarity"]:
+                        existing["similarity"] = sim
+                    existing["source_query_indices"].append(q_idx)
+                else:
+                    result["source_query_indices"] = [q_idx]
+                    all_results_map[img_id] = result
+
+            per_query_stats.append({
+                "query_index": q_idx,
+                "results": len(query_results),
+                "duration_ms": q_duration_ms,
+            })
+
+        except Exception as e:
+            q_duration_ms = int((time.time() - q_start) * 1000)
+            per_query_stats.append({
+                "query_index": q_idx,
+                "results": 0,
+                "duration_ms": q_duration_ms,
+                "error": str(e),
+            })
+            _log(f"Batch search query {q_idx} failed: {e}")
+
+    # Convert to list, remove internal tracking field before sorting
+    merged = list(all_results_map.values())
+    merged.sort(key=lambda r: r["similarity"], reverse=True)
+    merged = merged[:top_k]
+
+    overall_duration_ms = int((time.time() - overall_start) * 1000)
+
+    # Record search history
+    try:
+        conn = get_connection()
+        conn.execute(
+            "INSERT INTO search_history (query_image, result_count, duration_ms) VALUES (?, ?, ?)",
+            (f"batch_{len(images_b64)}_images", len(merged), overall_duration_ms),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+    _add_activity_log("info", "search",
+        f"Batch search: {len(images_b64)} queries -> {len(merged)} merged results in {overall_duration_ms}ms")
+
+    return {
+        "results": merged,
+        "count": len(merged),
+        "duration_ms": overall_duration_ms,
+        "query_count": len(images_b64),
+        "per_query_stats": per_query_stats,
+    }
+
+
 def execute(method: str, params: dict):
     if method == "search.buildIndex":
         return _build_index_from_images()
@@ -356,6 +461,8 @@ def execute(method: str, params: dict):
         return _handle_search_by_image(params)
     elif method == "search.searchByPath":
         return _handle_search_by_path(params)
+    elif method == "search.batchSearchByImages":
+        return _handle_batch_search_by_images(params)
     elif method == "search.indexImage":
         return _handle_index_image(params)
     elif method == "search.getIndexStatus":
