@@ -1,5 +1,6 @@
 import { useTheme, type Theme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../i18n/context";
+import { Tooltip } from "./Tooltip";
 
 const themeOrder: Theme[] = ["light", "dark", "system"];
 
@@ -19,13 +20,14 @@ export function ThemeToggle() {
   }
 
   return (
-    <button
-      className="toggle-btn theme-toggle"
-      onClick={cycle}
-      title={t(`theme.${theme}`)}
-      aria-label={t(`theme.${theme}`)}
-    >
-      {iconMap[theme]}
-    </button>
+    <Tooltip content={t(`theme.${theme}`)}>
+      <button
+        className="toggle-btn theme-toggle"
+        onClick={cycle}
+        aria-label={t(`theme.${theme}`)}
+      >
+        {iconMap[theme]}
+      </button>
+    </Tooltip>
   );
 }

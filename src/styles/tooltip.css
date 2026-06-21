@@ -1,0 +1,70 @@
+/* === Tooltip === */
+.tooltip {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  animation: tooltip-fade-in 0.12s ease-out;
+}
+
+.tooltip-inner {
+  display: block;
+  padding: 4px 10px;
+  font-size: var(--text-xs, 0.75rem);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  white-space: nowrap;
+  max-width: 200px;
+  color: oklch(90% 0.006 90);
+  background: oklch(20% 0.018 70);
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: 0 2px 8px oklch(0% 0 0 / 0.25);
+}
+
+/* Arrow */
+.tooltip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+}
+
+.tooltip-top .tooltip-inner {
+  transform: translate(-50%, -100%);
+}
+
+.tooltip-top::after {
+  bottom: -5px;
+  border-top-color: oklch(20% 0.018 70);
+  border-bottom: none;
+}
+
+.tooltip-bottom .tooltip-inner {
+  transform: translate(-50%, 0);
+}
+
+.tooltip-bottom::after {
+  top: -5px;
+  border-bottom-color: oklch(20% 0.018 70);
+  border-top: none;
+}
+
+/* Dark theme */
+[data-theme="dark"] .tooltip-inner {
+  color: oklch(20% 0.018 70);
+  background: oklch(90% 0.006 90);
+  box-shadow: 0 2px 8px oklch(0% 0 0 / 0.5);
+}
+
+[data-theme="dark"] .tooltip-top::after {
+  border-top-color: oklch(90% 0.006 90);
+}
+
+[data-theme="dark"] .tooltip-bottom::after {
+  border-bottom-color: oklch(90% 0.006 90);
+}
+
+@keyframes tooltip-fade-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}

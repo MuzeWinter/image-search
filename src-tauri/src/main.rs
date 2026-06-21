@@ -154,6 +154,9 @@ static PYTHON_LOCK: Mutex<()> = Mutex::new(());
 static SCAN_CHILD: Mutex<Option<Child>> = Mutex::new(None);
 static BACKEND_FAILURES: Mutex<u32> = Mutex::new(0);
 
+const DEFAULT_MAX_RETRIES: u32 = 2;
+const DEFAULT_RETRY_DELAY_MS: u64 = 500;
+
 fn resolve_backend_path(app_handle: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let resource_dir = app_handle
         .path()
@@ -313,6 +316,48 @@ fn reset_backend_failures(app_handle: &tauri::AppHandle) {
     save_failure_count(app_handle, 0);
 }
 
+fn try_call_backend(
+    python: &str,
+    backend_path: &std::path::Path,
+    request_str: &str,
+) -> Result<serde_json::Value, String> {
+    let mut child = Command::new(python)
+        .arg(backend_path)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .map_err(|e| format!("Failed to start Python backend: {}", e))?;
+
+    if let Some(ref mut stdin) = child.stdin {
+        stdin
+            .write_all(request_str.as_bytes())
+            .map_err(|e| format!("stdin write error: {}", e))?;
+        stdin
+            .write_all(b"\n")
+            .map_err(|e| format!("stdin newline error: {}", e))?;
+        stdin.flush().map_err(|e| format!("stdin flush error: {}", e))?;
+    }
+    drop(child.stdin.take());
+
+    let stdout = child.stdout.take().ok_or("no stdout")?;
+    let reader = BufReader::new(stdout);
+    let response_line = reader
+        .lines()
+        .next()
+        .ok_or_else(|| "no response from backend".to_string())?
+        .map_err(|e| format!("read error: {}", e))?;
+
+    let _ = child.wait();
+
+    let response: serde_json::Value =
+        serde_json::from_str(&response_line).map_err(|e| {
+            format!("JSON parse error: {}. raw: {}", e, response_line)
+        })?;
+
+    Ok(response)
+}
+
 #[tauri::command]
 fn call_backend(
     app_handle: tauri::AppHandle,
@@ -332,60 +377,47 @@ fn call_backend(
 
     let _guard = PYTHON_LOCK.lock().map_err(|e| format!("lock error: {}", e))?;
 
-    let mut child = Command::new(python)
-        .arg(&backend_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .map_err(|e| {
-            let msg = format!("Failed to start Python backend: {}", e);
-            track_backend_failure(&app_handle);
-            msg
-        })?;
+    let mut last_err = String::new();
+    for attempt in 0..=DEFAULT_MAX_RETRIES {
+        if attempt > 0 {
+            eprintln!(
+                "[rust] Backend retry attempt {}/{} after {}ms",
+                attempt, DEFAULT_MAX_RETRIES, DEFAULT_RETRY_DELAY_MS
+            );
+            std::thread::sleep(std::time::Duration::from_millis(DEFAULT_RETRY_DELAY_MS));
+        }
 
-    if let Some(ref mut stdin) = child.stdin {
-        stdin
-            .write_all(request_str.as_bytes())
-            .map_err(|e| format!("stdin write error: {}", e))?;
-        stdin
-            .write_all(b"\n")
-            .map_err(|e| format!("stdin newline error: {}", e))?;
-        stdin.flush().map_err(|e| format!("stdin flush error: {}", e))?;
-    }
-    drop(child.stdin.take());
-
-    let stdout = child.stdout.take().ok_or("no stdout")?;
-    let reader = BufReader::new(stdout);
-    let response_line = reader
-        .lines()
-        .next()
-        .ok_or_else(|| {
-            track_backend_failure(&app_handle);
-            "no response from backend".to_string()
-        })?
-        .map_err(|e| format!("read error: {}", e))?;
-
-    let _ = child.wait();
-
-    let response: serde_json::Value =
-        serde_json::from_str(&response_line).map_err(|e| {
-            format!("JSON parse error: {}. raw: {}", e, response_line)
-        })?;
-
-    if let Some(error) = response.get("error") {
-        return Err(error
-            .get("message")
-            .and_then(|m| m.as_str())
-            .unwrap_or("unknown backend error")
-            .to_string());
+        match try_call_backend(python, &backend_path, &request_str) {
+            Ok(response) => {
+                if let Some(error) = response.get("error") {
+                    let err_msg = error
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("unknown backend error");
+                    eprintln!("[rust] Backend returned business error (not retrying): {}", err_msg);
+                    return Err(err_msg.to_string());
+                }
+                reset_backend_failures(&app_handle);
+                return Ok(response
+                    .get("result")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null));
+            }
+            Err(e) => {
+                eprintln!(
+                    "[rust] Backend call failed (attempt {}/{}): {}",
+                    attempt + 1,
+                    DEFAULT_MAX_RETRIES + 1,
+                    e
+                );
+                last_err = e;
+            }
+        }
     }
 
-    reset_backend_failures(&app_handle);
-    Ok(response
-        .get("result")
-        .cloned()
-        .unwrap_or(serde_json::Value::Null))
+    eprintln!("[rust] All {} retries exhausted", DEFAULT_MAX_RETRIES + 1);
+    track_backend_failure(&app_handle);
+    Err(last_err)
 }
 
 #[tauri::command]

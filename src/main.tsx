@@ -9,6 +9,7 @@ import "./styles/toast.css";
 import "./styles/context-menu.css";
 import "./styles/welcome.css";
 import "./styles/splash.css";
+import "./styles/tooltip.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

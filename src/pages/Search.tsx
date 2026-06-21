@@ -13,6 +13,7 @@ import { openFile, openFolder } from "../services/systemService";
 import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
 import LazyThumbnail from "../components/shared/LazyThumbnail";
+import { Tooltip } from "../components/shared/Tooltip";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
 import { escapeEpochAtom, splashStateAtom, startupSearchPathAtom } from "../stores/atoms";
 import { useServiceQuery } from "../stores/hooks";
@@ -729,13 +730,14 @@ export default function Search() {
             onChange={(e) => setFilterText(e.target.value)}
           />
           {filterText.trim() && (
-            <button
-              className="search-filter-clear"
-              onClick={() => setFilterText("")}
-              title={t("common.cancel")}
-            >
-              x
-            </button>
+            <Tooltip content={t("common.cancel")}>
+              <button
+                className="search-filter-clear"
+                onClick={() => setFilterText("")}
+              >
+                x
+              </button>
+            </Tooltip>
           )}
         </div>
       )}
@@ -758,20 +760,22 @@ export default function Search() {
               </select>
             </div>
             <div className="search-view-toggle">
-              <button
-                className={`search-view-btn ${viewMode === "list" ? "active" : ""}`}
-                onClick={() => setViewMode("list")}
-                title={t("search.viewList")}
-              >
-                {t("search.viewList")}
-              </button>
-              <button
-                className={`search-view-btn ${viewMode === "grid" ? "active" : ""}`}
-                onClick={() => setViewMode("grid")}
-                title={t("search.viewGrid")}
-              >
-                {t("search.viewGrid")}
-              </button>
+              <Tooltip content={t("search.viewList")}>
+                <button
+                  className={`search-view-btn ${viewMode === "list" ? "active" : ""}`}
+                  onClick={() => setViewMode("list")}
+                >
+                  {t("search.viewList")}
+                </button>
+              </Tooltip>
+              <Tooltip content={t("search.viewGrid")}>
+                <button
+                  className={`search-view-btn ${viewMode === "grid" ? "active" : ""}`}
+                  onClick={() => setViewMode("grid")}
+                >
+                  {t("search.viewGrid")}
+                </button>
+              </Tooltip>
             </div>
             <button className="search-export-btn" onClick={handleExportCsv}>
               {t("search.exportCsv")}

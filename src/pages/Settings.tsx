@@ -8,6 +8,7 @@ import { getLogs, type ActivityLog } from "../services/dbService";
 import { callBackend } from "../services/ipc";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { open } from "@tauri-apps/plugin-shell";
+import { Tooltip } from "../components/shared/Tooltip";
 
 const UG_COLUMN_KEY = "ugColumnName";
 
@@ -399,13 +400,14 @@ export default function Settings() {
                 />
                 <span>{ext}</span>
                 {!DEFAULT_SCAN_EXTENSIONS.includes(ext) && (
-                  <button
-                    className="settings-ext-remove"
-                    onClick={() => handleRemoveExt(ext)}
-                    title={t("common.delete")}
-                  >
-                    ×
-                  </button>
+                  <Tooltip content={t("common.delete")}>
+                    <button
+                      className="settings-ext-remove"
+                      onClick={() => handleRemoveExt(ext)}
+                    >
+                      ×
+                    </button>
+                  </Tooltip>
                 )}
               </label>
             ))}
@@ -596,13 +598,15 @@ export default function Settings() {
           }}
         >
           <div className="about-dialog">
-            <button
-              className="about-dialog-close"
-              onClick={() => setShowAbout(false)}
-              aria-label={t("common.close")}
-            >
-              &#x2715;
-            </button>
+            <Tooltip content={t("common.close")}>
+              <button
+                className="about-dialog-close"
+                onClick={() => setShowAbout(false)}
+                aria-label={t("common.close")}
+              >
+                &#x2715;
+              </button>
+            </Tooltip>
             <div className="about-dialog-body">
               <div className="about-app-icon">Z</div>
               <h3 className="about-app-name">{t("settings.aboutAppName")}</h3>
@@ -650,13 +654,15 @@ export default function Settings() {
           }}
         >
           <div className="reset-confirm-dialog">
-            <button
-              className="reset-confirm-dialog-close"
-              onClick={() => setShowResetConfirm(false)}
-              aria-label={t("common.close")}
-            >
-              &#x2715;
-            </button>
+            <Tooltip content={t("common.close")}>
+              <button
+                className="reset-confirm-dialog-close"
+                onClick={() => setShowResetConfirm(false)}
+                aria-label={t("common.close")}
+              >
+                &#x2715;
+              </button>
+            </Tooltip>
             <div className="reset-confirm-body">
               <h3 className="reset-confirm-title">{t("settings.resetDefaultsTitle")}</h3>
               <p className="reset-confirm-desc">{t("settings.resetDefaultsDesc")}</p>
