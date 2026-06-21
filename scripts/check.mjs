@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+﻿import { execSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,6 +39,9 @@ run("mypy", "python -m mypy backend/");
 
 // 7. pytest
 run("pytest", "python -m pytest backend/tests/ -v");
+
+// 8. vitest (frontend tests)
+run("vitest", "npx vitest run");
 
 // Summary
 process.stdout.write(`\n${"=".repeat(40)}\n`);
