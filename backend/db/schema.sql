@@ -145,6 +145,17 @@ CREATE TABLE IF NOT EXISTS change_logs (
     created_at TEXT DEFAULT (datetime('now','localtime'))
 );
 
+-- 活动日志
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    level TEXT NOT NULL CHECK(level IN ('info', 'warn', 'error')),
+    source TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_level ON activity_logs(level);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
+
 -- 扫描历史
 CREATE TABLE IF NOT EXISTS scan_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -24,6 +24,18 @@ def _log(msg: str):
     print(f"[search_service] {msg}", file=sys.stderr, flush=True)
 
 
+def _add_activity_log(level: str, source: str, message: str):
+    try:
+        conn = get_connection()
+        conn.execute(
+            "INSERT INTO activity_logs (level, source, message) VALUES (?, ?, ?)",
+            (level, source, message),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
 def _emit_progress(status: str, percent: int, message: str):
     payload = json.dumps({"type": "index-progress", "status": status, "percent": percent, "message": message}, ensure_ascii=False)
     tmpdir = os.environ.get("TEMP") or os.environ.get("TMP") or "/tmp"
@@ -341,6 +353,8 @@ def _handle_search_by_vector(params: dict):
     results = _search_similar(vector, top_k, scope)
     duration_ms = int((time.time() - start) * 1000)
 
+    _add_activity_log("info", "search", f"Vector search: {len(results)} results in {duration_ms}ms (scope={scope})")
+
     return {
         "results": results,
         "count": len(results),
@@ -391,6 +405,8 @@ def _handle_search_by_image(params: dict):
     except Exception:
         pass
 
+    _add_activity_log("info", "search", f"Image search: {len(results)} results in {duration_ms}ms")
+
     return {
         "results": results,
         "count": len(results),
@@ -436,6 +452,8 @@ def _handle_search_by_path(params: dict):
         conn.commit()
     except Exception:
         pass
+
+    _add_activity_log("info", "search", f"Path search: {os.path.basename(file_path)} — {len(results)} results in {duration_ms}ms")
 
     return {
         "results": results,

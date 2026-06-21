@@ -35,3 +35,22 @@ export async function execute(
     { sql, params: params ?? [] },
   );
 }
+
+export interface ActivityLog {
+  id: number;
+  level: "info" | "warn" | "error";
+  source: string;
+  message: string;
+  created_at: string;
+}
+
+export async function getLogs(
+  level?: string,
+  limit?: number,
+): Promise<ActivityLog[]> {
+  await serviceRegistry.ensureReady("dbService");
+  return callBackend<ActivityLog[]>("db.getLogs", {
+    level: level ?? null,
+    limit: limit ?? 50,
+  });
+}

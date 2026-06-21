@@ -28,6 +28,18 @@ CAD_EXT = {'.dwg', '.dxf', '.step', '.stp', '.iges', '.igs', '.prt', '.asm',
 PDF_EXT = {'.pdf'}
 
 
+def _add_activity_log(level: str, source: str, message: str):
+    try:
+        conn = get_connection()
+        conn.execute(
+            "INSERT INTO activity_logs (level, source, message) VALUES (?, ?, ?)",
+            (level, source, message),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
 def classify_file(ext: str) -> str:
     e = ext.lower()
     if e in EXCEL_EXT: return "excel"
@@ -467,6 +479,7 @@ def scan_library(library_id: int, library_path: str):
     path = Path(library_path)
 
     if not path.exists():
+        _add_activity_log("error", "scan", f"Scan failed: path does not exist: {library_path}")
         emit_result({"error": f"Path does not exist: {library_path}", "added": 0, "removed": 0,
                      "modified": 0, "moved": 0, "errors": 1, "duration_sec": 0,
                      "total_files": 0, "excel_count": 0, "image_count": 0,
@@ -474,6 +487,7 @@ def scan_library(library_id: int, library_path: str):
         return
 
     if not path.is_dir():
+        _add_activity_log("error", "scan", f"Scan failed: path is not a directory: {library_path}")
         emit_result({"error": f"Path is not a directory: {library_path}", "added": 0, "removed": 0,
                      "modified": 0, "moved": 0, "errors": 1, "duration_sec": 0,
                      "total_files": 0, "excel_count": 0, "image_count": 0,
@@ -483,6 +497,9 @@ def scan_library(library_id: int, library_path: str):
     # Read scan extensions config
     conn = get_connection()
     scan_exts = _load_scan_extensions(conn)
+
+    # Log scan start
+    _add_activity_log("info", "scan", f"Scan started: library {library_id} ({library_path})")
 
     # Phase 1: Collect all file paths (filtered by configured extensions)
     emit_progress("collecting", 0, 0, str(path))
@@ -496,6 +513,7 @@ def scan_library(library_id: int, library_path: str):
                     if ext in scan_exts:
                         all_files.append(os.path.join(root, f))
     except PermissionError as e:
+        _add_activity_log("error", "scan", f"Scan failed: permission denied: {e}")
         emit_result({"error": f"Permission denied: {e}", "added": 0, "removed": 0,
                      "modified": 0, "moved": 0, "errors": 1, "duration_sec": 0,
                      "total_files": 0, "excel_count": 0, "image_count": 0,
@@ -504,12 +522,14 @@ def scan_library(library_id: int, library_path: str):
 
     total_files = len(all_files)
     if total_files == 0:
+        _add_activity_log("warn", "scan", f"Scan aborted: no matching files found in {library_path}")
         emit_result({"added": 0, "removed": 0, "modified": 0, "moved": 0, "errors": 0,
                      "duration_sec": round(time.time() - start_time, 2),
                      "total_files": 0, "excel_count": 0, "image_count": 0,
                      "cad_count": 0, "pdf_count": 0, "other_count": 0})
         return
 
+    _add_activity_log("info", "scan", f"Collected {total_files} files for scanning")
     # Phase 2: Hash and classify each file
     current_scan = {}
     stats = {"excel": 0, "image": 0, "cad": 0, "pdf": 0, "other": 0}
@@ -535,6 +555,8 @@ def scan_library(library_id: int, library_path: str):
             sys.stderr.write(f"[scan] error reading {filepath}: {e}\n")
             sys.stderr.flush()
 
+    if errors > 0:
+        _add_activity_log("warn", "scan", f"Hashing complete: {len(current_scan)} files hashed with {errors} errors")
     # Phase 3: Change detection — query all indexed tables
     emit_progress("comparing", 0, 0, "")
     conn = get_connection()
@@ -581,6 +603,17 @@ def scan_library(library_id: int, library_path: str):
                 removed.discard(old_p)
 
     move_count = len(moved_pairs)
+
+    # Log change detection summary
+    change_summary_parts = []
+    if added: change_summary_parts.append(f"{len(added)} added")
+    if removed: change_summary_parts.append(f"{len(removed)} removed")
+    if modified: change_summary_parts.append(f"{len(modified)} modified")
+    if move_count: change_summary_parts.append(f"{move_count} moved")
+    if change_summary_parts:
+        _add_activity_log("info", "scan", f"Changes detected: {', '.join(change_summary_parts)}")
+    else:
+        _add_activity_log("info", "scan", "No changes detected")
 
     # Phase 4: Save to database
     total_to_save = len(added) + len(removed)
@@ -634,7 +667,10 @@ def scan_library(library_id: int, library_path: str):
         from backend.services.ug_service import process_directory as ug_process
         ug_result = ug_process(library_path)
         ug_extracted = ug_result.get("extracted", 0)
+        if ug_extracted > 0:
+            _add_activity_log("info", "scan", f"UG previews extracted: {ug_extracted}")
     except Exception as e:
+        _add_activity_log("warn", "scan", f"UG preview extraction failed: {e}")
         sys.stderr.write(f"[scan] UG preview error: {e}\n")
         sys.stderr.flush()
 
@@ -642,7 +678,10 @@ def scan_library(library_id: int, library_path: str):
     emit_progress("matching", 0, 0, "")
     try:
         auto_matches = _auto_associate(conn, library_path)
+        if auto_matches > 0:
+            _add_activity_log("info", "scan", f"Auto-associated {auto_matches} matches")
     except Exception as e:
+        _add_activity_log("warn", "scan", f"Auto-association failed: {e}")
         sys.stderr.write(f"[scan] auto-associate error: {e}\n")
         sys.stderr.flush()
         auto_matches = 0
@@ -651,7 +690,10 @@ def scan_library(library_id: int, library_path: str):
     emit_progress("indexing", 0, 0, "")
     try:
         auto_indexed = _auto_index_images(conn, limit=200)
+        if auto_indexed > 0:
+            _add_activity_log("info", "scan", f"Auto-indexed {auto_indexed} images")
     except Exception as e:
+        _add_activity_log("warn", "scan", f"Auto-indexing failed: {e}")
         sys.stderr.write(f"[scan] auto-index error: {e}\n")
         sys.stderr.flush()
         auto_indexed = 0
@@ -673,6 +715,13 @@ def scan_library(library_id: int, library_path: str):
         (total_files, stats["image"] + excel_image_count, library_id)
     )
     conn.commit()
+
+    # Log scan completion
+    scan_errors = errors + (1 if excel_image_count == 0 and stats["excel"] > 0 else 0)
+    if scan_errors > 0:
+        _add_activity_log("warn", "scan", f"Scan complete with {scan_errors} error(s): {len(added)} added, {len(removed)} removed, {len(modified)} modified, {move_count} moved in {round(duration, 1)}s")
+    else:
+        _add_activity_log("info", "scan", f"Scan complete: {len(added)} added, {len(removed)} removed, {len(modified)} modified, {move_count} moved in {round(duration, 1)}s")
 
     emit_result({
         "added": len(added),

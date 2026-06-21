@@ -4,6 +4,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
 import * as settingsService from "../services/settingsService";
 import { getDbStats, optimizeDb } from "../services/settingsService";
+import { getLogs, type ActivityLog } from "../services/dbService";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { open } from "@tauri-apps/plugin-shell";
 
@@ -30,6 +31,9 @@ export default function Settings() {
   const DEFAULT_SCAN_EXTENSIONS = [".xlsx", ".xls", ".prt"];
   const [scanExtensions, setScanExtensions] = useState<string[]>(DEFAULT_SCAN_EXTENSIONS);
   const [newExt, setNewExt] = useState("");
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [logFilter, setLogFilter] = useState("");
+  const [logLoading, setLogLoading] = useState(false);
 
   useEffect(() => {
     settingsService.get("scan_extensions").then((val) => {
@@ -50,6 +54,22 @@ export default function Settings() {
       setDbSize(stats.fileSize);
     }).catch(() => { /* non-critical */ });
   }, []);
+
+  const fetchLogs = async () => {
+    setLogLoading(true);
+    try {
+      const entries = await getLogs(logFilter || undefined, 50);
+      setLogs(entries);
+    } catch {
+      // non-critical
+    } finally {
+      setLogLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [logFilter]);
 
   const saveExtensions = async (exts: string[]) => {
     try {
@@ -189,6 +209,19 @@ export default function Settings() {
     } finally {
       setMaintLoading("");
     }
+  };
+
+  const logLevelLabel = (level: string): string => {
+    if (level === "info") return t("settings.logLevelInfo");
+    if (level === "warn") return t("settings.logLevelWarn");
+    if (level === "error") return t("settings.logLevelError");
+    return level;
+  };
+
+  const logSourceLabel = (source: string): string => {
+    if (source === "scan") return t("settings.logSourceScan");
+    if (source === "search") return t("settings.logSourceSearch");
+    return source;
   };
 
   const formatSize = (bytes: number): string => {
@@ -381,6 +414,51 @@ export default function Settings() {
         </div>
 
         {maintMsg && <p className="settings-msg" style={{ marginTop: 12 }}>{maintMsg}</p>}
+      </section>
+
+      {/* Activity Logs */}
+      <section className="settings-section">
+        <h3>{t("settings.logs")}</h3>
+
+        <div className="settings-row" style={{ marginBottom: 8 }}>
+          <div className="settings-options">
+            {(["", "info", "warn", "error"] as const).map((level) => (
+              <button
+                key={level || "all"}
+                className={`settings-option-btn ${logFilter === level ? "active" : ""}`}
+                onClick={() => setLogFilter(level)}
+              >
+                {level === "" ? t("settings.logLevelAll") : logLevelLabel(level)}
+              </button>
+            ))}
+          </div>
+          <button
+            className="settings-btn-secondary"
+            onClick={fetchLogs}
+            disabled={logLoading}
+            style={{ marginLeft: "auto" }}
+          >
+            {logLoading ? t("common.loading") : t("common.retry")}
+          </button>
+        </div>
+
+        <div className="settings-log-list">
+          {logs.length === 0 && !logLoading && (
+            <p className="settings-log-empty">{t("settings.logNoLogs")}</p>
+          )}
+          {logs.map((entry) => (
+            <div key={entry.id} className={`settings-log-entry settings-log-${entry.level}`}>
+              <span className="settings-log-time">
+                {entry.created_at ? entry.created_at.slice(5, 19).replace("T", " ") : ""}
+              </span>
+              <span className={`settings-log-badge badge-${entry.level}`}>
+                {logLevelLabel(entry.level)}
+              </span>
+              <span className="settings-log-source">{logSourceLabel(entry.source)}</span>
+              <span className="settings-log-message">{entry.message}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* About */}

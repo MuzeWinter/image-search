@@ -20,6 +20,10 @@ def execute(method: str, params: dict):
         return _vacuum()
     elif method == "db.optimize":
         return _optimize()
+    elif method == "db.addLog":
+        return _add_log(params.get("level", "info"), params.get("source", ""), params.get("message", ""))
+    elif method == "db.getLogs":
+        return _get_logs(params.get("level"), params.get("limit", 50))
     else:
         raise ValueError(f"Unknown db method: {method}")
 
@@ -55,6 +59,33 @@ def _get_stats():
         "excelEmbedded": embedded_count,
         "ugPreviews": ug_count,
     }
+
+
+def _add_log(level: str, source: str, message: str):
+    if level not in ("info", "warn", "error"):
+        level = "info"
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO activity_logs (level, source, message) VALUES (?, ?, ?)",
+        (level, source, message),
+    )
+    conn.commit()
+    return {"ok": True}
+
+
+def _get_logs(level: str = None, limit: int = 50):
+    conn = get_connection()
+    if level and level in ("info", "warn", "error"):
+        rows = conn.execute(
+            "SELECT id, level, source, message, created_at FROM activity_logs WHERE level = ? ORDER BY id DESC LIMIT ?",
+            (level, limit),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT id, level, source, message, created_at FROM activity_logs WHERE level IN ('info','warn','error') ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def _get_db_file_size():

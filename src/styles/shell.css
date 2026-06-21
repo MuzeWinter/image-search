@@ -1518,6 +1518,108 @@
   opacity: 0.85;
 }
 
+/* === Activity Logs === */
+.settings-log-list {
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.settings-log-empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.settings-log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 6px var(--space-4);
+  font-size: var(--text-xs);
+  border-bottom: var(--border-width) solid var(--border);
+  font-family: var(--font-mono);
+}
+
+.settings-log-entry:last-child {
+  border-bottom: none;
+}
+
+.settings-log-time {
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settings-log-badge {
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-info {
+  color: var(--muted);
+  background: var(--surface-active);
+}
+
+.badge-warn {
+  color: var(--warning);
+  background: oklch(62% 0.14 75 / 0.15);
+}
+
+.badge-error {
+  color: var(--danger);
+  background: oklch(48% 0.16 22 / 0.15);
+}
+
+.settings-log-source {
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settings-log-message {
+  color: var(--fg);
+  word-break: break-word;
+  min-width: 0;
+}
+
+.settings-log-entry.settings-log-warn {
+  background: oklch(62% 0.14 75 / 0.06);
+}
+
+.settings-log-entry.settings-log-error {
+  background: oklch(48% 0.16 22 / 0.08);
+}
+
+[data-theme="dark"] .badge-info {
+  background: oklch(30% 0.014 85);
+}
+
+[data-theme="dark"] .badge-warn {
+  background: oklch(70% 0.17 80 / 0.2);
+}
+
+[data-theme="dark"] .badge-error {
+  background: oklch(58% 0.20 25 / 0.2);
+}
+
+[data-theme="dark"] .settings-log-entry.settings-log-warn {
+  background: oklch(70% 0.17 80 / 0.08);
+}
+
+[data-theme="dark"] .settings-log-entry.settings-log-error {
+  background: oklch(58% 0.20 25 / 0.1);
+}
+
 /* === Print === */
 @media print {
   .sidebar, .header, .statusbar { display: none !important; }
