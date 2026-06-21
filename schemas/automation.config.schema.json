@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schema.zoobet.app/automation.config/1.0",
+  "title": "Claude Code Automation Configuration",
+  "description": "Schema for automation.config.json — defines review commands, mojibake scanning, and required file checks for Claude Code automation.",
+  "type": "object",
+  "required": ["reviewCommands", "mojibakeScan", "requiredFiles"],
+  "properties": {
+    "reviewCommands": {
+      "description": "Commands executed during automated code review. Each command has a name, shell command string, and whether it blocks the review on failure.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "command", "required"],
+        "properties": {
+          "name": {
+            "description": "Human-readable name of this review check (e.g. 'TypeScript type-check').",
+            "type": "string"
+          },
+          "command": {
+            "description": "Shell command to run for this review check.",
+            "type": "string"
+          },
+          "required": {
+            "description": "If true, failure of this command blocks the review from passing.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mojibakeScan": {
+      "description": "Mojibake (乱码) detector configuration. Scans specified paths for file-encoding corruption in source files.",
+      "type": "object",
+      "required": ["enabled", "paths", "extensions"],
+      "properties": {
+        "enabled": {
+          "description": "Whether mojibake scanning is active.",
+          "type": "boolean"
+        },
+        "paths": {
+          "description": "Directory paths to scan for encoding errors.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "extensions": {
+          "description": "File glob patterns to include in the scan.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "requiredFiles": {
+      "description": "Files that must exist in the project. Used to verify project structure integrity before automated operations.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

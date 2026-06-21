@@ -1,4 +1,6 @@
 {
+  "$schema": "./schemas/automation.config.schema.json",
+  "$comment": "Claude Code automation configuration — defines review commands, mojibake scanning, and required file checks",
   "reviewCommands": [
     {
       "name": "TypeScript type-check",
