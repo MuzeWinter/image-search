@@ -1,44 +1,44 @@
 ﻿{
   "reviewCommands": [
     {
+      "name": "TypeScript type-check",
+      "command": "npx tsc --noEmit",
+      "required": true
+    },
+    {
+      "name": "Vite production build",
+      "command": "npm run build",
+      "required": true
+    },
+    {
+      "name": "Cargo build",
+      "command": "cargo build --manifest-path src-tauri/Cargo.toml 2>&1",
+      "required": true
+    },
+    {
+      "name": "Python backend syntax",
+      "command": "python -m py_compile backend/main.py",
+      "required": true
+    },
+    {
       "name": "Git status",
       "command": "git status --short",
       "required": true
-    },
-    {
-      "name": "Git diff summary",
-      "command": "git diff --stat",
-      "required": true
-    },
-    {
-      "name": "HTML structure check",
-      "command": "powershell -Command \"(Get-ChildItem -Recurse -Filter *.html | Measure-Object).Count\"",
-      "required": false
-    },
-    {
-      "name": "JS syntax check",
-      "command": "powershell -Command \"Get-ChildItem -Path js -Filter *.js | ForEach-Object { node --check $_.FullName 2>&1 }\"",
-      "required": false
     }
   ],
   "mojibakeScan": {
     "enabled": true,
-    "paths": [
-      "css",
-      "js",
-      "docs"
-    ],
-    "extensions": [
-      "*.html",
-      "*.css",
-      "*.js",
-      "*.json",
-      "*.md"
-    ]
+    "paths": ["src", "src-tauri/src", "backend", "docs"],
+    "extensions": ["*.ts", "*.tsx", "*.rs", "*.py", "*.json", "*.md", "*.css"]
   },
   "requiredFiles": [
     "AGENTS.md",
     "CLAUDE.md",
-    "index.html"
+    "docs/AI-CODING-RULES.md",
+    "src/main.tsx",
+    "src/App.tsx",
+    "src-tauri/src/main.rs",
+    "src-tauri/Cargo.toml",
+    "backend/main.py"
   ]
 }
