@@ -20,6 +20,10 @@ dist/
 # Rust
 src-tauri/target/
 
+# Python
+__pycache__/
+*.pyc
+
 # IDE
 *.suo
 *.user

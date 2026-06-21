@@ -135,6 +135,7 @@ export default function ImageLibrary() {
 
   const handleBatchDelete = async () => {
     if (selected.size === 0) return;
+    if (!window.confirm(t("imageLibrary.batchDeleteConfirm", { count: String(selected.size) }))) return;
     try {
       for (const imgId of selected) {
         await dbService.execute("DELETE FROM images WHERE img_id = ?", [imgId]);

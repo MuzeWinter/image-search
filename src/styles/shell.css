@@ -295,6 +295,52 @@
   margin-top: var(--space-1);
 }
 
+.home-guide-card {
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  padding: var(--space-10) var(--space-8);
+  margin-bottom: var(--space-8);
+}
+
+.home-guide-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-4);
+  opacity: 0.6;
+}
+
+.home-guide-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: var(--space-3);
+}
+
+.home-guide-desc {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  max-width: 480px;
+  margin: 0 auto var(--space-5);
+  line-height: 1.6;
+}
+
+.home-guide-btn {
+  display: inline-block;
+  padding: var(--space-3) var(--space-8);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--bg-primary);
+  background: var(--fg);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: opacity 0.15s;
+}
+
+.home-guide-btn:hover {
+  opacity: 0.85;
+}
+
 .home-section-title {
   font-family: var(--font-display);
   font-size: var(--text-xl);
@@ -556,6 +602,34 @@
 
 .settings-btn-primary:hover {
   opacity: 0.85;
+}
+
+.settings-btn-primary:disabled,
+.settings-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-btn-secondary {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--bg-primary);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.settings-btn-secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.settings-maintenance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
 }
 
 .settings-btn-danger {

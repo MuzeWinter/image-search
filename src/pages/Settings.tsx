@@ -7,6 +7,7 @@ import * as libraryService from "../services/libraryService";
 import * as ocrService from "../services/ocrService";
 import type { Library } from "../services/types";
 import { Skeleton } from "../components/shared/Skeleton";
+import { open, save } from "@tauri-apps/plugin-dialog";
 
 export default function Settings() {
   const { t, locale, setLocale } = useI18n();
@@ -14,6 +15,8 @@ export default function Settings() {
   const [libPath, setLibPath] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
   const [ocrEnabled, setOcrEnabled] = useState(false);
+  const [maintMsg, setMaintMsg] = useState("");
+  const [maintLoading, setMaintLoading] = useState("");
 
   const {
     data: libraries,
@@ -55,6 +58,17 @@ export default function Settings() {
     }
   };
 
+  const handleBrowse = async () => {
+    try {
+      const selected = await open({ directory: true, multiple: false, title: t("library.selectFolder") });
+      if (selected && typeof selected === "string") {
+        setLibPath(selected);
+      }
+    } catch {
+      // dialog cancelled or error
+    }
+  };
+
   const handleAddLibrary = async () => {
     const path = libPath.trim();
     if (!path) return;
@@ -69,12 +83,81 @@ export default function Settings() {
     }
   };
 
-  const handleRemoveLibrary = async (id: number) => {
+  const handleRemoveLibrary = async (id: number, path: string) => {
+    if (!window.confirm(t("library.deleteConfirm", { path }))) return;
     try {
       await libraryService.remove(id);
       refetchLibs();
     } catch (e) {
       setSaveMsg(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const showMaintMsg = (msg: string, duration = 3000) => {
+    setMaintMsg(msg);
+    setTimeout(() => setMaintMsg(""), duration);
+  };
+
+  const handleBackup = async () => {
+    try {
+      const targetPath = await save({
+        defaultPath: "zoobet-backup.db",
+        filters: [{ name: "Database", extensions: ["db"] }],
+        title: t("settings.backupDb"),
+      });
+      if (!targetPath) return;
+      setMaintLoading("backup");
+      const result = await settingsService.backup(targetPath);
+      showMaintMsg(`${t("settings.backupSuccess")}: ${result.backup_path}`);
+    } catch (e) {
+      showMaintMsg(`${t("settings.backupFail")}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setMaintLoading("");
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!window.confirm(t("settings.restoreConfirm"))) return;
+    try {
+      const sourcePath = await open({
+        multiple: false,
+        filters: [{ name: "Database", extensions: ["db"] }],
+        title: t("settings.restoreDb"),
+      });
+      if (!sourcePath || typeof sourcePath !== "string") return;
+      setMaintLoading("restore");
+      await settingsService.restore(sourcePath);
+      showMaintMsg(t("settings.restoreSuccess"), 5000);
+    } catch (e) {
+      showMaintMsg(`${t("settings.restoreFail")}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setMaintLoading("");
+    }
+  };
+
+  const handleRebuildIndex = async () => {
+    if (!window.confirm(t("settings.rebuildConfirm"))) return;
+    try {
+      setMaintLoading("rebuild");
+      const result = await settingsService.rebuildIndex();
+      showMaintMsg(`${t("settings.rebuildSuccess")} (${result.deleted_vectors} ${t("statusBar.images")})`);
+    } catch (e) {
+      showMaintMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setMaintLoading("");
+    }
+  };
+
+  const handleClearCache = async () => {
+    if (!window.confirm(t("settings.clearCacheConfirm"))) return;
+    try {
+      setMaintLoading("clear");
+      const result = await settingsService.clearCache();
+      showMaintMsg(`${t("settings.clearCacheSuccess")} (${result.cleaned_files} files)`);
+    } catch (e) {
+      showMaintMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setMaintLoading("");
     }
   };
 
@@ -169,6 +252,9 @@ export default function Settings() {
                 if (e.key === "Enter") handleAddLibrary();
               }}
             />
+            <button className="settings-btn-secondary" onClick={handleBrowse}>
+              {t("settings.browseBtn")}
+            </button>
             <button className="settings-btn-primary" onClick={handleAddLibrary}>
               {t("settings.addLibrary")}
             </button>
@@ -195,7 +281,7 @@ export default function Settings() {
                   </span>
                   <button
                     className="settings-btn-danger"
-                    onClick={() => handleRemoveLibrary(lib.id)}
+                    onClick={() => handleRemoveLibrary(lib.id, lib.label || lib.path)}
                   >
                     {t("common.delete")}
                   </button>
@@ -206,6 +292,44 @@ export default function Settings() {
             <p className="settings-empty">{t("settings.noLibraries")}</p>
           )}
         </div>
+      </section>
+
+      {/* Maintenance */}
+      <section className="settings-section">
+        <h3>{t("settings.maintenance")}</h3>
+
+        <div className="settings-maintenance-grid">
+          <button
+            className="settings-btn-secondary"
+            onClick={handleBackup}
+            disabled={maintLoading !== ""}
+          >
+            {maintLoading === "backup" ? `${t("common.loading")}` : t("settings.backupDb")}
+          </button>
+          <button
+            className="settings-btn-secondary"
+            onClick={handleRestore}
+            disabled={maintLoading !== ""}
+          >
+            {maintLoading === "restore" ? `${t("common.loading")}` : t("settings.restoreDb")}
+          </button>
+          <button
+            className="settings-btn-secondary"
+            onClick={handleRebuildIndex}
+            disabled={maintLoading !== ""}
+          >
+            {maintLoading === "rebuild" ? `${t("common.loading")}` : t("settings.rebuildIndex")}
+          </button>
+          <button
+            className="settings-btn-secondary"
+            onClick={handleClearCache}
+            disabled={maintLoading !== ""}
+          >
+            {maintLoading === "clear" ? `${t("common.loading")}` : t("settings.clearCache")}
+          </button>
+        </div>
+
+        {maintMsg && <p className="settings-msg" style={{ marginTop: 12 }}>{maintMsg}</p>}
       </section>
 
       {/* About */}

@@ -32,6 +32,8 @@ export default function Home() {
     "db.getStats",
   );
 
+  const showGuide = !statsLoading && stats && stats.libraries === 0;
+
   return (
     <div className="home-page">
       <div className="home-welcome">
@@ -82,6 +84,17 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {showGuide && (
+        <div className="home-guide-card">
+          <div className="home-guide-icon">📁</div>
+          <h3 className="home-guide-title">{t("home.firstLibrary")}</h3>
+          <p className="home-guide-desc">{t("home.firstLibraryDesc")}</p>
+          <Link to="/settings" className="home-guide-btn">
+            {t("home.addFirstLibrary")}
+          </Link>
+        </div>
+      )}
 
       <h2 className="home-section-title">{t("home.quickLinks")}</h2>
       <div className="home-cards">
