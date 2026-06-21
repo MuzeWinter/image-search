@@ -1,0 +1,198 @@
+{
+  "title": "CLIP+FAISS Performance Benchmark",
+  "timestamp": "2026-06-21T15:34:19.193116",
+  "vector_dim": 512,
+  "results": [
+    {
+      "category": "clip_vectorization",
+      "metric": "throughput",
+      "value": 44.16295955441299,
+      "unit": "images/sec",
+      "scale": 20,
+      "elapsed_sec": 0.453,
+      "images_processed": 20
+    },
+    {
+      "category": "clip_vectorization",
+      "metric": "throughput",
+      "value": 50.408591882449436,
+      "unit": "images/sec",
+      "scale": 50,
+      "elapsed_sec": 0.992,
+      "images_processed": 50
+    },
+    {
+      "category": "clip_vectorization",
+      "metric": "throughput",
+      "value": 52.568645977793786,
+      "unit": "images/sec",
+      "scale": 100,
+      "elapsed_sec": 1.902,
+      "images_processed": 100
+    },
+    {
+      "category": "faiss_index_build",
+      "metric": "build_time",
+      "value": 30.32,
+      "unit": "ms",
+      "scale": 100,
+      "elapsed_sec": 0.03,
+      "vector_count": 100
+    },
+    {
+      "category": "faiss_index_build",
+      "metric": "build_time",
+      "value": 4.81,
+      "unit": "ms",
+      "scale": 1000,
+      "elapsed_sec": 0.005,
+      "vector_count": 1000
+    },
+    {
+      "category": "faiss_index_build",
+      "metric": "build_time",
+      "value": 19.09,
+      "unit": "ms",
+      "scale": 5000,
+      "elapsed_sec": 0.019,
+      "vector_count": 5000
+    },
+    {
+      "category": "faiss_index_build",
+      "metric": "build_time",
+      "value": 39.15,
+      "unit": "ms",
+      "scale": 10000,
+      "elapsed_sec": 0.039,
+      "vector_count": 10000
+    },
+    {
+      "category": "search_latency",
+      "metric": "avg_search_time",
+      "value": 0.266,
+      "unit": "ms",
+      "scale": 100,
+      "min_ms": 0.262,
+      "max_ms": 0.279,
+      "iterations": 10,
+      "top_k": 10
+    },
+    {
+      "category": "search_latency",
+      "metric": "avg_search_time",
+      "value": 0.339,
+      "unit": "ms",
+      "scale": 1000,
+      "min_ms": 0.306,
+      "max_ms": 0.445,
+      "iterations": 10,
+      "top_k": 10
+    },
+    {
+      "category": "search_latency",
+      "metric": "avg_search_time",
+      "value": 0.504,
+      "unit": "ms",
+      "scale": 5000,
+      "min_ms": 0.46,
+      "max_ms": 0.741,
+      "iterations": 10,
+      "top_k": 10
+    },
+    {
+      "category": "search_latency",
+      "metric": "avg_search_time",
+      "value": 1.406,
+      "unit": "ms",
+      "scale": 10000,
+      "min_ms": 1.248,
+      "max_ms": 1.715,
+      "iterations": 10,
+      "top_k": 10
+    },
+    {
+      "category": "search_throughput",
+      "metric": "queries_per_sec",
+      "value": 2604.26,
+      "unit": "queries/sec",
+      "scale": 100,
+      "elapsed_sec": 0.019,
+      "burst_size": 50,
+      "top_k": 10
+    },
+    {
+      "category": "search_throughput",
+      "metric": "queries_per_sec",
+      "value": 2151.13,
+      "unit": "queries/sec",
+      "scale": 1000,
+      "elapsed_sec": 0.023,
+      "burst_size": 50,
+      "top_k": 10
+    },
+    {
+      "category": "search_throughput",
+      "metric": "queries_per_sec",
+      "value": 1392.19,
+      "unit": "queries/sec",
+      "scale": 5000,
+      "elapsed_sec": 0.036,
+      "burst_size": 50,
+      "top_k": 10
+    },
+    {
+      "category": "search_throughput",
+      "metric": "queries_per_sec",
+      "value": 905.49,
+      "unit": "queries/sec",
+      "scale": 10000,
+      "elapsed_sec": 0.055,
+      "burst_size": 50,
+      "top_k": 10
+    },
+    {
+      "category": "index_memory",
+      "metric": "estimated_mb",
+      "value": 0.2,
+      "unit": "MB",
+      "scale": 100,
+      "bytes_per_vector": 2048,
+      "dim": 512
+    },
+    {
+      "category": "index_memory",
+      "metric": "estimated_mb",
+      "value": 1.95,
+      "unit": "MB",
+      "scale": 1000,
+      "bytes_per_vector": 2048,
+      "dim": 512
+    },
+    {
+      "category": "index_memory",
+      "metric": "estimated_mb",
+      "value": 9.77,
+      "unit": "MB",
+      "scale": 5000,
+      "bytes_per_vector": 2048,
+      "dim": 512
+    },
+    {
+      "category": "index_memory",
+      "metric": "estimated_mb",
+      "value": 19.53,
+      "unit": "MB",
+      "scale": 10000,
+      "bytes_per_vector": 2048,
+      "dim": 512
+    },
+    {
+      "category": "search_consistency",
+      "metric": "scale_verified",
+      "value": 1000,
+      "unit": "vectors",
+      "self_match": true,
+      "monotonic": true
+    }
+  ]
+}

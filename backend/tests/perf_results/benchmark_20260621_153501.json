@@ -1,0 +1,34 @@
+{
+  "title": "CLIP+FAISS Performance Benchmark",
+  "timestamp": "2026-06-21T15:35:01.838857",
+  "vector_dim": 512,
+  "results": [
+    {
+      "category": "clip_vectorization",
+      "metric": "throughput",
+      "value": 53.23244719912532,
+      "unit": "images/sec",
+      "scale": 20,
+      "elapsed_sec": 0.376,
+      "images_processed": 20
+    },
+    {
+      "category": "clip_vectorization",
+      "metric": "throughput",
+      "value": 54.73799494486234,
+      "unit": "images/sec",
+      "scale": 50,
+      "elapsed_sec": 0.913,
+      "images_processed": 50
+    },
+    {
+      "category": "clip_vectorization",
+      "metric": "throughput",
+      "value": 54.77012758367842,
+      "unit": "images/sec",
+      "scale": 100,
+      "elapsed_sec": 1.826,
+      "images_processed": 100
+    }
+  ]
+}
