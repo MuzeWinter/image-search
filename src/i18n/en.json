@@ -44,7 +44,15 @@
     "confirm": "Confirm",
     "errorBoundaryTitle": "Something went wrong",
     "errorBoundaryDesc": "Please try refreshing the page or click retry. If the issue persists, check the console logs.",
-    "switchLocale": "Switch Language"
+    "switchLocale": "Switch Language",
+    "done": "Done",
+    "close": "Close",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "start": "Start",
+    "success": "Success",
+    "failed": "Failed"
   },
   "settings": {
     "title": "Settings",
@@ -156,5 +164,20 @@
     "emptyIcon": "📁",
     "emptyTitle": "No Libraries",
     "emptyDesc": "Add a library folder to start scanning and indexing your files."
+  },
+  "welcome": {
+    "step1Title": "Welcome to ZOOBET Search",
+    "step1Desc": "Local AI visual search engine built for product designers.\nSupports image similarity search, UG drawing/Excel invoice image management, and smart matching.",
+    "step2Title": "Select Library Folder",
+    "step2Desc": "A library is a folder containing UG drawings (.prt) and Excel invoice sheets.\nAfter adding a library, the system will automatically scan and index images within.",
+    "step2Browse": "Browse Folder",
+    "step2NoPath": "Please select a library folder first",
+    "step3Title": "First Scan",
+    "step3Desc": "Scanning will index all files in the library, extracting image feature vectors for AI search.\nScan time depends on file count. Once complete, you can start searching.",
+    "step3ScanNow": "Start Scan",
+    "step3Skip": "Skip for now",
+    "step4Title": "Ready!",
+    "step4Desc": "You are all set! You can:\n• Drag an image on the Search page for AI similarity search\n• Browse and manage all images in Library\n• Modify settings anytime",
+    "step4Start": "Start Using"
   }
 }
