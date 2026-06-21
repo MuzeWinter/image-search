@@ -11,13 +11,14 @@ import threading
 import io
 import base64
 import os
+from typing import Any, cast
 
-_model = None
-_preprocess = None
-_device = None
+_model: Any = None
+_preprocess: Any = None
+_device: str | None = None
 _load_lock = threading.Lock()
-_load_progress = {"status": "idle", "percent": 0, "message": ""}
-_LOAD_FAILED_MSG = None
+_load_progress: dict[str, object] = {"status": "idle", "percent": 0, "message": ""}
+_LOAD_FAILED_MSG: str | None = None
 
 
 def _log(msg: str):
@@ -56,7 +57,7 @@ def _load_model():
         if _LOAD_FAILED_MSG is not None:
             raise RuntimeError(_LOAD_FAILED_MSG)
 
-        load_result = {}
+        load_result: dict[str, object] = {}
 
         def _do_load():
             try:
@@ -105,16 +106,17 @@ def _load_model():
             _log(_LOAD_FAILED_MSG)
             raise RuntimeError(_LOAD_FAILED_MSG)
 
-        if load_result.get("error"):
-            _LOAD_FAILED_MSG = load_result["error"]
-            _emit_progress("error", 0, _LOAD_FAILED_MSG)
-            _log(_LOAD_FAILED_MSG)
-            raise RuntimeError(_LOAD_FAILED_MSG)
+        error_msg = load_result.get("error")
+        if error_msg and isinstance(error_msg, str):
+            _LOAD_FAILED_MSG = error_msg
+            _emit_progress("error", 0, error_msg)
+            _log(error_msg)
+            raise RuntimeError(error_msg)
 
         if load_result.get("ok"):
             _model = load_result["model"]
             _preprocess = load_result["preprocess"]
-            _device = load_result["device"]
+            _device = cast(str, load_result["device"])
 
 
 def _preprocess_image(image_data: bytes):
@@ -122,7 +124,7 @@ def _preprocess_image(image_data: bytes):
     from PIL import Image
     import torchvision.transforms as transforms
 
-    img = Image.open(io.BytesIO(image_data))
+    img: Image.Image = Image.open(io.BytesIO(image_data))
     if img.mode != "RGB":
         img = img.convert("RGB")
 
@@ -143,6 +145,7 @@ def _extract_features(image_tensor):
     import torch
     image_tensor = image_tensor.to(_device)
     with torch.no_grad():
+        assert _model is not None
         features = _model.encode_image(image_tensor)
         features = features / features.norm(dim=-1, keepdim=True)
     return features.cpu().numpy().flatten()
@@ -190,9 +193,9 @@ def _handle_load_model():
 
 def _handle_get_model_status():
     return {
-        "status": _load_progress["status"],
-        "percent": _load_progress["percent"],
-        "message": _load_progress["message"],
+        "status": cast(str, _load_progress["status"]),
+        "percent": cast(int, _load_progress["percent"]),
+        "message": cast(str, _load_progress["message"]),
         "device": _device,
         "error": _LOAD_FAILED_MSG,
     }

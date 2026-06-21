@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:py": "python -m mypy backend/",
+    "check": "node scripts/check.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

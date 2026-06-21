@@ -14,6 +14,7 @@ import time
 import argparse
 import re
 from pathlib import Path
+from typing import Any
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _PROJECT_ROOT not in sys.path:
@@ -289,7 +290,7 @@ def _extract_excel_images(filepath: str, library_path: str) -> int:
     return count
 
 
-def _log_change(conn, change_type: str, filepath: str, old_value: str = None, new_value: str = None):
+def _log_change(conn, change_type: str, filepath: str, old_value: str | None = None, new_value: str | None = None):
     conn.execute(
         """INSERT INTO change_logs (change_type, file_path, old_value, new_value, status, created_at)
            VALUES (?, ?, ?, ?, 'processed', datetime('now','localtime'))""",
@@ -562,7 +563,7 @@ def scan_library(library_id: int, library_path: str):
 
     _add_activity_log("info", "scan", f"Collected {total_files} files for scanning")
     # Phase 2: Hash and classify each file
-    current_scan = {}
+    current_scan: dict[str, dict[str, Any]] = {}
     stats = {"excel": 0, "image": 0, "cad": 0, "pdf": 0, "other": 0}
     errors = 0
 
@@ -614,12 +615,12 @@ def scan_library(library_id: int, library_path: str):
             modified.add(p)
 
     # Detect moved/renamed (same hash, different path)
-    curr_hash_to_paths = {}
+    curr_hash_to_paths: dict[str, list[str]] = {}
     for p in added:
         h = current_scan[p]["hash"]
         curr_hash_to_paths.setdefault(h, []).append(p)
 
-    prev_hash_to_paths = {}
+    prev_hash_to_paths: dict[str, list[str]] = {}
     for p in removed:
         h = prev_map[p]
         prev_hash_to_paths.setdefault(h, []).append(p)
@@ -825,7 +826,7 @@ def check_changes(library_id: int) -> dict:
                 "has_changes": prev_count > 0}
 
     # Hash each file
-    current_scan = {}
+    current_scan: dict[str, str] = {}
     for filepath in all_files:
         try:
             file_hash = sha256_file(filepath)
@@ -856,12 +857,12 @@ def check_changes(library_id: int) -> dict:
             modified.add(p)
 
     # Detect moved/renamed files
-    curr_hash_to_paths = {}
+    curr_hash_to_paths: dict[str, list[str]] = {}
     for p in added:
         h = current_scan[p]
         curr_hash_to_paths.setdefault(h, []).append(p)
 
-    prev_hash_to_paths = {}
+    prev_hash_to_paths: dict[str, list[str]] = {}
     for p in removed:
         h = prev_map[p]
         prev_hash_to_paths.setdefault(h, []).append(p)

@@ -31,7 +31,7 @@ def execute(method: str, params: dict):
         raise ValueError(f"Unknown excel method: {method}")
 
 
-def _parse(file_path: str, library_path: str = "") -> dict:
+def _parse(file_path: str, library_path: str = "") -> dict[str, object]:
     """Parse an Excel file and write records to excel_records table."""
     if not file_path or not os.path.exists(file_path):
         raise ValueError(f"Excel file not found: {file_path}")
@@ -48,14 +48,14 @@ def _parse(file_path: str, library_path: str = "") -> dict:
     now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     import hashlib
-    file_hash = hashlib.sha256()
+    h = hashlib.sha256()
     with open(file_path, 'rb') as f:
         while True:
             chunk = f.read(65536)
             if not chunk:
                 break
-            file_hash.update(chunk)
-    file_hash = file_hash.hexdigest()
+            h.update(chunk)
+    file_hash = h.hexdigest()
 
     wb = load_workbook(file_path, data_only=True)
     total_rows = 0
@@ -97,7 +97,7 @@ def _parse(file_path: str, library_path: str = "") -> dict:
     }
 
 
-def _list_records(file_path: str = None) -> list:
+def _list_records(file_path: str | None = None) -> list:
     conn = get_connection()
     if file_path:
         rows = conn.execute(

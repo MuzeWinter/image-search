@@ -57,11 +57,13 @@ def _recognize_text(image_bytes: bytes) -> list:
     import numpy as np
     from PIL import Image
 
-    img = Image.open(io.BytesIO(image_bytes))
+    img: Image.Image = Image.open(io.BytesIO(image_bytes))
     if img.mode != "RGB":
         img = img.convert("RGB")
     img_array = np.array(img)
 
+    if _ocr_reader is None:
+        raise RuntimeError("OCR reader not initialized")
     results = _ocr_reader.readtext(img_array)
     return [
         {"text": text, "confidence": round(conf, 4), "bbox": bbox}

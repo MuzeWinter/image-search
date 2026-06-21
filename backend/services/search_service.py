@@ -9,15 +9,16 @@ import json
 import struct
 import time
 import threading
+from typing import Any, cast
 
 import numpy as np
 
 from backend.db.connection import get_connection
 
-_index = None
-_index_img_ids = None
+_index: Any = None
+_index_img_ids: list[str] | None = None
 _index_lock = threading.Lock()
-_index_status = {"built": False, "count": 0, "dim": 0}
+_index_status: dict[str, object] = {"built": False, "count": 0, "dim": 0}
 
 
 def _log(msg: str):
@@ -147,11 +148,14 @@ def _index_single(img_id: str, vector: list):
             _index_img_ids = []
             _index_status["dim"] = dim
 
+        img_ids = _index_img_ids
+        assert img_ids is not None
         _index.add(vec)
-        _index_img_ids.append(img_id)
-        _index_status["count"] = len(_index_img_ids)
+        img_ids.append(img_id)
+        _index_status["count"] = len(img_ids)
         _index_status["built"] = True
 
+    assert _index_img_ids is not None
     _log(f"Indexed image {img_id}, total={len(_index_img_ids)}")
 
 
@@ -159,14 +163,20 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", lib
     """搜索相似图片，支持搜索范围过滤和资料库过滤"""
     _load_index()
 
+    if _index is None or _index_img_ids is None:
+        _log("Index or img_ids not initialized, returning empty")
+        return []
+
     if _index_status["count"] == 0:
         return []
 
     vec = np.array(query_vector, dtype=np.float32).reshape(1, -1)
 
     # Get more candidates to filter by scope
-    fetch_k = min(top_k * 3, _index_status["count"])
+    fetch_k = min(top_k * 3, cast(int, _index_status["count"]))
 
+    if _index is None or _index_img_ids is None:
+        return []
     distances, indices = _index.search(vec, fetch_k)
 
     results = []

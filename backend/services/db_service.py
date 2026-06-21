@@ -76,7 +76,7 @@ def _add_log(level: str, source: str, message: str):
     return {"ok": True}
 
 
-def _get_logs(level: str = None, limit: int = 50):
+def _get_logs(level: str | None = None, limit: int = 50):
     conn = get_connection()
     if level and level in ("info", "warn", "error"):
         rows = conn.execute(
