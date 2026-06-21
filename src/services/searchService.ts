@@ -26,6 +26,7 @@ export interface SearchResultItem {
   height?: number | null;
   format?: string;
   source_query_indices?: number[];
+  prt_files?: string[];
 }
 
 export interface SearchResults {
@@ -219,4 +220,60 @@ export async function deleteEmbedding(
     "search.deleteEmbedding",
     { img_id: imgId },
   );
+}
+
+export interface FindPrtFilesResult {
+  directory: string;
+  prt_files: string[];
+  count: number;
+}
+
+export async function findPrtFiles(
+  imagePath?: string,
+  directory?: string,
+): Promise<FindPrtFilesResult> {
+  await serviceRegistry.ensureReady("searchService");
+  const params: Record<string, unknown> = {};
+  if (imagePath) params.image_path = imagePath;
+  if (directory) params.directory = directory;
+  return callBackend<FindPrtFilesResult>("search.findPrtFiles", params);
+}
+
+export interface PrtImageResult {
+  img_id: string;
+  source_type: string;
+  file_path: string;
+  image_path: string | null;
+  origin_path: string | null;
+  folder: string | null;
+  filename: string | null;
+  size_bytes: number | null;
+  width: number | null;
+  height: number | null;
+  sheet_name: string | null;
+  row_number: number | null;
+  ug_ref: string | null;
+  ocr_text: string | null;
+  ex_ref: string | null;
+  cad_ref: string | null;
+  pdf_ref: string | null;
+  favorite: boolean;
+  tags: string[];
+  format: string;
+}
+
+export interface FindImagesByPrtPathResult {
+  prt_path: string;
+  ug_ref: string;
+  images: PrtImageResult[];
+  count: number;
+}
+
+export async function findImagesByPrtPath(
+  prtPath: string,
+): Promise<FindImagesByPrtPathResult> {
+  await serviceRegistry.ensureReady("searchService");
+  return callBackend<FindImagesByPrtPathResult>("search.findImagesByPrtPath", {
+    prt_path: prtPath,
+  });
 }

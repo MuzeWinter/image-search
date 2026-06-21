@@ -841,6 +841,35 @@ fn stop_folder_watch(app_handle: tauri::AppHandle) -> Result<serde_json::Value, 
 }
 
 #[tauri::command]
+fn find_prt_files_batch(dirs: Vec<String>) -> Result<serde_json::Value, String> {
+    let mut result: HashMap<String, Vec<String>> = HashMap::new();
+    for dir in &dirs {
+        let path = std::path::Path::new(dir);
+        if !path.is_dir() {
+            continue;
+        }
+        let mut prt_files: Vec<String> = Vec::new();
+        match std::fs::read_dir(path) {
+            Ok(entries) => {
+                for entry in entries.flatten() {
+                    let entry_path = entry.path();
+                    if entry_path.extension().map(|e| e.to_ascii_lowercase()) == Some("prt".into()) {
+                        if let Some(p) = entry_path.to_str() {
+                            prt_files.push(p.to_string());
+                        }
+                    }
+                }
+            }
+            Err(_) => continue,
+        }
+        if !prt_files.is_empty() {
+            result.insert(dir.clone(), prt_files);
+        }
+    }
+    Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
+}
+
+#[tauri::command]
 fn get_watch_status() -> Result<serde_json::Value, String> {
     let active = DEBOUNCE_TX.lock().map_err(|e| e.to_string())?.is_some();
     let paths = WATCHED_PATHS.lock().map_err(|e| e.to_string())?.clone();
@@ -877,6 +906,7 @@ fn main() {
             write_text_file,
             save_window_state,
             load_window_state,
+            find_prt_files_batch,
             start_folder_watch,
             stop_folder_watch,
             get_watch_status,

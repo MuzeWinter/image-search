@@ -56,6 +56,8 @@ interface VirtualRowData {
   onThumbLeave: () => void;
   onThumbClick: (e: React.MouseEvent<HTMLDivElement>, item: SearchResultItem) => void;
   onImgError: (imgId: string) => void;
+  prtFileMap: Record<string, string[]>;
+  setPrtDirFilter: (dir: string | null) => void;
 }
 
 type ResultListRowProps = VirtualRowData & {
@@ -64,7 +66,7 @@ type ResultListRowProps = VirtualRowData & {
   ariaAttributes: { "aria-posinset": number; "aria-setsize": number; role: "listitem" };
 };
 
-function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarkedIds, thumbPx, t, toggleSelect, toggleBookmark, showContextMenu, onThumbEnter, onThumbLeave, onThumbClick, onImgError }: ResultListRowProps) {
+function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarkedIds, thumbPx, t, toggleSelect, toggleBookmark, showContextMenu, onThumbEnter, onThumbLeave, onThumbClick, onImgError, prtFileMap, setPrtDirFilter }: ResultListRowProps) {
   const item = items[index];
   const gap = 8;
   const innerH = (style.height as number) - gap;
@@ -72,6 +74,9 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
   const isBroken = brokenImgs.has(item.img_id);
   const isBookmarked = bookmarkedIds.has(item.img_id);
   const simClass = similarityClass(item.similarity);
+  const itemPrtFiles = getItemPrtFiles(item, prtFileMap);
+  const hasPrt = itemPrtFiles.length > 0;
+  const itemDir = item.image_path ? extractDir(item.image_path) : extractDir(item.origin_path);
 
   return (
     <div style={{ ...style, height: (style.height as number) }}>
@@ -162,6 +167,20 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
               <span className="detail-value">{item.ug_ref}</span>
             </div>
           )}
+          {hasPrt && (
+            <div className="search-result-detail">
+              <span className="detail-label" style={{ color: "var(--accent)" }}>PRT:</span>
+              <button
+                className="search-result-prt-link"
+                onClick={(e) => { e.stopPropagation(); setPrtDirFilter(itemDir); }}
+                title={t("search.filterByPrtDir")}
+              >
+                {itemPrtFiles.length === 1
+                  ? extractFilename(itemPrtFiles[0])
+                  : t("search.prtFileCount", { count: String(itemPrtFiles.length) })}
+              </button>
+            </div>
+          )}
         </div>
         <div className="search-result-actions">
           {item.source_type === "excel-embedded" && (
@@ -172,6 +191,11 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
           {item.source_type === "ug-preview" && (
             <button className="search-action-btn search-action-primary" onClick={() => openFolder(item.origin_path)} aria-label={t("search.openUgFolder")}>
               {t("search.openUgFolder")}
+            </button>
+          )}
+          {hasPrt && (
+            <button className="search-action-btn search-action-primary" onClick={() => openFile(itemPrtFiles[0])} aria-label={t("search.openPrt")}>
+              {t("search.openPrt")}
             </button>
           )}
           <button className="search-action-btn" onClick={() => openFile(item.image_path)} aria-label={t("search.openImage")}>
@@ -201,7 +225,7 @@ type ResultGridCellProps = VirtualRowData & {
   ariaAttributes: { "aria-colindex": number; role: "gridcell" };
 };
 
-function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brokenImgs, bookmarkedIds, _gridCols, t, toggleSelect, toggleBookmark, showContextMenu, onThumbEnter, onThumbLeave, onThumbClick, onImgError }: ResultGridCellProps) {
+function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brokenImgs, bookmarkedIds, _gridCols, t, toggleSelect, toggleBookmark, showContextMenu, onThumbEnter, onThumbLeave, onThumbClick, onImgError, prtFileMap, setPrtDirFilter }: ResultGridCellProps) {
   const index = rowIndex * _gridCols + columnIndex;
   if (index >= items.length) return null;
   const item = items[index];
@@ -212,6 +236,9 @@ function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brok
   const isBroken = brokenImgs.has(item.img_id);
   const isBookmarked = bookmarkedIds.has(item.img_id);
   const simClass = similarityClass(item.similarity);
+  const itemPrtFiles = getItemPrtFiles(item, prtFileMap);
+  const hasPrt = itemPrtFiles.length > 0;
+  const itemDir = item.image_path ? extractDir(item.image_path) : extractDir(item.origin_path);
 
   return (
     <div style={{ ...style, width: (style.width as number), height: (style.height as number) }}>
@@ -301,6 +328,33 @@ function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brok
               <span className="detail-value" style={{ fontSize: 10 }}>{item.ug_ref}</span>
             </div>
           )}
+          {hasPrt && (
+            <div className="search-result-detail" style={{ marginTop: 0, fontSize: 10 }}>
+              <span className="detail-label" style={{ fontSize: 10, color: "var(--accent)" }}>PRT:</span>
+              <button
+                className="search-result-prt-link"
+                onClick={(e) => { e.stopPropagation(); setPrtDirFilter(itemDir); }}
+                title={t("search.filterByPrtDir")}
+                style={{ fontSize: 10 }}
+              >
+                {itemPrtFiles.length === 1
+                  ? extractFilename(itemPrtFiles[0])
+                  : t("search.prtFileCount", { count: String(itemPrtFiles.length) })}
+              </button>
+            </div>
+          )}
+          {(hasPrt || item.source_type === "ug-preview" || item.source_type === "excel-embedded") && (
+            <div className="search-result-actions" style={{ display: "flex", gap: 4, marginTop: 4 }}>
+              {hasPrt && (
+                <button className="search-action-btn search-action-primary" onClick={() => openFile(itemPrtFiles[0])} aria-label={t("search.openPrt")} style={{ fontSize: 10, padding: "2px 6px" }}>
+                  {t("search.openPrt")}
+                </button>
+              )}
+              <button className="search-action-btn" onClick={() => openFile(item.image_path)} aria-label={t("search.openImage")} style={{ fontSize: 10, padding: "2px 6px" }}>
+                {t("search.openImage")}
+              </button>
+            </div>
+          )}
         </div>
         <button
           className={`search-result-bookmark ${isBookmarked ? "bookmarked" : ""}`}
@@ -366,6 +420,33 @@ function extractDir(filePath: string): string {
   return parts.join("/") || filePath;
 }
 
+function autoDetectPrtFiles(
+  results: { image_path: string; origin_path: string; prt_files?: string[] }[],
+  setPrtFileMap: (map: Record<string, string[]>) => void,
+) {
+  const map: Record<string, string[]> = {};
+  for (const r of results) {
+    if (r.prt_files && r.prt_files.length > 0) {
+      const dir = r.image_path ? extractDir(r.image_path) : extractDir(r.origin_path);
+      if (dir && !map[dir]) {
+        map[dir] = r.prt_files;
+      }
+    }
+  }
+  setPrtFileMap(map);
+}
+
+function getItemPrtFiles(item: SearchResultItem, prtFileMap: Record<string, string[]>): string[] {
+  const dirs = new Set<string>();
+  if (item.image_path) dirs.add(extractDir(item.image_path));
+  if (item.origin_path) dirs.add(extractDir(item.origin_path));
+  for (const dir of dirs) {
+    const files = prtFileMap[dir];
+    if (files && files.length > 0) return files;
+  }
+  return [];
+}
+
 export default function Search() {
   const { t } = useI18n();
   const { addToast } = useToast();
@@ -404,6 +485,8 @@ export default function Search() {
   const [compareItems, setCompareItems] = useState<[SearchResultItem, SearchResultItem] | null>(null);
   const [detailItem, setDetailItem] = useState<SearchResultItem | null>(null);
   const [filterText, setFilterText] = useState("");
+  const [prtFileMap, setPrtFileMap] = useState<Record<string, string[]>>({});
+  const [prtDirFilter, setPrtDirFilter] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [focusedResultIdx, setFocusedResultIdx] = useState(-1);
@@ -525,6 +608,13 @@ export default function Search() {
       items = items.filter(item => bookmarkedIds.has(item.img_id));
     }
 
+    if (prtDirFilter) {
+      items = items.filter(item => {
+        const dir = item.image_path ? extractDir(item.image_path) : extractDir(item.origin_path);
+        return dir === prtDirFilter;
+      });
+    }
+
     const threshold = similarityThreshold / 100;
     items = items.filter(item => item.similarity >= threshold);
 
@@ -551,7 +641,7 @@ export default function Search() {
     }
 
     return sorted;
-  }, [results, filterText, sortBy, bookmarkFilter, bookmarkedIds, similarityThreshold]);
+  }, [results, filterText, sortBy, bookmarkFilter, bookmarkedIds, similarityThreshold, prtDirFilter]);
 
   // Reset page when filter, sort, or results change
   useEffect(() => {
@@ -637,6 +727,8 @@ export default function Search() {
     setErrorMsg("");
     setPreviewUrl("");
     setFilterText("");
+    setPrtDirFilter(null);
+    setPrtFileMap({});
   }, [escapeEpoch]);
 
   const waitForModel = useCallback((): Promise<void> => {
@@ -690,6 +782,8 @@ export default function Search() {
     setResults(null);
     setSelectedIds(new Set());
     setFilterText("");
+    setPrtDirFilter(null);
+    setPrtFileMap({});
     pendingSearchRef.current = { type: "base64", base64, url: displayUrl };
 
     // Check model status first
@@ -725,6 +819,8 @@ export default function Search() {
       setState("done");
       pendingSearchRef.current = null;
 
+      autoDetectPrtFiles(searchResults.results, setPrtFileMap);
+
       // Save to search history
       createThumbnail(base64).then((thumb) => {
         const updated = addHistory({
@@ -755,6 +851,8 @@ export default function Search() {
     setResults(null);
     setSelectedIds(new Set());
     setFilterText("");
+    setPrtDirFilter(null);
+    setPrtFileMap({});
     pendingSearchRef.current = { type: "path", path: filePath, url: fileToUrl(filePath) || "" };
 
     let modelFailed = false;
@@ -788,6 +886,8 @@ export default function Search() {
       setResults(searchResults);
       setState("done");
       pendingSearchRef.current = null;
+
+      autoDetectPrtFiles(searchResults.results, setPrtFileMap);
 
       const updated = addHistory({
         thumbnail: "",
@@ -854,6 +954,8 @@ export default function Search() {
     setResults(null);
     setSelectedIds(new Set());
     setFilterText("");
+    setPrtDirFilter(null);
+    setPrtFileMap({});
 
     let modelFailed = false;
     try {
@@ -888,6 +990,8 @@ export default function Search() {
       );
       setResults(batchResults);
       setState("done");
+
+      autoDetectPrtFiles(batchResults.results, setPrtFileMap);
 
       // Save first query image as search history thumbnail
       if (images.length > 0) {
@@ -1311,7 +1415,9 @@ export default function Search() {
         return next;
       });
     },
-  }), [filteredResults, selectedIds, brokenImgs, bookmarkedIds, thumbPx, gridColCount, t, toggleSelect, toggleBookmark, setHoverPreview, setBrokenImgs, setCtxMenu]);
+    prtFileMap,
+    setPrtDirFilter,
+  }), [filteredResults, selectedIds, brokenImgs, bookmarkedIds, thumbPx, gridColCount, t, toggleSelect, toggleBookmark, setHoverPreview, setBrokenImgs, setCtxMenu, prtFileMap]);
 
   const showDropZone = state === "idle" || state === "done" || state === "error";
 
@@ -1551,6 +1657,23 @@ export default function Search() {
               <p className="search-duration">{t("search.duration", { ms: String(results.duration_ms) })}</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* PRT directory filter */}
+      {prtDirFilter && (
+        <div className="search-filter-bar" style={{ padding: "var(--space-2) var(--space-3)", background: "var(--bg-surface)", border: "1px solid var(--accent)", borderRadius: "var(--radius-sm)" }}>
+          <span style={{ fontSize: "var(--text-sm)", color: "var(--accent)", fontWeight: 600 }}>PRT Dir:</span>
+          <span style={{ fontSize: "var(--text-sm)", marginLeft: "var(--space-2)" }}>{prtDirFilter}</span>
+          <Tooltip content={t("common.cancel")}>
+            <button
+              className="search-filter-clear"
+              onClick={() => setPrtDirFilter(null)}
+              aria-label={t("common.cancel")}
+            >
+              x
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -1901,6 +2024,22 @@ export default function Search() {
                       <span className="detail-value">{item.ug_ref}</span>
                     </div>
                   )}
+                  {/* PRT files */}
+                  {(() => {
+                    const pfs = getItemPrtFiles(item, prtFileMap);
+                    const pDir = item.image_path ? extractDir(item.image_path) : extractDir(item.origin_path);
+                    if (pfs.length > 0) {
+                      return (
+                        <div className="search-result-detail">
+                          <span className="detail-label" style={{ color: "var(--accent)" }}>PRT:</span>
+                          <button className="search-result-prt-link" onClick={(e) => { e.stopPropagation(); setPrtDirFilter(pDir); }} title={t("search.filterByPrtDir")}>
+                            {pfs.length === 1 ? extractFilename(pfs[0]) : t("search.prtFileCount", { count: String(pfs.length) })}
+                          </button>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div className="search-result-actions">
                   {item.source_type === "excel-embedded" && (
@@ -1921,6 +2060,17 @@ export default function Search() {
                       {t("search.openUgFolder")}
                     </button>
                   )}
+                  {(() => {
+                    const pfs = getItemPrtFiles(item, prtFileMap);
+                    if (pfs.length > 0) {
+                      return (
+                        <button className="search-action-btn search-action-primary" onClick={() => openFile(pfs[0])} aria-label={t("search.openPrt")}>
+                          {t("search.openPrt")}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
                   <button
                     className="search-action-btn"
                     onClick={() => openFile(item.image_path)}
@@ -2074,6 +2224,23 @@ export default function Search() {
               addToast("success", t("search.copied"));
             },
           });
+        }
+        {
+          const prtFiles = getItemPrtFiles(item, prtFileMap);
+          if (prtFiles.length > 0) {
+            menuItems.push({ separator: true });
+            menuItems.push({
+              label: t("search.openPrt"),
+              onClick: () => { openFile(prtFiles[0]); },
+            });
+            menuItems.push({
+              label: t("search.filterByPrtDir"),
+              onClick: () => {
+                const dir = item.image_path ? extractDir(item.image_path) : extractDir(item.origin_path);
+                setPrtDirFilter(dir);
+              },
+            });
+          }
         }
         return (
           <ContextMenu

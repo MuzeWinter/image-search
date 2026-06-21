@@ -25,6 +25,34 @@ def _log(msg: str):
     print(f"[search_service] {msg}", file=sys.stderr, flush=True)
 
 
+# Per-request cache for directory → .prt file list
+_prt_dir_cache: dict[str, list[str]] = {}
+
+
+def _find_prt_files_in_dir(dir_path: str) -> list[str]:
+    """List .prt files in a directory. Results cached per directory for the request."""
+    if not dir_path or not os.path.isdir(dir_path):
+        return []
+    norm = os.path.normpath(dir_path)
+    if norm in _prt_dir_cache:
+        return _prt_dir_cache[norm]
+    try:
+        prt_files = sorted([
+            os.path.join(norm, f)
+            for f in os.listdir(norm)
+            if f.lower().endswith(".prt") and not f.startswith(".") and not f.startswith("~")
+        ])
+    except OSError:
+        prt_files = []
+    _prt_dir_cache[norm] = prt_files
+    return prt_files
+
+
+def _clear_prt_cache():
+    global _prt_dir_cache
+    _prt_dir_cache.clear()
+
+
 def _add_activity_log(level: str, source: str, message: str):
     try:
         conn = get_connection()
@@ -161,6 +189,7 @@ def _index_single(img_id: str, vector: list):
 
 def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", library_id: int | None = None):
     """搜索相似图片，支持搜索范围过滤和资料库过滤"""
+    _clear_prt_cache()
     _load_index()
 
     if _index is None or _index_img_ids is None:
@@ -268,6 +297,14 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", lib
             if pdf_row:
                 pdf_info = dict(pdf_row)
 
+        # Detect .prt files in the same directory
+        result_folder = img_data.get("folder") or ""
+        if not result_folder and img_data.get("origin_path"):
+            result_folder = os.path.dirname(img_data["origin_path"])
+        if not result_folder and img_data.get("image_path"):
+            result_folder = os.path.dirname(img_data["image_path"])
+        prt_files = _find_prt_files_in_dir(result_folder)
+
         results.append({
             "img_id": img_data["img_id"],
             "source_type": img_data["source_type"],
@@ -293,6 +330,7 @@ def _search_similar(query_vector: list, top_k: int = 20, scope: str = "all", lib
             "cad_info": cad_info,
             "pdf_ref": pdf_ref,
             "pdf_info": pdf_info,
+            "prt_files": prt_files,
         })
 
     # Truncate to requested top_k after scope/library filtering
@@ -481,6 +519,10 @@ def execute(method: str, params: dict):
         return _handle_delete_embedding(params)
     elif method == "search.batchIndex":
         return _handle_batch_index(params)
+    elif method == "search.findPrtFiles":
+        return _handle_find_prt_files(params)
+    elif method == "search.findImagesByPrtPath":
+        return _handle_find_images_by_prt_path(params)
     else:
         raise ValueError(f"Unknown search method: {method}")
 
@@ -754,3 +796,82 @@ def _handle_reset_model():
     """重置 AI 模型失败状态以支持手动重试"""
     from backend.services.ai_service import _handle_reset_model as _ai_reset
     return _ai_reset()
+
+
+def _handle_find_prt_files(params: dict):
+    """给定图片路径或目录路径，查找同目录下的 .prt 文件"""
+    image_path = params.get("image_path", "")
+    directory = params.get("directory", "")
+
+    target_dir = directory
+    if not target_dir and image_path:
+        target_dir = os.path.dirname(image_path)
+
+    if not target_dir:
+        raise ValueError("Either image_path or directory is required")
+
+    if not os.path.isdir(target_dir):
+        return {"directory": target_dir, "prt_files": [], "count": 0}
+
+    prt_files = _find_prt_files_in_dir(target_dir)
+    return {"directory": target_dir, "prt_files": prt_files, "count": len(prt_files)}
+
+
+def _handle_find_images_by_prt_path(params: dict):
+    """反向查找：给定 .prt 文件路径，找出数据库中同目录的预览图"""
+    prt_path = params.get("prt_path", "")
+    if not prt_path:
+        raise ValueError("prt_path is required")
+
+    prt_dir = os.path.dirname(prt_path)
+    prt_basename = os.path.basename(prt_path)
+    ug_ref = os.path.splitext(prt_basename)[0]
+
+    conn = get_connection()
+
+    # Find images in the same directory
+    norm_dir = prt_dir.replace("\\", "/").rstrip("/")
+    rows = conn.execute(
+        """SELECT img_id, source_type, file_path, image_path, origin_path,
+                  folder, filename, size_bytes, width, height, sheet_name,
+                  row_number, ug_ref, ocr_text, ex_ref, cad_ref, pdf_ref
+           FROM images
+           WHERE folder = ? OR folder LIKE ?
+           ORDER BY img_id""",
+        (prt_dir, norm_dir + "/%"),
+    ).fetchall()
+
+    results = []
+    for row in rows:
+        img_data = dict(row)
+        img_data["favorite"] = bool(img_data.get("favorite", False))
+        img_data["tags"] = []
+        img_data["format"] = os.path.splitext(
+            img_data.get("filename") or img_data.get("file_path") or ""
+        )[1].upper().lstrip(".")
+        results.append(img_data)
+
+    # If no results by folder, try matching by ug_ref
+    if not results:
+        ug_rows = conn.execute(
+            """SELECT img_id, source_type, file_path, image_path, origin_path,
+                      folder, filename, size_bytes, width, height, sheet_name,
+                      row_number, ug_ref, ocr_text, ex_ref, cad_ref, pdf_ref
+               FROM images WHERE ug_ref = ? ORDER BY img_id""",
+            (ug_ref,),
+        ).fetchall()
+        for row in ug_rows:
+            img_data = dict(row)
+            img_data["favorite"] = bool(img_data.get("favorite", False))
+            img_data["tags"] = []
+            img_data["format"] = os.path.splitext(
+                img_data.get("filename") or img_data.get("file_path") or ""
+            )[1].upper().lstrip(".")
+            results.append(img_data)
+
+    return {
+        "prt_path": prt_path,
+        "ug_ref": ug_ref,
+        "images": results,
+        "count": len(results),
+    }
