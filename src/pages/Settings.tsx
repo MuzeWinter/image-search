@@ -497,6 +497,7 @@ export default function Settings() {
                 key={opt.value}
                 className={`settings-option-btn ${theme === opt.value ? "active" : ""}`}
                 onClick={() => handleThemeChange(opt.value)}
+                aria-label={t(opt.labelKey)}
               >
                 {t(opt.labelKey)}
               </button>
@@ -512,6 +513,7 @@ export default function Settings() {
                 key={opt.value}
                 className={`settings-option-btn ${locale === opt.value ? "active" : ""}`}
                 onClick={() => handleLocaleChange(opt.value)}
+                aria-label={t(opt.labelKey)}
               >
                 {t(opt.labelKey)}
               </button>
@@ -552,8 +554,9 @@ export default function Settings() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleUgColumnSave();
               }}
+              aria-label={t("settings.ugColumnName")}
             />
-            <button className="settings-btn-primary" onClick={handleUgColumnSave}>
+            <button className="settings-btn-primary" onClick={handleUgColumnSave} aria-label={t("common.save")}>
               {t("common.save")}
             </button>
           </div>
@@ -567,6 +570,7 @@ export default function Settings() {
                 type="checkbox"
                 checked={autoMonitor}
                 onChange={(e) => handleAutoMonitorToggle(e.target.checked)}
+                aria-label={t("settings.autoMonitor")}
               />
               <span className="settings-toggle-slider" />
             </label>
@@ -590,6 +594,7 @@ export default function Settings() {
                 setSimilarityThreshold(v);
                 try { localStorage.setItem(SIMILARITY_THRESHOLD_KEY, String(v)); } catch { /* ignore */ }
               }}
+              aria-label={t("settings.similarityThreshold")}
             />
             <span className="settings-slider-value">{similarityThreshold}%</span>
           </div>
@@ -608,6 +613,7 @@ export default function Settings() {
                   type="checkbox"
                   checked={scanExtensions.includes(ext)}
                   onChange={() => handleToggleExt(ext)}
+                  aria-label={`${t("settings.scanExtensions")} ${ext}`}
                 />
                 <span>{ext}</span>
                 {!DEFAULT_SCAN_EXTENSIONS.includes(ext) && (
@@ -615,6 +621,7 @@ export default function Settings() {
                     <button
                       className="settings-ext-remove"
                       onClick={() => handleRemoveExt(ext)}
+                      aria-label={`${t("common.delete")} ${ext}`}
                     >
                       ×
                     </button>
@@ -632,8 +639,9 @@ export default function Settings() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddExt();
                 }}
+                aria-label={t("settings.scanExtensionsPlaceholder")}
               />
-              <button className="settings-btn-primary" onClick={handleAddExt}>
+              <button className="settings-btn-primary" onClick={handleAddExt} aria-label={t("settings.scanExtensionsAdd")}>
                 {t("settings.scanExtensionsAdd")}
               </button>
             </div>
@@ -648,6 +656,7 @@ export default function Settings() {
                 type="checkbox"
                 checked={scanOcrEnabled}
                 onChange={(e) => handleToggleOcr(e.target.checked)}
+                aria-label={t("settings.scanOcrEnabled")}
               />
               <span className="settings-toggle-slider" />
             </label>
@@ -665,6 +674,7 @@ export default function Settings() {
                 type="checkbox"
                 checked={scanUgPreviewEnabled}
                 onChange={(e) => handleToggleUgPreview(e.target.checked)}
+                aria-label={t("settings.scanUgPreviewEnabled")}
               />
               <span className="settings-toggle-slider" />
             </label>
@@ -689,6 +699,7 @@ export default function Settings() {
             className="settings-btn-secondary"
             onClick={handleBackup}
             disabled={maintLoading !== ""}
+            aria-label={t("settings.backupDb")}
           >
             {maintLoading === "backup" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.backupDb")}
           </button>
@@ -696,6 +707,7 @@ export default function Settings() {
             className="settings-btn-secondary"
             onClick={handleRestore}
             disabled={maintLoading !== ""}
+            aria-label={t("settings.restoreDb")}
           >
             {maintLoading === "restore" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.restoreDb")}
           </button>
@@ -703,6 +715,7 @@ export default function Settings() {
             className="settings-btn-secondary"
             onClick={handleRebuildIndex}
             disabled={maintLoading !== ""}
+            aria-label={t("settings.rebuildIndex")}
           >
             {maintLoading === "rebuild" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.rebuildIndex")}
           </button>
@@ -710,6 +723,7 @@ export default function Settings() {
             className="settings-btn-secondary"
             onClick={handleClearCache}
             disabled={maintLoading !== ""}
+            aria-label={t("settings.clearCache")}
           >
             {maintLoading === "clear" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.clearCache")}
           </button>
@@ -717,6 +731,7 @@ export default function Settings() {
             className="settings-btn-secondary"
             onClick={handleOptimize}
             disabled={maintLoading !== ""}
+            aria-label={t("settings.optimizeDb")}
           >
             {maintLoading === "optimize" ? <><span className="btn-spinner" />{t("common.loading")}</> : t("settings.optimizeDb")}
           </button>
@@ -726,6 +741,7 @@ export default function Settings() {
           className="settings-btn-reset-danger"
           onClick={() => setShowResetConfirm(true)}
           disabled={maintLoading !== ""}
+          aria-label={t("settings.resetDefaults")}
         >
           {t("settings.resetDefaults")}
         </button>
@@ -744,6 +760,7 @@ export default function Settings() {
                 key={level || "all"}
                 className={`settings-option-btn ${logFilter === level ? "active" : ""}`}
                 onClick={() => setLogFilter(level)}
+                aria-label={level === "" ? t("settings.logLevelAll") : logLevelLabel(level)}
               >
                 {level === "" ? t("settings.logLevelAll") : logLevelLabel(level)}
               </button>
@@ -754,6 +771,7 @@ export default function Settings() {
             onClick={fetchLogs}
             disabled={logLoading}
             style={{ marginLeft: "auto" }}
+            aria-label={t("common.retry")}
           >
             {logLoading ? <><span className="btn-spinner" />{t("common.loading")}</> : t("common.retry")}
           </button>
@@ -786,6 +804,7 @@ export default function Settings() {
           className="settings-btn-secondary"
           onClick={handleDiagnostics}
           disabled={diagLoading}
+          aria-label={t("settings.diagnosticsRun")}
         >
           {diagLoading ? <><span className="btn-spinner" />{t("settings.diagnosticsRunning")}</> : t("settings.diagnosticsRun")}
         </button>
@@ -829,7 +848,7 @@ export default function Settings() {
       {/* About */}
       <section className="settings-section">
         <h3>{t("settings.about")}</h3>
-        <button className="settings-btn-secondary" onClick={() => setShowAbout(true)}>
+        <button className="settings-btn-secondary" onClick={() => setShowAbout(true)} aria-label={t("settings.aboutBtn")}>
           {t("settings.aboutBtn")}
         </button>
       </section>
@@ -882,6 +901,7 @@ export default function Settings() {
               <button
                 className="about-close-btn"
                 onClick={() => setShowAbout(false)}
+                aria-label={t("settings.aboutClose")}
               >
                 {t("settings.aboutClose")}
               </button>
@@ -923,12 +943,14 @@ export default function Settings() {
                 <button
                   className="reset-confirm-cancel-btn"
                   onClick={() => setShowResetConfirm(false)}
+                  aria-label={t("common.cancel")}
                 >
                   {t("common.cancel")}
                 </button>
                 <button
                   className="reset-confirm-danger-btn"
                   onClick={handleResetDefaults}
+                  aria-label={t("settings.resetDefaultsConfirm")}
                 >
                   {t("settings.resetDefaultsConfirm")}
                 </button>

@@ -90,6 +90,7 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
             }}
             disabled={item.disabled}
             role="menuitem"
+            aria-label={item.label}
           >
             {item.label}
           </button>

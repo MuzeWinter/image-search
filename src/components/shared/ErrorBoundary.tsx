@@ -77,6 +77,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryInnerProps, ErrorBoundar
           </p>
           <button
             onClick={this.handleRetry}
+            aria-label={this.props.t("common.retry")}
             style={{
               padding: "8px 24px",
               fontSize: 14,

@@ -236,21 +236,21 @@ export default function ImageCompareModal({
       <div className="image-compare-header" onClick={(e) => e.stopPropagation()}>
         <span className="image-compare-title">{t("search.compareTitle")}</span>
         <div className="image-compare-zoom-group">
-          <button className="image-compare-zoom-btn" onClick={handleZoomOut} title={t("search.compareZoomOut")}>
+          <button className="image-compare-zoom-btn" onClick={handleZoomOut} title={t("search.compareZoomOut")} aria-label={t("search.compareZoomOut")}>
             -
           </button>
           <span className="image-compare-zoom-label">{zoomPct}%</span>
-          <button className="image-compare-zoom-btn" onClick={handleZoomIn} title={t("search.compareZoomIn")}>
+          <button className="image-compare-zoom-btn" onClick={handleZoomIn} title={t("search.compareZoomIn")} aria-label={t("search.compareZoomIn")}>
             +
           </button>
-          <button className="image-compare-zoom-btn" onClick={handleFit} title={t("search.compareZoomFit")}>
+          <button className="image-compare-zoom-btn" onClick={handleFit} title={t("search.compareZoomFit")} aria-label={t("search.compareZoomFit")}>
             {t("search.compareZoomFit")}
           </button>
-          <button className="image-compare-zoom-btn" onClick={handleReset} title={t("search.compareZoomReset")}>
+          <button className="image-compare-zoom-btn" onClick={handleReset} title={t("search.compareZoomReset")} aria-label={t("search.compareZoomReset")}>
             {t("search.compareZoomReset")}
           </button>
         </div>
-        <button className="image-compare-close" onClick={onClose}>
+        <button className="image-compare-close" onClick={onClose} aria-label={t("search.compareClose")}>
           {t("search.compareClose")}
         </button>
       </div>

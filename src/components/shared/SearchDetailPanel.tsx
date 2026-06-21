@@ -226,7 +226,7 @@ export default function SearchDetailPanel({
         {/* Header */}
         <div className="search-detail-header">
           <span className="search-detail-title">{t("search.detailTitle")}</span>
-          <button className="search-detail-close" onClick={onClose}>
+          <button className="search-detail-close" onClick={onClose} aria-label={t("common.close")}>
             x
           </button>
         </div>
@@ -271,6 +271,7 @@ export default function SearchDetailPanel({
                 className="search-detail-zoom-btn"
                 onClick={() => setZoom((z) => Math.max(0.1, z - 0.25))}
                 title={t("search.compareZoomOut")}
+                aria-label={t("search.compareZoomOut")}
               >
                 -
               </button>
@@ -279,6 +280,7 @@ export default function SearchDetailPanel({
                 className="search-detail-zoom-btn"
                 onClick={() => setZoom((z) => Math.min(10, z + 0.25))}
                 title={t("search.compareZoomIn")}
+                aria-label={t("search.compareZoomIn")}
               >
                 +
               </button>
@@ -286,6 +288,7 @@ export default function SearchDetailPanel({
                 className="search-detail-zoom-btn"
                 onClick={resetView}
                 title={t("search.compareZoomFit")}
+                aria-label={t("search.compareZoomFit")}
               >
                 {t("search.compareZoomFit")}
               </button>
@@ -297,6 +300,7 @@ export default function SearchDetailPanel({
                   setPan({ x: 0, y: 0 });
                 }}
                 title={t("search.compareZoomReset")}
+                aria-label={t("search.compareZoomReset")}
               >
                 {t("search.compareZoomReset")}
               </button>
@@ -442,22 +446,23 @@ export default function SearchDetailPanel({
               {t("search.detailActions")}
             </div>
             <div className="search-detail-actions">
-              <button className="search-detail-action-btn" onClick={handleCopyPath}>
+              <button className="search-detail-action-btn" onClick={handleCopyPath} aria-label={t("search.copyPath")}>
                 {t("search.copyPath")}
               </button>
-              <button className="search-detail-action-btn" onClick={handleOpenFolder}>
+              <button className="search-detail-action-btn" onClick={handleOpenFolder} aria-label={t("search.openFolder")}>
                 {t("search.openFolder")}
               </button>
-              <button className="search-detail-action-btn" onClick={handleOpenFile}>
+              <button className="search-detail-action-btn" onClick={handleOpenFile} aria-label={t("search.detailOpenFile")}>
                 {t("search.detailOpenFile")}
               </button>
-              <button className="search-detail-action-btn" onClick={handleCopyImage}>
+              <button className="search-detail-action-btn" onClick={handleCopyImage} aria-label={t("search.copyImageToClipboard")}>
                 {t("search.copyImageToClipboard")}
               </button>
               <button
                 className="search-detail-action-btn primary"
                 onClick={handleExportZip}
                 disabled={exporting}
+                aria-label={t("search.detailExportZip")}
               >
                 {exporting ? t("search.exporting") : t("search.detailExportZip")}
               </button>

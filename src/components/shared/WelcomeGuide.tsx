@@ -92,7 +92,7 @@ export function WelcomeGuide({ onDone, onAddLibrary, onScan }: WelcomeGuideProps
             <h2 className="welcome-title">{t("welcome.step1Title")}</h2>
             <p className="welcome-desc">{t("welcome.step1Desc")}</p>
             <div className="welcome-actions">
-              <button className="welcome-btn-primary" onClick={() => setStep(2)}>
+              <button className="welcome-btn-primary" onClick={() => setStep(2)} aria-label={t("common.next")}>
                 {t("common.next")}
               </button>
             </div>
@@ -113,23 +113,26 @@ export function WelcomeGuide({ onDone, onAddLibrary, onScan }: WelcomeGuideProps
                 onChange={(e) => setLibraryPath(e.target.value)}
                 placeholder="G:\Drawings"
                 readOnly
+                aria-label={t("welcome.step2Browse")}
               />
               <button
                 className="welcome-btn-secondary"
                 onClick={handleBrowse}
                 disabled={browsing}
+                aria-label={t("welcome.step2Browse")}
               >
                 {browsing ? "..." : t("welcome.step2Browse")}
               </button>
             </div>
             <div className="welcome-actions">
-              <button className="welcome-btn-ghost" onClick={() => setStep(3)}>
+              <button className="welcome-btn-ghost" onClick={() => setStep(3)} aria-label={t("common.skip")}>
                 {t("common.skip")}
               </button>
               <button
                 className="welcome-btn-primary"
                 onClick={handleNextStep2}
                 disabled={!libraryPath.trim()}
+                aria-label={t("common.next")}
               >
                 {t("common.next")}
               </button>
@@ -144,13 +147,14 @@ export function WelcomeGuide({ onDone, onAddLibrary, onScan }: WelcomeGuideProps
             <h2 className="welcome-title">{t("welcome.step3Title")}</h2>
             <p className="welcome-desc">{t("welcome.step3Desc")}</p>
             <div className="welcome-actions">
-              <button className="welcome-btn-ghost" onClick={() => setStep(4)}>
+              <button className="welcome-btn-ghost" onClick={() => setStep(4)} aria-label={t("welcome.step3Skip")}>
                 {t("welcome.step3Skip")}
               </button>
               <button
                 className="welcome-btn-primary"
                 onClick={handleScan}
                 disabled={scanning}
+                aria-label={t("welcome.step3ScanNow")}
               >
                 {scanning ? t("libraries.scanning") : t("welcome.step3ScanNow")}
               </button>
@@ -165,7 +169,7 @@ export function WelcomeGuide({ onDone, onAddLibrary, onScan }: WelcomeGuideProps
             <h2 className="welcome-title">{t("welcome.step4Title")}</h2>
             <p className="welcome-desc">{t("welcome.step4Desc")}</p>
             <div className="welcome-actions">
-              <button className="welcome-btn-primary" onClick={handleDone}>
+              <button className="welcome-btn-primary" onClick={handleDone} aria-label={t("welcome.step4Start")}>
                 {t("welcome.step4Start")}
               </button>
             </div>

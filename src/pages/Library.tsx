@@ -299,11 +299,12 @@ export default function LibraryPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") handleAddLibrary();
             }}
+            aria-label={t("libraries.pathHint")}
           />
-          <button className="settings-btn-primary" onClick={handleOpenFolderDialog}>
+          <button className="settings-btn-primary" onClick={handleOpenFolderDialog} aria-label={t("libraries.browse")}>
             {t("libraries.browse")}
           </button>
-          <button className="settings-btn-primary" onClick={handleAddLibrary}>
+          <button className="settings-btn-primary" onClick={handleAddLibrary} aria-label={t("libraries.add")}>
             {t("libraries.add")}
           </button>
         </div>
@@ -322,7 +323,7 @@ export default function LibraryPage() {
               {scanPhase === "scanning" ? t("libraries.scanning") : t("libraries.scanComplete")}
             </span>
             {scanPhase === "scanning" && (
-              <button className="settings-btn-danger" onClick={handleCancelScan}>
+              <button className="settings-btn-danger" onClick={handleCancelScan} aria-label={t("libraries.cancelScan")}>
                 {t("libraries.cancelScan")}
               </button>
             )}
@@ -510,6 +511,7 @@ export default function LibraryPage() {
                           onClick={() => handleOpenFolder(lib)}
                           title={t("libraries.openFolder")}
                           disabled={isActiveScan || isPendingDelete}
+                          aria-label={t("libraries.open")}
                         >
                           {t("libraries.open")}
                         </button>
@@ -518,6 +520,7 @@ export default function LibraryPage() {
                           onClick={() => handleScanLibrary(lib)}
                           title={t("libraries.scan")}
                           disabled={scanPhase === "scanning" || isUnavailable || isPendingDelete}
+                          aria-label={t("libraries.scan")}
                         >
                           {t("libraries.scan")}
                         </button>
@@ -526,6 +529,7 @@ export default function LibraryPage() {
                             className="lib-action-btn lib-action-undo"
                             onClick={() => handleUndoDelete(lib)}
                             title={t("libraries.undo")}
+                            aria-label={t("libraries.undo")}
                           >
                             {t("libraries.undo")}
                           </button>
@@ -535,6 +539,7 @@ export default function LibraryPage() {
                             onClick={() => handleRemoveLibrary(lib)}
                             title={t("libraries.delete")}
                             disabled={isActiveScan}
+                            aria-label={t("common.delete")}
                           >
                             {t("common.delete")}
                           </button>

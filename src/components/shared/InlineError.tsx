@@ -25,7 +25,7 @@ export function InlineError({ message, onRetry, retryLabel }: InlineErrorProps) 
       </svg>
       <span className="inline-error-message">{message}</span>
       {onRetry && (
-        <button className="inline-error-retry" onClick={onRetry}>
+        <button className="inline-error-retry" onClick={onRetry} aria-label={retryLabel ?? t("common.retry")}>
           {retryLabel ?? t("common.retry")}
         </button>
       )}

@@ -69,6 +69,7 @@ export function StatusBar() {
           className="statusbar-item statusbar-warning"
           onClick={handleGoToLibrary}
           title={t("statusBar.pathsMissingHint")}
+          aria-label={t("statusBar.pathsMissingHint")}
         >
           {t("statusBar.pathsMissing", { count: invalidCount })}
         </button>
@@ -83,6 +84,7 @@ export function StatusBar() {
           className="statusbar-item statusbar-changes"
           onClick={handleIncrementalScan}
           title={t("statusBar.changesHint")}
+          aria-label={t("statusBar.changesHint")}
         >
           {t("statusBar.changesDetected", { count: totalChanges })}
         </button>

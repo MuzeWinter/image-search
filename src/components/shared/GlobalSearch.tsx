@@ -169,6 +169,7 @@ export default function GlobalSearch() {
             value={query_}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            aria-label={t("globalSearch.placeholder")}
           />
           <span className="global-search-shortcut">
             {t("globalSearch.shortcutHint")}
@@ -251,6 +252,7 @@ export default function GlobalSearch() {
                       if (path) openFile(path);
                     }}
                     title={t("globalSearch.openFile")}
+                    aria-label={t("globalSearch.openFile")}
                   >
                     {t("globalSearch.openFile")}
                   </button>
@@ -261,6 +263,7 @@ export default function GlobalSearch() {
                       openFolder(item.folder);
                     }}
                     title={t("globalSearch.openFolder")}
+                    aria-label={t("globalSearch.openFolder")}
                   >
                     {t("globalSearch.openFolder")}
                   </button>

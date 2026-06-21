@@ -19,7 +19,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         <p className="empty-state-description">{description}</p>
       )}
       {action && (
-        <button className="empty-state-action" onClick={action.onClick}>
+        <button className="empty-state-action" onClick={action.onClick} aria-label={action.label}>
           {action.label}
         </button>
       )}

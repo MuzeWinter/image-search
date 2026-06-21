@@ -70,6 +70,7 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
   return (
     <div style={{ ...style, height: (style.height as number) }}>
       <div
+        data-result-index={index}
         className={`search-result-item ${simClass} ${isSelected ? "selected" : ""}`}
         style={{ height: innerH }}
         onClick={(e) => {
@@ -149,19 +150,19 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
         </div>
         <div className="search-result-actions">
           {item.source_type === "excel-embedded" && (
-            <button className="search-action-btn search-action-primary" onClick={() => openFile(item.origin_path)}>
+            <button className="search-action-btn search-action-primary" onClick={() => openFile(item.origin_path)} aria-label={t("search.openExcel")}>
               {t("search.openExcel")}
             </button>
           )}
           {item.source_type === "ug-preview" && (
-            <button className="search-action-btn search-action-primary" onClick={() => openFolder(item.origin_path)}>
+            <button className="search-action-btn search-action-primary" onClick={() => openFolder(item.origin_path)} aria-label={t("search.openUgFolder")}>
               {t("search.openUgFolder")}
             </button>
           )}
-          <button className="search-action-btn" onClick={() => openFile(item.image_path)}>
+          <button className="search-action-btn" onClick={() => openFile(item.image_path)} aria-label={t("search.openImage")}>
             {t("search.openImage")}
           </button>
-          <button className="search-action-btn" onClick={() => openFolder(item.image_path)}>
+          <button className="search-action-btn" onClick={() => openFolder(item.image_path)} aria-label={t("search.openFolder")}>
             {t("search.openFolder")}
           </button>
         </div>
@@ -169,6 +170,7 @@ function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarke
           className={`search-result-bookmark ${isBookmarked ? "bookmarked" : ""}`}
           onClick={(e) => { e.stopPropagation(); toggleBookmark(item.img_id); }}
           title={isBookmarked ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
+          aria-label={isBookmarked ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
         >
           {isBookmarked ? "★" : "☆"}
         </button>
@@ -199,6 +201,7 @@ function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brok
   return (
     <div style={{ ...style, width: (style.width as number), height: (style.height as number) }}>
       <div
+        data-result-index={index}
         className={`search-result-item ${simClass} ${isSelected ? "selected" : ""}`}
         style={{ width: innerW, height: innerH, flexDirection: "column", padding: 0, overflow: "hidden" }}
         onClick={(e) => {
@@ -279,6 +282,7 @@ function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brok
           className={`search-result-bookmark ${isBookmarked ? "bookmarked" : ""}`}
           onClick={(e) => { e.stopPropagation(); toggleBookmark(item.img_id); }}
           title={isBookmarked ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
+          aria-label={isBookmarked ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
           style={{ top: "var(--space-2)", right: "var(--space-2)", fontSize: 20, background: "oklch(0% 0 0 / 0.25)", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
           {isBookmarked ? "★" : "☆"}
@@ -376,6 +380,7 @@ export default function Search() {
   const [filterText, setFilterText] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [focusedResultIdx, setFocusedResultIdx] = useState(-1);
   const PAGE_SIZE = 20;
   const VIRTUAL_SCROLL_THRESHOLD = 200;
   const [page, setPage] = useState(0);
@@ -525,11 +530,41 @@ export default function Search() {
   // Reset page when filter, sort, or results change
   useEffect(() => {
     setPage(0);
+    setFocusedResultIdx(-1);
   }, [filterText, sortBy, results]);
 
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE));
   const pagedResults = filteredResults.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const useVirtualScroll = filteredResults.length > VIRTUAL_SCROLL_THRESHOLD;
+
+  // Keyboard navigation: scroll focused result into view
+  useEffect(() => {
+    if (focusedResultIdx < 0 || !useVirtualScroll) return;
+    setTimeout(() => {
+      const el = document.querySelector(`[data-result-index="${focusedResultIdx}"]`);
+      if (el) {
+        el.scrollIntoView({ block: "nearest" });
+      }
+    }, 0);
+  }, [focusedResultIdx, useVirtualScroll]);
+
+  // Keyboard navigation for results
+  const handleResultsKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const len = filteredResults.length;
+    if (len === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedResultIdx((prev) => (prev < len - 1 ? prev + 1 : prev));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedResultIdx((prev) => (prev > 0 ? prev - 1 : 0));
+    } else if (e.key === "Enter" && focusedResultIdx >= 0 && focusedResultIdx < len) {
+      e.preventDefault();
+      const item = filteredResults[focusedResultIdx];
+      if (item) setDetailItem(item);
+    }
+  }, [filteredResults, focusedResultIdx]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -1190,6 +1225,7 @@ export default function Search() {
           accept="image/*"
           style={{ display: "none" }}
           onChange={handleFileSelect}
+          aria-label={t("search.dropHint")}
         />
       </div>
 
@@ -1204,6 +1240,7 @@ export default function Search() {
                 clearHistory();
                 setHistory([]);
               }}
+              aria-label={t("search.clearHistory")}
             >
               {t("search.clearHistory")}
             </button>
@@ -1253,6 +1290,7 @@ export default function Search() {
             const val = e.target.value;
             setSelectedLibraryId(val ? Number(val) : null);
           }}
+          aria-label={t("search.scopeLibraryLabel")}
         >
           <option value="">{t("search.scopeLibraryAll")}</option>
           {libraries.map((lib) => (
@@ -1272,6 +1310,7 @@ export default function Search() {
               key={val}
               className={`search-scope-btn ${searchScope === val ? "active" : ""}`}
               onClick={() => setSearchScope(val)}
+              aria-label={t(labelKey)}
             >
               {t(labelKey)}
             </button>
@@ -1280,6 +1319,7 @@ export default function Search() {
             className={`search-scope-btn ${bookmarkFilter ? "active" : ""}`}
             onClick={() => setBookmarkFilter((v) => !v)}
             title={t("search.bookmarkFilter")}
+            aria-label={t("search.bookmarkFilter")}
           >
             ★ {t("search.bookmarkFilter")}
           </button>
@@ -1330,11 +1370,11 @@ export default function Search() {
               : `${t("common.error")}: ${errorMsg}`}
           </p>
           {errorMsg === "MODEL_TIMEOUT" || errorMsg.includes("Model load failed") || errorMsg.includes("Missing Python package") ? (
-            <button className="search-retry-btn" onClick={handleRetryModel}>
+            <button className="search-retry-btn" onClick={handleRetryModel} aria-label={t("common.retry")}>
               {t("common.retry")}
             </button>
           ) : (
-            <button className="search-retry-btn" onClick={() => { setState("idle"); setErrorMsg(""); }}>
+            <button className="search-retry-btn" onClick={() => { setState("idle"); setErrorMsg(""); }} aria-label={t("common.retry")}>
               {t("common.retry")}
             </button>
           )}
@@ -1365,12 +1405,14 @@ export default function Search() {
             placeholder={t("search.filterPlaceholder")}
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
+            aria-label={t("search.filterPlaceholder")}
           />
           {filterText.trim() && (
             <Tooltip content={t("common.cancel")}>
               <button
                 className="search-filter-clear"
                 onClick={() => setFilterText("")}
+                aria-label={t("common.cancel")}
               >
                 x
               </button>
@@ -1390,6 +1432,7 @@ export default function Search() {
                 className="search-sort-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortKey)}
+                aria-label={t("search.sortLabel")}
               >
                 <option value="similarity">{t("search.sortSimilarity")}</option>
                 <option value="filename">{t("search.sortFilename")}</option>
@@ -1401,6 +1444,7 @@ export default function Search() {
                 <button
                   className={`search-view-btn ${viewMode === "list" ? "active" : ""}`}
                   onClick={() => setViewMode("list")}
+                  aria-label={t("search.viewList")}
                 >
                   {t("search.viewList")}
                 </button>
@@ -1409,6 +1453,7 @@ export default function Search() {
                 <button
                   className={`search-view-btn ${viewMode === "grid" ? "active" : ""}`}
                   onClick={() => setViewMode("grid")}
+                  aria-label={t("search.viewGrid")}
                 >
                   {t("search.viewGrid")}
                 </button>
@@ -1419,6 +1464,7 @@ export default function Search() {
                 <button
                   className={`search-thumb-size-btn ${thumbSize === "s" ? "active" : ""}`}
                   onClick={() => setThumbSize("s")}
+                  aria-label={t("search.thumbSmall")}
                 >
                   {t("search.thumbSmall")}
                 </button>
@@ -1427,6 +1473,7 @@ export default function Search() {
                 <button
                   className={`search-thumb-size-btn ${thumbSize === "m" ? "active" : ""}`}
                   onClick={() => setThumbSize("m")}
+                  aria-label={t("search.thumbMedium")}
                 >
                   {t("search.thumbMedium")}
                 </button>
@@ -1435,18 +1482,19 @@ export default function Search() {
                 <button
                   className={`search-thumb-size-btn ${thumbSize === "l" ? "active" : ""}`}
                   onClick={() => setThumbSize("l")}
+                  aria-label={t("search.thumbLarge")}
                 >
                   {t("search.thumbLarge")}
                 </button>
               </Tooltip>
             </div>
-            <button className="search-export-btn" onClick={handleExportCsv} disabled={exporting}>
+            <button className="search-export-btn" onClick={handleExportCsv} disabled={exporting} aria-label={t("search.exportCsv")}>
               {t("search.exportCsv")}
             </button>
-            <button className="search-export-btn" onClick={handleExportZip} disabled={exporting}>
+            <button className="search-export-btn" onClick={handleExportZip} disabled={exporting} aria-label={t("search.exportZip")}>
               {t("search.exportZip")}
             </button>
-            <button className="search-export-btn" onClick={handleExportPdf} disabled={exporting}>
+            <button className="search-export-btn" onClick={handleExportPdf} disabled={exporting} aria-label={t("search.exportPdf")}>
               {t("search.exportPdf")}
             </button>
           </div>
@@ -1458,25 +1506,25 @@ export default function Search() {
                 {t("search.selectedCount", { count: String(selectedIds.size) })}
               </span>
               <div className="search-batch-actions">
-                <button className="search-batch-btn" onClick={handleBatchOpenFolders}>
+                <button className="search-batch-btn" onClick={handleBatchOpenFolders} aria-label={t("search.batchOpenFolders")}>
                   {t("search.batchOpenFolders")}
                 </button>
-                <button className="search-batch-btn" onClick={handleBatchExportCsv} disabled={exporting}>
+                <button className="search-batch-btn" onClick={handleBatchExportCsv} disabled={exporting} aria-label={t("search.batchExportCsv")}>
                   {t("search.batchExportCsv")}
                 </button>
-                <button className="search-batch-btn" onClick={handleBatchExportZip} disabled={exporting}>
+                <button className="search-batch-btn" onClick={handleBatchExportZip} disabled={exporting} aria-label={t("search.batchExportZip")}>
                   {t("search.batchExportZip")}
                 </button>
-                <button className="search-batch-btn" onClick={handleBatchExportPdf} disabled={exporting}>
+                <button className="search-batch-btn" onClick={handleBatchExportPdf} disabled={exporting} aria-label={t("search.batchExportPdf")}>
                   {t("search.batchExportPdf")}
                 </button>
-                <button className="search-batch-btn" onClick={handleBatchCopyPaths}>
+                <button className="search-batch-btn" onClick={handleBatchCopyPaths} aria-label={t("search.batchCopyPaths")}>
                   {t("search.batchCopyPaths")}
                 </button>
-                <button className="search-batch-btn" onClick={handleBatchCompare}>
+                <button className="search-batch-btn" onClick={handleBatchCompare} aria-label={t("search.batchCompare")}>
                   {t("search.batchCompare")}
                 </button>
-                <button className="search-batch-btn" onClick={clearSelection}>
+                <button className="search-batch-btn" onClick={clearSelection} aria-label={t("search.batchClearSelection")}>
                   {t("search.batchClearSelection")}
                 </button>
               </div>
@@ -1506,7 +1554,7 @@ export default function Search() {
             <>
             {useVirtualScroll ? (
               viewMode === "list" ? (
-                <div ref={virtContainerRef} className="search-virt-container">
+                <div ref={virtContainerRef} className="search-virt-container" tabIndex={0} onKeyDown={handleResultsKeyDown}>
                   <List
                     style={{ height: virtDims.height, width: virtDims.width }}
                     rowCount={filteredResults.length}
@@ -1517,7 +1565,7 @@ export default function Search() {
                   />
                 </div>
               ) : (
-                <div ref={virtContainerRef} className="search-virt-container">
+                <div ref={virtContainerRef} className="search-virt-container" tabIndex={0} onKeyDown={handleResultsKeyDown}>
                   <Grid
                     style={{ height: virtDims.height, width: virtDims.width }}
                     columnCount={gridColCount}
@@ -1539,6 +1587,21 @@ export default function Search() {
               <div
                 key={item.img_id}
                 className={`search-result-item ${similarityClass(item.similarity)} ${selectedIds.has(item.img_id) ? "selected" : ""}`}
+                data-result-index={idx}
+                tabIndex={0}
+                onFocus={() => setFocusedResultIdx(idx)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setFocusedResultIdx((prev) => Math.min(prev + 1, filteredResults.length - 1));
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setFocusedResultIdx((prev) => Math.max(prev - 1, 0));
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    setDetailItem(item);
+                  }
+                }}
                 onClick={(e) => {
                   if (e.ctrlKey || e.metaKey) {
                     e.preventDefault();
@@ -1677,6 +1740,7 @@ export default function Search() {
                     <button
                       className="search-action-btn search-action-primary"
                       onClick={() => openFile(item.origin_path)}
+                      aria-label={t("search.openExcel")}
                     >
                       {t("search.openExcel")}
                     </button>
@@ -1685,6 +1749,7 @@ export default function Search() {
                     <button
                       className="search-action-btn search-action-primary"
                       onClick={() => openFolder(item.origin_path)}
+                      aria-label={t("search.openUgFolder")}
                     >
                       {t("search.openUgFolder")}
                     </button>
@@ -1692,12 +1757,14 @@ export default function Search() {
                   <button
                     className="search-action-btn"
                     onClick={() => openFile(item.image_path)}
+                    aria-label={t("search.openImage")}
                   >
                     {t("search.openImage")}
                   </button>
                   <button
                     className="search-action-btn"
                     onClick={() => openFolder(item.image_path)}
+                    aria-label={t("search.openFolder")}
                   >
                     {t("search.openFolder")}
                   </button>
@@ -1709,6 +1776,7 @@ export default function Search() {
                     toggleBookmark(item.img_id);
                   }}
                   title={bookmarkedIds.has(item.img_id) ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
+                  aria-label={bookmarkedIds.has(item.img_id) ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
                 >
                   {bookmarkedIds.has(item.img_id) ? "★" : "☆"}
                 </button>
@@ -1725,6 +1793,7 @@ export default function Search() {
                 className="search-pagination-btn"
                 disabled={page === 0}
                 onClick={() => setPage((p) => p - 1)}
+                aria-label={t("search.pagePrev")}
               >
                 {t("search.pagePrev")}
               </button>
@@ -1739,6 +1808,7 @@ export default function Search() {
                 className="search-pagination-btn"
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((p) => p + 1)}
+                aria-label={t("search.pageNext")}
               >
                 {t("search.pageNext")}
               </button>

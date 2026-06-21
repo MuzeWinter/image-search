@@ -34,6 +34,7 @@ export function Header() {
           placeholder={t("globalSearch.placeholder")}
           readOnly
           style={{ cursor: "pointer" }}
+          aria-label={t("globalSearch.placeholder")}
         />
       </div>
       <div className="header-actions">
