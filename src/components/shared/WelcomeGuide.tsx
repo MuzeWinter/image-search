@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useI18n } from "../../i18n/context";
 import { useToast } from "../../contexts/ToastContext";
@@ -181,21 +181,3 @@ export function WelcomeGuide({ onDone, onAddLibrary, onScan }: WelcomeGuideProps
 }
 
 /** Hook that checks if welcome has been shown and returns control */
-export function useWelcomeState(): [boolean, () => void] {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    try {
-      const done = localStorage.getItem(STORAGE_KEY);
-      if (!done) {
-        setShow(true);
-      }
-    } catch {
-      setShow(true);
-    }
-  }, []);
-
-  const dismiss = () => setShow(false);
-
-  return [show, dismiss];
-}

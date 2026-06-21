@@ -2,32 +2,36 @@
 
 通过 stdin 逐行读取 JSON 请求，路由到服务模块，返回 JSON 响应到 stdout。
 所有输出写 stderr 用于日志，stdout 仅用于 JSON-RPC 响应。
+
+Services are loaded lazily on first request — only db_service is loaded at startup.
 """
 
 import sys
 import os
 import json
 import traceback
+import importlib
 
 # Add project root to Python path so `backend` package is importable
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from backend.services import db_service, settings_service, library_service, excel_service, search_service, ug_service, scan_service, system_service, error_report_service, ocr_service
-
-ROUTES = {
-    "db": db_service,
-    "settings": settings_service,
-    "library": library_service,
-    "excel": excel_service,
-    "search": search_service,
-    "ug": ug_service,
-    "scan": scan_service,
-    "system": system_service,
-    "errorReport": error_report_service,
-    "ocr": ocr_service,
+# Lazy service registry: route name → module path
+_SERVICE_MODULE_MAP: dict[str, str] = {
+    "db": "backend.services.db_service",
+    "settings": "backend.services.settings_service",
+    "library": "backend.services.library_service",
+    "excel": "backend.services.excel_service",
+    "search": "backend.services.search_service",
+    "ug": "backend.services.ug_service",
+    "scan": "backend.services.scan_service",
+    "system": "backend.services.system_service",
+    "errorReport": "backend.services.error_report_service",
+    "ocr": "backend.services.ocr_service",
 }
+
+_services: dict[str, object] = {}
 
 
 def log(msg: str):
@@ -46,6 +50,25 @@ def send_error(req_id, code, message):
     sys.stdout.flush()
 
 
+def _get_service(service_name: str):
+    """Lazily import and cache a service module by its route name."""
+    if service_name in _services:
+        return _services[service_name]
+
+    module_path = _SERVICE_MODULE_MAP.get(service_name)
+    if module_path is None:
+        return None
+
+    try:
+        module = importlib.import_module(module_path)
+    except ImportError as e:
+        log(f"Failed to import {module_path}: {e}")
+        return None
+
+    _services[service_name] = module
+    return module
+
+
 def handle_request(req: dict):
     method = req.get("method", "")
     params = req.get("params", {})
@@ -57,7 +80,7 @@ def handle_request(req: dict):
         return
 
     service_name = parts[0]
-    service = ROUTES.get(service_name)
+    service = _get_service(service_name)
     if service is None:
         send_error(req_id, -32601, f"Service not found: {service_name}")
         return
@@ -71,43 +94,27 @@ def handle_request(req: dict):
         send_error(req_id, -32000, str(e))
 
 
-def check_dependencies():
-    """启动时检查 Python 依赖，记录缺失的包"""
-    deps = {
-        "torch": "AI model inference",
-        "open_clip": "OpenCLIP model",
-        "faiss": "vector search index",
-        "numpy": "vector operations",
-        "PIL": "image processing (Pillow)",
-    }
-    for module_name, purpose in deps.items():
-        try:
-            __import__(module_name)
-            log(f"Dependency OK: {module_name} ({purpose})")
-        except ImportError:
-            log(f"WARNING: Missing dependency: {module_name} ({purpose})")
-
-
 def main():
     log("Python backend started, waiting for requests on stdin...")
 
-    # 检查依赖
-    check_dependencies()
-
-    # 初始化数据库
+    # Eagerly load db_service and init database (required for everything else)
     try:
-        db_service.execute("db.init", {})
-        log("Database initialized")
+        db_service = _get_service("db")
+        if db_service is not None:
+            db_service.execute("db.init", {})
+            log("Database initialized")
     except Exception as e:
         log(f"Database init failed: {e}")
-        # Database corruption detected — generate error report
+        # Database corruption detected — try to generate error report
         try:
-            report = error_report_service.generate_report(
-                trigger="db-corruption",
-                context=f"Database init failed at startup: {e}",
-                db_available=False,
-            )
-            log(f"Error report generated: {report.get('path', 'unknown')}")
+            error_report = _get_service("errorReport")
+            if error_report is not None:
+                report = error_report.generate_report(
+                    trigger="db-corruption",
+                    context=f"Database init failed at startup: {e}",
+                    db_available=False,
+                )
+                log(f"Error report generated: {report.get('path', 'unknown')}")
         except Exception as re:
             log(f"Failed to generate error report: {re}")
 

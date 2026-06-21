@@ -6,11 +6,11 @@ import { I18nProvider } from "./i18n/context";
 import { useI18n } from "./i18n/context";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/shared/Toast";
-import { WelcomeGuide, useWelcomeState } from "./components/shared/WelcomeGuide";
 import { AppShell } from "./AppShell";
 import { Skeleton } from "./components/shared/Skeleton";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 import { SplashScreen } from "./components/SplashScreen";
+import { useWelcomeState } from "./hooks/useWelcomeState";
 import { pendingChangesAtom, splashStateAtom, startupSearchPathAtom, invalidPathsAtom, watchActiveAtom, watchPathCountAtom } from "./stores/atoms";
 import * as libraryService from "./services/libraryService";
 import * as scanService from "./services/scanService";
@@ -20,6 +20,7 @@ import { listen } from "@tauri-apps/api/event";
 import { callTauri } from "./services/ipc";
 import type { CheckChangesResult } from "./services/types";
 
+const WelcomeGuide = lazy(() => import("./components/shared/WelcomeGuide").then(m => ({ default: m.WelcomeGuide })));
 const Search = lazy(() => import("./pages/Search"));
 const Library = lazy(() => import("./pages/Library"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -64,11 +65,13 @@ function WelcomeGate() {
   if (!show) return null;
 
   return (
-    <WelcomeGuide
-      onDone={dismiss}
-      onAddLibrary={handleAddLibrary}
-      onScan={handleScan}
-    />
+    <Suspense fallback={null}>
+      <WelcomeGuide
+        onDone={dismiss}
+        onAddLibrary={handleAddLibrary}
+        onScan={handleScan}
+      />
+    </Suspense>
   );
 }
 

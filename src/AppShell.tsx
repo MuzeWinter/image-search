@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { Sidebar } from "./components/shell/Sidebar";
@@ -7,8 +7,9 @@ import { StatusBar } from "./components/shell/StatusBar";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useI18n } from "./i18n/context";
 import { scanPhaseAtom } from "./stores/atoms";
-import GlobalSearch from "./components/shared/GlobalSearch";
-import ShortcutsHelp from "./components/shared/ShortcutsHelp";
+
+const GlobalSearch = lazy(() => import("./components/shared/GlobalSearch"));
+const ShortcutsHelp = lazy(() => import("./components/shared/ShortcutsHelp"));
 
 export function AppShell() {
   useKeyboardShortcuts();
@@ -46,8 +47,12 @@ export function AppShell() {
         </div>
       </main>
       <StatusBar />
-      <GlobalSearch />
-      <ShortcutsHelp />
+      <Suspense fallback={null}>
+        <GlobalSearch />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShortcutsHelp />
+      </Suspense>
     </div>
   );
 }
