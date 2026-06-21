@@ -2,14 +2,14 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import zh from "./zh.json";
 import en from "./en.json";
 
-type Locale = "zh" | "en";
+export type Locale = "zh" | "en";
 
 const messages: Record<Locale, Record<string, unknown>> = { zh, en };
 
 interface I18nContextValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextValue>(null!);
@@ -46,7 +46,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   const t = useCallback(
-    (key: string): string => resolve(key, messages[locale]),
+    (key: string, params?: Record<string, string | number>): string => {
+      let value = resolve(key, messages[locale]);
+      if (params && typeof value === "string") {
+        for (const [k, v] of Object.entries(params)) {
+          value = value.replace(`{${k}}`, String(v));
+        }
+      }
+      return value;
+    },
     [locale],
   );
 

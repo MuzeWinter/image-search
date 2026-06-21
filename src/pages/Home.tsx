@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n/context";
 import { Skeleton } from "../components/shared/Skeleton";
+import { useServiceQuery } from "../stores/hooks";
+import type { SystemStats } from "../services/types";
 
 interface NavCard {
   key: string;
@@ -25,6 +27,10 @@ const navCards: NavCard[] = [
 
 export default function Home() {
   const { t } = useI18n();
+  const { data: stats, loading: statsLoading } = useServiceQuery<SystemStats>(
+    "dbService",
+    "db.getStats",
+  );
 
   return (
     <div className="home-page">
@@ -36,25 +42,41 @@ export default function Home() {
         <div className="home-stats">
           <div className="home-stat">
             <div className="home-stat-value">
-              <Skeleton variant="text" width={48} />
+              {statsLoading ? (
+                <Skeleton variant="text" width={48} />
+              ) : (
+                stats?.libraries ?? 0
+              )}
             </div>
             <div className="home-stat-label">{t("statusBar.libraries")}</div>
           </div>
           <div className="home-stat">
             <div className="home-stat-value">
-              <Skeleton variant="text" width={48} />
+              {statsLoading ? (
+                <Skeleton variant="text" width={48} />
+              ) : (
+                stats?.images ?? 0
+              )}
             </div>
             <div className="home-stat-label">{t("statusBar.images")}</div>
           </div>
           <div className="home-stat">
             <div className="home-stat-value">
-              <Skeleton variant="text" width={48} />
+              {statsLoading ? (
+                <Skeleton variant="text" width={48} />
+              ) : (
+                stats?.excelRecords ?? 0
+              )}
             </div>
             <div className="home-stat-label">Excel</div>
           </div>
           <div className="home-stat">
             <div className="home-stat-value">
-              <Skeleton variant="text" width={48} />
+              {statsLoading ? (
+                <Skeleton variant="text" width={48} />
+              ) : (
+                stats?.cadFiles ?? 0
+              )}
             </div>
             <div className="home-stat-label">CAD/UG</div>
           </div>

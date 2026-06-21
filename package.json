@@ -15,6 +15,7 @@
     "react-router-dom": "^6.26.0",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
     "jotai": "^2.9.0"
   },
   "devDependencies": {
