@@ -1219,6 +1219,19 @@
   background: oklch(0% 0 0 / 0.45);
 }
 
+/* === Virtual Scroll Container === */
+.search-virt-container {
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.search-virt-container > div {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
 /* === Pagination === */
 .search-pagination {
   display: flex;

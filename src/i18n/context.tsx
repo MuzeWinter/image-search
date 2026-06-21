@@ -24,12 +24,20 @@ function resolve(key: string, obj: Record<string, unknown>): string {
   return typeof current === "string" ? current : key;
 }
 
+function detectSystemLocale(): Locale {
+  try {
+    const lang = navigator.language || "";
+    if (lang.toLowerCase().startsWith("zh")) return "zh";
+  } catch { /* browser API unavailable */ }
+  return "en";
+}
+
 function getSavedLocale(): Locale {
   try {
     const saved = localStorage.getItem("locale");
     if (saved === "en" || saved === "zh") return saved;
   } catch { /* localStorage unavailable */ }
-  return "zh";
+  return detectSystemLocale();
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {

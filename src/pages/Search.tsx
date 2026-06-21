@@ -2,6 +2,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
+import { List, Grid } from "react-window";
 import { useI18n } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
@@ -30,6 +31,256 @@ import type { SearchHistoryItem } from "../services/searchHistoryStore";
 
 type SearchState = "idle" | "model-loading" | "searching" | "done" | "error";
 type SortKey = "similarity" | "filename" | "ug_ref";
+
+interface VirtualRowData {
+  items: SearchResultItem[];
+  selectedIds: Set<string>;
+  brokenImgs: Set<string>;
+  bookmarkedIds: Set<string>;
+  thumbPx: number;
+  _gridCols: number;
+  t: (key: string, params?: Record<string, string>) => string;
+  toggleSelect: (imgId: string) => void;
+  toggleBookmark: (imgId: string) => void;
+  showContextMenu: (e: React.MouseEvent, item: SearchResultItem) => void;
+  onThumbEnter: (e: React.MouseEvent<HTMLDivElement>, item: SearchResultItem) => void;
+  onThumbLeave: () => void;
+  onThumbClick: (e: React.MouseEvent<HTMLDivElement>, item: SearchResultItem) => void;
+  onImgError: (imgId: string) => void;
+}
+
+type ResultListRowProps = VirtualRowData & {
+  index: number;
+  style: React.CSSProperties;
+  ariaAttributes: { "aria-posinset": number; "aria-setsize": number; role: "listitem" };
+};
+
+function ResultListRow({ index, style, items, selectedIds, brokenImgs, bookmarkedIds, thumbPx, t, toggleSelect, toggleBookmark, showContextMenu, onThumbEnter, onThumbLeave, onThumbClick, onImgError }: ResultListRowProps) {
+  const item = items[index];
+  const gap = 8;
+  const innerH = (style.height as number) - gap;
+  const isSelected = selectedIds.has(item.img_id);
+  const isBroken = brokenImgs.has(item.img_id);
+  const isBookmarked = bookmarkedIds.has(item.img_id);
+  const simClass = similarityClass(item.similarity);
+
+  return (
+    <div style={{ ...style, height: (style.height as number) }}>
+      <div
+        className={`search-result-item ${simClass} ${isSelected ? "selected" : ""}`}
+        style={{ height: innerH }}
+        onClick={(e) => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            toggleSelect(item.img_id);
+          }
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          showContextMenu(e, item);
+        }}
+      >
+        <div className="search-result-rank">#{index + 1}</div>
+        <div
+          className="search-result-thumb"
+          style={{ width: thumbPx, height: thumbPx, minWidth: thumbPx }}
+          onMouseEnter={(e) => onThumbEnter(e, item)}
+          onMouseLeave={onThumbLeave}
+          onClick={(e) => onThumbClick(e, item)}
+          title={t("search.openImage")}
+        >
+          <LazyThumbnail
+            imagePath={item.image_path}
+            imgId={item.img_id}
+            broken={isBroken}
+            onError={() => onImgError(item.img_id)}
+            noPreviewText={t("search.noPreview")}
+          />
+        </div>
+        <div className="search-result-info">
+          <div className="search-result-header">
+            <span className="search-result-id" title={item.img_id}>{item.img_id}</span>
+            <span className={`search-result-similarity ${simClass}`}>{formatSimilarity(item.similarity)}</span>
+          </div>
+          <div className="search-result-meta">
+            <span className={`search-result-source-badge ${item.source_type}`}>
+              {item.source_type === "excel-embedded" ? t("search.sourceExcelEmbedded") : item.source_type === "ug-preview" ? t("search.sourceUgPreview") : item.source_type}
+            </span>
+            <span className="search-result-path" title={item.origin_path}>{extractFilename(item.origin_path)}</span>
+          </div>
+          {(item.width != null || item.format || item.size_bytes != null) && (
+            <div className="search-result-meta-info">
+              {item.width != null && item.height != null && <span>{item.width}×{item.height}</span>}
+              {item.width != null && item.height != null && item.format && <span className="meta-sep">·</span>}
+              {item.format && <span>{item.format}</span>}
+              {item.format && item.size_bytes != null && <span className="meta-sep">·</span>}
+              {item.size_bytes != null && <span>{formatFileSize(item.size_bytes)}</span>}
+            </div>
+          )}
+          {item.ocr_text && (
+            <div className="search-result-detail">
+              <span className="search-ocr-label">{t("search.ocrLabel")}:</span>
+              <span className="search-ocr-text" title={item.ocr_text}>
+                {item.ocr_text.length > 50 ? item.ocr_text.slice(0, 50) + "..." : item.ocr_text}
+              </span>
+            </div>
+          )}
+          {item.source_type === "excel-embedded" && item.sheet_name && (
+            <div className="search-result-detail">
+              <span className="detail-label">{t("search.sheet")}:</span>
+              <span className="detail-value">{item.sheet_name}</span>
+              {item.row_number != null && (
+                <>
+                  <span className="detail-label">{t("search.row")}:</span>
+                  <span className="detail-value">R{item.row_number}</span>
+                </>
+              )}
+            </div>
+          )}
+          {item.ug_ref && (
+            <div className="search-result-detail">
+              <span className="detail-label">UG:</span>
+              <span className="detail-value">{item.ug_ref}</span>
+            </div>
+          )}
+        </div>
+        <div className="search-result-actions">
+          {item.source_type === "excel-embedded" && (
+            <button className="search-action-btn search-action-primary" onClick={() => openFile(item.origin_path)}>
+              {t("search.openExcel")}
+            </button>
+          )}
+          {item.source_type === "ug-preview" && (
+            <button className="search-action-btn search-action-primary" onClick={() => openFolder(item.origin_path)}>
+              {t("search.openUgFolder")}
+            </button>
+          )}
+          <button className="search-action-btn" onClick={() => openFile(item.image_path)}>
+            {t("search.openImage")}
+          </button>
+        </div>
+        <button
+          className={`search-result-bookmark ${isBookmarked ? "bookmarked" : ""}`}
+          onClick={(e) => { e.stopPropagation(); toggleBookmark(item.img_id); }}
+          title={isBookmarked ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
+        >
+          {isBookmarked ? "★" : "☆"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type ResultGridCellProps = VirtualRowData & {
+  columnIndex: number;
+  rowIndex: number;
+  style: React.CSSProperties;
+  ariaAttributes: { "aria-colindex": number; role: "gridcell" };
+};
+
+function ResultGridCell({ columnIndex, rowIndex, style, items, selectedIds, brokenImgs, bookmarkedIds, _gridCols, t, toggleSelect, toggleBookmark, showContextMenu, onThumbEnter, onThumbLeave, onThumbClick, onImgError }: ResultGridCellProps) {
+  const index = rowIndex * _gridCols + columnIndex;
+  if (index >= items.length) return null;
+  const item = items[index];
+  const gap = 8;
+  const innerW = (style.width as number) - gap;
+  const innerH = (style.height as number) - gap;
+  const isSelected = selectedIds.has(item.img_id);
+  const isBroken = brokenImgs.has(item.img_id);
+  const isBookmarked = bookmarkedIds.has(item.img_id);
+  const simClass = similarityClass(item.similarity);
+
+  return (
+    <div style={{ ...style, width: (style.width as number), height: (style.height as number) }}>
+      <div
+        className={`search-result-item ${simClass} ${isSelected ? "selected" : ""}`}
+        style={{ width: innerW, height: innerH, flexDirection: "column", padding: 0, overflow: "hidden" }}
+        onClick={(e) => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            toggleSelect(item.img_id);
+          }
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          showContextMenu(e, item);
+        }}
+      >
+        <div
+          className="search-result-thumb"
+          style={{ width: "100%", height: "auto", aspectRatio: "1", borderRadius: 0, border: "none", borderBottom: "var(--border-width) solid var(--border)" }}
+          onMouseEnter={(e) => onThumbEnter(e, item)}
+          onMouseLeave={onThumbLeave}
+          onClick={(e) => onThumbClick(e, item)}
+          title={t("search.openImage")}
+        >
+          <LazyThumbnail
+            imagePath={item.image_path}
+            imgId={item.img_id}
+            broken={isBroken}
+            onError={() => onImgError(item.img_id)}
+            noPreviewText={t("search.noPreview")}
+          />
+        </div>
+        <div className="search-result-info" style={{ padding: "var(--space-2) var(--space-3)", gap: "var(--space-1)" }}>
+          <div className="search-result-header" style={{ flexWrap: "wrap" }}>
+            <span className="search-result-id" title={item.img_id} style={{ fontSize: "var(--text-xs)", fontWeight: 600 }}>{item.img_id}</span>
+            <span className={`search-result-similarity ${simClass}`} style={{ fontSize: 10 }}>{formatSimilarity(item.similarity)}</span>
+          </div>
+          <div className="search-result-meta" style={{ gap: "var(--space-2)" }}>
+            <span className={`search-result-source-badge ${item.source_type}`} style={{ fontSize: 10 }}>
+              {item.source_type === "excel-embedded" ? t("search.sourceExcelEmbedded") : item.source_type === "ug-preview" ? t("search.sourceUgPreview") : item.source_type}
+            </span>
+            <span className="search-result-path" title={item.origin_path} style={{ fontSize: 11 }}>{extractFilename(item.origin_path)}</span>
+          </div>
+          {(item.width != null || item.format || item.size_bytes != null) && (
+            <div className="search-result-meta-info">
+              {item.width != null && item.height != null && <span>{item.width}×{item.height}</span>}
+              {item.width != null && item.height != null && item.format && <span className="meta-sep">·</span>}
+              {item.format && <span>{item.format}</span>}
+              {item.format && item.size_bytes != null && <span className="meta-sep">·</span>}
+              {item.size_bytes != null && <span>{formatFileSize(item.size_bytes)}</span>}
+            </div>
+          )}
+          {item.ocr_text && (
+            <div className="search-result-detail" style={{ marginTop: 0, fontSize: 10 }}>
+              <span className="search-ocr-label">{t("search.ocrLabel")}:</span>
+              <span className="search-ocr-text" title={item.ocr_text}>
+                {item.ocr_text.length > 30 ? item.ocr_text.slice(0, 30) + "..." : item.ocr_text}
+              </span>
+            </div>
+          )}
+          {item.source_type === "excel-embedded" && item.sheet_name && (
+            <div className="search-result-detail" style={{ marginTop: 0, fontSize: 10 }}>
+              <span className="detail-label" style={{ fontSize: 10 }}>{t("search.sheet")}:</span>
+              <span className="detail-value" style={{ fontSize: 10 }}>{item.sheet_name}</span>
+              {item.row_number != null && (
+                <>
+                  <span className="detail-label" style={{ fontSize: 10 }}>{t("search.row")}:</span>
+                  <span className="detail-value" style={{ fontSize: 10 }}>R{item.row_number}</span>
+                </>
+              )}
+            </div>
+          )}
+          {item.ug_ref && (
+            <div className="search-result-detail" style={{ marginTop: 0, fontSize: 10 }}>
+              <span className="detail-label" style={{ fontSize: 10 }}>UG:</span>
+              <span className="detail-value" style={{ fontSize: 10 }}>{item.ug_ref}</span>
+            </div>
+          )}
+        </div>
+        <button
+          className={`search-result-bookmark ${isBookmarked ? "bookmarked" : ""}`}
+          onClick={(e) => { e.stopPropagation(); toggleBookmark(item.img_id); }}
+          title={isBookmarked ? t("search.bookmarkRemove") : t("search.bookmarkAdd")}
+          style={{ top: "var(--space-2)", right: "var(--space-2)", fontSize: 20, background: "oklch(0% 0 0 / 0.25)", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          {isBookmarked ? "★" : "☆"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -117,6 +368,7 @@ export default function Search() {
   const [compareItems, setCompareItems] = useState<[SearchResultItem, SearchResultItem] | null>(null);
   const [filterText, setFilterText] = useState("");
   const PAGE_SIZE = 20;
+  const VIRTUAL_SCROLL_THRESHOLD = 200;
   const [page, setPage] = useState(0);
   const [sortBy, setSortBy] = useState<SortKey>("similarity");
   const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
@@ -135,6 +387,34 @@ export default function Search() {
   useEffect(() => {
     localStorage.setItem("searchThumbSize", thumbSize);
   }, [thumbSize]);
+
+  // Virtual scroll: container measurement
+  const virtContainerRef = useRef<HTMLDivElement>(null);
+  const [virtDims, setVirtDims] = useState({ width: 800, height: 600 });
+  const thumbPx = THUMB_SIZES[thumbSize];
+  const listRowHeight = thumbPx + 48; // thumb + padding + gap
+  const gridColCount = Math.max(1, Math.floor((virtDims.width - 16) / 190));
+  const gridColWidth = Math.floor((virtDims.width - 16) / gridColCount);
+  const gridRowHeight = gridColWidth + 140; // square thumb + info section
+
+  useEffect(() => {
+    const el = virtContainerRef.current;
+    if (!el) return;
+    const measure = () => {
+      if (!virtContainerRef.current) return;
+      const rect = virtContainerRef.current.getBoundingClientRect();
+      const availableH = window.innerHeight - rect.top - 48;
+      setVirtDims({ width: rect.width, height: Math.max(300, availableH) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
 
   const SIMILARITY_THRESHOLD_KEY = "similarityThreshold";
   const BOOKMARKS_KEY = "searchBookmarks";
@@ -240,6 +520,7 @@ export default function Search() {
 
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE));
   const pagedResults = filteredResults.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const useVirtualScroll = filteredResults.length > VIRTUAL_SCROLL_THRESHOLD;
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -666,6 +947,61 @@ export default function Search() {
     setCompareItems([selected[0], selected[1]]);
   }, [getSelectedItems, t, addToast]);
 
+  const virtRowData = useMemo<VirtualRowData>(() => ({
+    items: filteredResults,
+    selectedIds,
+    brokenImgs,
+    bookmarkedIds,
+    thumbPx,
+    _gridCols: gridColCount,
+    t,
+    toggleSelect,
+    toggleBookmark,
+    showContextMenu: (e: React.MouseEvent, item: SearchResultItem) => {
+      setCtxMenu({ visible: true, x: e.clientX, y: e.clientY, item });
+    },
+    onThumbEnter: (e: React.MouseEvent<HTMLDivElement>, item: SearchResultItem) => {
+      if (brokenImgs.has(item.img_id)) return;
+      const thumb = e.currentTarget;
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = setTimeout(() => {
+        const rect = thumb.getBoundingClientRect();
+        const gap = 12;
+        const pw = 400;
+        const ph = 400;
+        let px = rect.right + gap;
+        let py = rect.top + rect.height / 2 - ph / 2;
+        if (px + pw > window.innerWidth - gap) px = rect.left - pw - gap;
+        if (py < gap) py = gap;
+        if (py + ph > window.innerHeight - gap) py = window.innerHeight - ph - gap;
+        setHoverPreview({ visible: true, x: px, y: py, imgPath: item.image_path });
+      }, 300);
+    },
+    onThumbLeave: () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      setHoverPreview({ visible: false, x: 0, y: 0, imgPath: "" });
+    },
+    onThumbClick: (e: React.MouseEvent<HTMLDivElement>, item: SearchResultItem) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        toggleSelect(item.img_id);
+      } else {
+        openFile(item.image_path);
+      }
+    },
+    onImgError: (imgId: string) => {
+      setBrokenImgs((prev) => {
+        if (prev.has(imgId)) return prev;
+        const next = new Set(prev);
+        next.add(imgId);
+        return next;
+      });
+    },
+  }), [filteredResults, selectedIds, brokenImgs, bookmarkedIds, thumbPx, gridColCount, t, toggleSelect, toggleBookmark, setHoverPreview, setBrokenImgs, setCtxMenu]);
+
   const showDropZone = state === "idle" || state === "done" || state === "error";
 
   return (
@@ -999,6 +1335,34 @@ export default function Search() {
               {t("search.noFilterMatches")}
             </div>
           ) : (
+            <>
+            {useVirtualScroll ? (
+              viewMode === "list" ? (
+                <div ref={virtContainerRef} className="search-virt-container">
+                  <List
+                    style={{ height: virtDims.height, width: virtDims.width }}
+                    rowCount={filteredResults.length}
+                    rowHeight={listRowHeight}
+                    rowProps={virtRowData}
+                    rowComponent={ResultListRow}
+                    overscanCount={10}
+                  />
+                </div>
+              ) : (
+                <div ref={virtContainerRef} className="search-virt-container">
+                  <Grid
+                    style={{ height: virtDims.height, width: virtDims.width }}
+                    columnCount={gridColCount}
+                    columnWidth={gridColWidth}
+                    rowCount={Math.ceil(filteredResults.length / gridColCount)}
+                    rowHeight={gridRowHeight}
+                    cellProps={virtRowData}
+                    cellComponent={ResultGridCell}
+                    overscanCount={2}
+                  />
+                </div>
+              )
+            ) : (
             <div
               className={`search-results-list ${viewMode === "grid" ? "grid-view" : ""}`}
               style={{ "--thumb-size": `${THUMB_SIZES[thumbSize]}px` } as React.CSSProperties}
@@ -1177,9 +1541,11 @@ export default function Search() {
               </div>
             ))}
           </div>
+            )}
+          </>
           )}
 
-          {filteredResults.length > PAGE_SIZE && (
+          {!useVirtualScroll && filteredResults.length > PAGE_SIZE && (
             <div className="search-pagination">
               <button
                 className="search-pagination-btn"
@@ -1202,6 +1568,17 @@ export default function Search() {
               >
                 {t("search.pageNext")}
               </button>
+            </div>
+          )}
+          {useVirtualScroll && (
+            <div className="search-pagination" style={{ justifyContent: "center" }}>
+              <span className="search-pagination-info">
+                {t("search.pageInfo", {
+                  page: "—",
+                  total: "—",
+                  count: String(filteredResults.length),
+                })}
+              </span>
             </div>
           )}
         </div>
