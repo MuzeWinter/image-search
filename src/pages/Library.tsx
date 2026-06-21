@@ -7,6 +7,7 @@ import * as scanService from "../services/scanService";
 import type { Library, ScanProgress, ScanResult } from "../services/types";
 import { Skeleton } from "../components/shared/Skeleton";
 import { InlineError } from "../components/shared/InlineError";
+import { EmptyState, LibraryEmptyIcon } from "../components/shared/EmptyState";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
 type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
@@ -401,11 +402,11 @@ export default function LibraryPage() {
             </table>
           </div>
         ) : (
-          <div className="empty-state">
-            <div className="empty-state-icon">{t("libraries.emptyIcon")}</div>
-            <div className="empty-state-title">{t("libraries.emptyTitle")}</div>
-            <div className="empty-state-description">{t("libraries.emptyDesc")}</div>
-          </div>
+          <EmptyState
+            icon={<LibraryEmptyIcon />}
+            title={t("libraries.emptyTitle")}
+            description={t("libraries.emptyDesc")}
+          />
         )}
       </section>
     </div>

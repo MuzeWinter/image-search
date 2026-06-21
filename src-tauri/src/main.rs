@@ -307,6 +307,15 @@ fn cancel_scan() -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
+fn write_text_file(path: String, content: String) -> Result<(), String> {
+    let mut file = std::fs::File::create(&path)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
+    file.write_all(content.as_bytes())
+        .map_err(|e| format!("Failed to write file: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
 fn open_file(path: String) -> Result<(), String> {
     let p = std::path::Path::new(&path);
     if !p.exists() {
@@ -343,6 +352,7 @@ fn main() {
             cancel_scan,
             open_file,
             open_folder,
+            write_text_file,
             save_window_state,
             load_window_state
         ])

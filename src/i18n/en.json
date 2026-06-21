@@ -128,7 +128,21 @@
     "historyTitle": "Search History",
     "clearHistory": "Clear All",
     "historyDeleted": "Removed from history",
-    "historyCleared": "History cleared"
+    "historyCleared": "History cleared",
+    "exportCsv": "Export CSV",
+    "csvColumn": {
+      "rank": "Rank",
+      "imageId": "Image ID",
+      "sourceType": "Source Type",
+      "similarity": "Similarity",
+      "filePath": "File Path",
+      "ugNumber": "UG Number",
+      "sheet": "Sheet",
+      "row": "Row"
+    },
+    "exportSuccess": "CSV exported successfully",
+    "exportFailed": "Export failed",
+    "exportCancelled": "Export cancelled"
   },
   "libraries": {
     "add": "Add Library",

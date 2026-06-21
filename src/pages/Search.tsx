@@ -1,13 +1,16 @@
 ﻿import { useState, useRef, useCallback, useEffect } from "react";
 import { useAtomValue } from "jotai";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 import { useI18n } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
+import { callTauri } from "../services/ipc";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
 import { openFile, openFolder } from "../services/systemService";
 import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
+import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
 import { escapeEpochAtom } from "../stores/atoms";
 import {
   getHistory,
@@ -230,6 +233,60 @@ export default function Search() {
     return sourceType;
   };
 
+  function escapeCsvField(val: string): string {
+    if (val.includes(",") || val.includes("\"") || val.includes("\n") || val.includes("\r")) {
+      return `"${val.replace(/"/g, "\"\"")}"`;
+    }
+    return val;
+  }
+
+  const handleExportCsv = useCallback(async () => {
+    if (!results || results.results.length === 0) return;
+
+    const filePath = await save({
+      defaultPath: "search_results.csv",
+      filters: [{ name: "CSV Files", extensions: ["csv"] }],
+    });
+
+    if (!filePath) return;
+
+    try {
+      const headers = [
+        t("search.csvColumn.rank"),
+        t("search.csvColumn.imageId"),
+        t("search.csvColumn.sourceType"),
+        t("search.csvColumn.similarity"),
+        t("search.csvColumn.filePath"),
+        t("search.csvColumn.ugNumber"),
+        t("search.csvColumn.sheet"),
+        t("search.csvColumn.row"),
+      ];
+
+      const rows = results.results.map((item, idx) => [
+        String(idx + 1),
+        item.img_id,
+        sourceTypeLabel(item.source_type),
+        formatSimilarity(item.similarity),
+        item.image_path,
+        item.ug_ref ?? "",
+        item.sheet_name ?? "",
+        item.row_number != null ? String(item.row_number) : "",
+      ]);
+
+      const bom = "﻿";
+      const csvLines = [
+        headers.map(escapeCsvField).join(","),
+        ...rows.map((row) => row.map(escapeCsvField).join(",")),
+      ];
+      const csvContent = bom + csvLines.join("\n");
+
+      await callTauri("write_text_file", { path: filePath, content: csvContent });
+      addToast("success", t("search.exportSuccess"));
+    } catch (e) {
+      addToast("error", t("search.exportFailed"));
+    }
+  }, [results, t, addToast]);
+
   const showDropZone = state === "idle" || state === "done" || state === "error";
 
   return (
@@ -391,7 +448,12 @@ export default function Search() {
       {/* Results */}
       {results && results.results.length > 0 && state === "done" && (
         <div className="search-results">
-          <h3 className="search-results-title">{t("search.results")}</h3>
+          <div className="search-results-header">
+            <h3 className="search-results-title">{t("search.results")}</h3>
+            <button className="search-export-btn" onClick={handleExportCsv}>
+              {t("search.exportCsv")}
+            </button>
+          </div>
           <div className="search-results-list">
             {results.results.map((item: SearchResultItem, idx: number) => (
               <div key={item.img_id} className="search-result-item"
@@ -498,11 +560,11 @@ export default function Search() {
 
       {/* No results */}
       {results && results.results.length === 0 && state === "done" && (
-        <div className="search-empty">
-          <p className="search-empty-icon">&#x1F50D;</p>
-          <p className="search-empty-title">{t("search.noResults")}</p>
-          <p className="search-empty-desc">{t("search.noResultsDesc")}</p>
-        </div>
+        <EmptyState
+          icon={<SearchEmptyIcon />}
+          title={t("search.noResults")}
+          description={t("search.noResultsDesc")}
+        />
       )}
 
       {/* Context menu */}

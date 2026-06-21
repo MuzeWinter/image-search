@@ -128,7 +128,21 @@
     "historyTitle": "搜索历史",
     "clearHistory": "清除全部",
     "historyDeleted": "已从历史中移除",
-    "historyCleared": "历史已清除"
+    "historyCleared": "历史已清除",
+    "exportCsv": "导出 CSV",
+    "csvColumn": {
+      "rank": "排名",
+      "imageId": "图片ID",
+      "sourceType": "来源类型",
+      "similarity": "相似度",
+      "filePath": "文件路径",
+      "ugNumber": "UG编号",
+      "sheet": "工作表",
+      "row": "行号"
+    },
+    "exportSuccess": "CSV 导出成功",
+    "exportFailed": "导出失败",
+    "exportCancelled": "已取消导出"
   },
   "libraries": {
     "add": "添加资料库",

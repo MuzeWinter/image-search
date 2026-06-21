@@ -319,6 +319,12 @@
   margin-bottom: var(--space-4);
 }
 
+.empty-state-svg {
+  display: block;
+  margin: 0 auto;
+  color: var(--muted);
+}
+
 .empty-state-title {
   font-family: var(--font-display);
   font-size: var(--text-xl);
