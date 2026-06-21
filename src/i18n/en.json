@@ -1,13 +1,6 @@
 {
   "sidebar": {
     "brand": "ZOOBET Search",
-    "groups": {
-      "search": "Search",
-      "browse": "Browse",
-      "manage": "Manage",
-      "classify": "Classify",
-      "system": "System"
-    },
     "nav": {
       "search": "Image Search",
       "library": "Library Manager",

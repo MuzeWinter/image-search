@@ -1,13 +1,6 @@
 {
   "sidebar": {
     "brand": "ZOOBET检索",
-    "groups": {
-      "search": "检索",
-      "browse": "浏览",
-      "manage": "管理",
-      "classify": "分类",
-      "system": "系统"
-    },
     "nav": {
       "search": "图片检索",
       "library": "资料库管理",
