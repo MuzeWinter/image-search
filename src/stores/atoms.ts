@@ -35,3 +35,8 @@ export const startupSearchPathAtom = atom<string | null>(null);
 
 /** Set of library IDs whose paths do not exist on disk (checked at startup) */
 export const invalidPathsAtom = atom<Set<number>>(new Set<number>());
+
+export type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
+
+/** Current scan phase (shared so AppShell can update window title) */
+export const scanPhaseAtom = atom<ScanPhase>("idle");

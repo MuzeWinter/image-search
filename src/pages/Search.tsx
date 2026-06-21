@@ -12,6 +12,7 @@ import * as libraryService from "../services/libraryService";
 import { openFile, openFolder } from "../services/systemService";
 import ContextMenu from "../components/shared/ContextMenu";
 import type { ContextMenuItem } from "../components/shared/ContextMenu";
+import LazyThumbnail from "../components/shared/LazyThumbnail";
 import { EmptyState, SearchEmptyIcon } from "../components/shared/EmptyState";
 import { escapeEpochAtom, splashStateAtom, startupSearchPathAtom } from "../stores/atoms";
 import { useServiceQuery } from "../stores/hooks";
@@ -860,27 +861,20 @@ export default function Search() {
                   }}
                   title={t("search.openImage")}
                 >
-                  {(() => {
-                    const url = fileToUrl(item.image_path);
-                    if (!url || brokenImgs.has(item.img_id)) {
-                      return <div className="img-placeholder">{t("search.noPreview")}</div>;
-                    }
-                    return (
-                      <img
-                        src={url}
-                        alt={item.img_id}
-                        loading="lazy"
-                        onError={() => {
-                          setBrokenImgs((prev) => {
-                            if (prev.has(item.img_id)) return prev;
-                            const next = new Set(prev);
-                            next.add(item.img_id);
-                            return next;
-                          });
-                        }}
-                      />
-                    );
-                  })()}
+                  <LazyThumbnail
+                    imagePath={item.image_path}
+                    imgId={item.img_id}
+                    broken={brokenImgs.has(item.img_id)}
+                    onError={() => {
+                      setBrokenImgs((prev) => {
+                        if (prev.has(item.img_id)) return prev;
+                        const next = new Set(prev);
+                        next.add(item.img_id);
+                        return next;
+                      });
+                    }}
+                    noPreviewText={t("search.noPreview")}
+                  />
                 </div>
                 <div className="search-result-info">
                   <div className="search-result-header">

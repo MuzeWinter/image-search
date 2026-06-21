@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useI18n } from "../i18n/context";
 import { useToast } from "../contexts/ToastContext";
 import { useServiceQuery } from "../stores/hooks";
-import { invalidPathsAtom } from "../stores/atoms";
+import { invalidPathsAtom, scanPhaseAtom, type ScanPhase } from "../stores/atoms";
 import * as libraryService from "../services/libraryService";
 import * as scanService from "../services/scanService";
 import type { Library, ScanProgress, ScanResult } from "../services/types";
@@ -13,12 +13,11 @@ import { EmptyState, LibraryEmptyIcon } from "../components/shared/EmptyState";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
-
 export default function LibraryPage() {
   const { t } = useI18n();
   const { addToast } = useToast();
   const invalidPaths = useAtomValue(invalidPathsAtom);
+  const setScanPhaseAtom = useSetAtom(scanPhaseAtom);
   const [libPath, setLibPath] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
   const [scanningLibId, setScanningLibId] = useState<number | null>(null);
@@ -82,6 +81,14 @@ export default function LibraryPage() {
       if (dropUnlisten) dropUnlisten();
     };
   }, [t, addToast, refetchLibs]);
+
+  // Sync scanPhase to global atom so AppShell can update window title
+  useEffect(() => {
+    setScanPhaseAtom(scanPhase);
+    return () => {
+      setScanPhaseAtom("idle");
+    };
+  }, [scanPhase, setScanPhaseAtom]);
 
   const startListening = useCallback(async () => {
     if (unlistenRef.current) {
