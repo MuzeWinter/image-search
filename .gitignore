@@ -24,6 +24,12 @@ src-tauri/target/
 __pycache__/
 *.pyc
 
+# Backend data
+backend/data/*.db
+
+# Test data (local only)
+test-data/
+
 # IDE
 *.suo
 *.user
