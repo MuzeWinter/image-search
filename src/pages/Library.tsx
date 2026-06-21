@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "../i18n/context";
+import { useToast } from "../contexts/ToastContext";
 import { useServiceQuery } from "../stores/hooks";
 import * as libraryService from "../services/libraryService";
 import * as scanService from "../services/scanService";
@@ -12,6 +13,7 @@ type ScanPhase = "idle" | "scanning" | "paused" | "complete" | "error";
 
 export default function LibraryPage() {
   const { t } = useI18n();
+  const { addToast } = useToast();
   const [libPath, setLibPath] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
   const [scanningLibId, setScanningLibId] = useState<number | null>(null);
@@ -58,11 +60,10 @@ export default function LibraryPage() {
     try {
       await libraryService.add(path);
       setLibPath("");
-      setSaveMsg(t("libraries.added"));
+      addToast("success", t("libraries.added"));
       refetchLibs();
-      setTimeout(() => setSaveMsg(""), 3000);
     } catch (e) {
-      setSaveMsg(e instanceof Error ? e.message : String(e));
+      addToast("error", e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -95,6 +96,7 @@ export default function LibraryPage() {
       const result = await scanService.startScan(lib.id, lib.path);
       setScanResult(result);
       setScanPhase("complete");
+      addToast("success", t("libraries.scanComplete"));
       refetchLibs();
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
@@ -102,7 +104,7 @@ export default function LibraryPage() {
         setScanPhase("idle");
       } else {
         setScanPhase("error");
-        setSaveMsg(errMsg);
+        addToast("error", errMsg);
       }
     } finally {
       stopListening();
@@ -124,10 +126,9 @@ export default function LibraryPage() {
     try {
       await libraryService.remove(lib.id);
       refetchLibs();
-      setSaveMsg(t("libraries.deleted"));
-      setTimeout(() => setSaveMsg(""), 3000);
+      addToast("success", t("libraries.deleted"));
     } catch (e) {
-      setSaveMsg(e instanceof Error ? e.message : String(e));
+      addToast("error", e instanceof Error ? e.message : String(e));
     }
   };
 

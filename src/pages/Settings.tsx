@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useI18n, type Locale } from "../i18n/context";
+import { useToast } from "../contexts/ToastContext";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
 import * as settingsService from "../services/settingsService";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -16,6 +17,7 @@ function getSavedUgColumn(): string {
 
 export default function Settings() {
   const { t, locale, setLocale } = useI18n();
+  const { addToast } = useToast();
   const { theme, setTheme } = useTheme();
   const [ugColumnName, setUgColumnName] = useState(getSavedUgColumn);
   const [ugSaveMsg, setUgSaveMsg] = useState("");
@@ -44,6 +46,7 @@ export default function Settings() {
     try {
       localStorage.setItem(UG_COLUMN_KEY, ugColumnName.trim() || "图号");
       setUgSaveMsg(t("settings.ugColumnNameSaved"));
+      addToast("success", t("settings.ugColumnNameSaved"));
       setTimeout(() => setUgSaveMsg(""), 2000);
     } catch {
       setUgSaveMsg("Failed to save");
@@ -66,8 +69,10 @@ export default function Settings() {
       setMaintLoading("backup");
       const result = await settingsService.backup(targetPath);
       showMaintMsg(`${t("settings.backupSuccess")}: ${result.backup_path}`);
+      addToast("success", t("settings.backupSuccess"));
     } catch (e) {
       showMaintMsg(`${t("settings.backupFail")}: ${e instanceof Error ? e.message : String(e)}`);
+      addToast("error", t("settings.backupFail"));
     } finally {
       setMaintLoading("");
     }
@@ -85,8 +90,10 @@ export default function Settings() {
       setMaintLoading("restore");
       await settingsService.restore(sourcePath);
       showMaintMsg(t("settings.restoreSuccess"), 5000);
+      addToast("success", t("settings.restoreSuccess"));
     } catch (e) {
       showMaintMsg(`${t("settings.restoreFail")}: ${e instanceof Error ? e.message : String(e)}`);
+      addToast("error", t("settings.restoreFail"));
     } finally {
       setMaintLoading("");
     }
@@ -98,6 +105,7 @@ export default function Settings() {
       setMaintLoading("rebuild");
       const result = await settingsService.rebuildIndex();
       showMaintMsg(`${t("settings.rebuildSuccess")} (${result.deleted_vectors} ${t("statusBar.images")})`);
+      addToast("success", t("settings.rebuildSuccess"));
     } catch (e) {
       showMaintMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -111,6 +119,7 @@ export default function Settings() {
       setMaintLoading("clear");
       const result = await settingsService.clearCache();
       showMaintMsg(`${t("settings.clearCacheSuccess")} (${result.cleaned_files} files)`);
+      addToast("success", t("settings.clearCacheSuccess"));
     } catch (e) {
       showMaintMsg(e instanceof Error ? e.message : String(e));
     } finally {

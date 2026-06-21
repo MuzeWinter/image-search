@@ -1,6 +1,7 @@
 ﻿import { useState, useRef, useCallback, useEffect } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/context";
+import { useToast } from "../contexts/ToastContext";
 import * as searchService from "../services/searchService";
 import type { SearchScope, SearchResultItem, SearchResults } from "../services/searchService";
 import { openFile, openFolder } from "../services/systemService";
@@ -37,6 +38,7 @@ function extractFilename(path: string): string {
 
 export default function Search() {
   const { t } = useI18n();
+  const { addToast } = useToast();
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResults | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -111,12 +113,14 @@ export default function Search() {
     } catch (e) {
       setState("error");
       setErrorMsg(e instanceof Error ? e.message : String(e));
+      addToast("error", e instanceof Error ? e.message : String(e));
     }
-  }, [searchScope, waitForModel]);
+  }, [searchScope, waitForModel, addToast]);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setErrorMsg(t("search.invalidFileType"));
+      addToast("warning", t("search.invalidFileType"));
       return;
     }
     const base64 = await fileToBase64(file);
