@@ -43,7 +43,8 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "errorBoundaryTitle": "Something went wrong",
-    "errorBoundaryDesc": "Please try refreshing the page or click retry. If the issue persists, check the console logs."
+    "errorBoundaryDesc": "Please try refreshing the page or click retry. If the issue persists, check the console logs.",
+    "switchLocale": "Switch Language"
   },
   "settings": {
     "title": "Settings",
@@ -111,7 +112,8 @@
     "modelFailed": "Model load failed",
     "imgId": "IMG",
     "sheet": "Sheet",
-    "row": "Row"
+    "row": "Row",
+    "ugRef": "UG Ref"
   },
   "libraries": {
     "add": "Add Library",

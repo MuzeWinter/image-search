@@ -43,7 +43,8 @@
     "delete": "删除",
     "confirm": "确认",
     "errorBoundaryTitle": "应用出错了",
-    "errorBoundaryDesc": "请尝试刷新页面或点击重试按钮。如果问题持续出现，请检查控制台日志。"
+    "errorBoundaryDesc": "请尝试刷新页面或点击重试按钮。如果问题持续出现，请检查控制台日志。",
+    "switchLocale": "切换语言"
   },
   "settings": {
     "title": "系统设置",
@@ -111,7 +112,8 @@
     "modelFailed": "模型加载失败",
     "imgId": "图片编号",
     "sheet": "工作表",
-    "row": "行"
+    "row": "行",
+    "ugRef": "UG编号"
   },
   "libraries": {
     "add": "添加资料库",

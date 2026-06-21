@@ -1,10 +1,10 @@
-interface InlineErrorProps {
+﻿interface InlineErrorProps {
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
 }
 
-export function InlineError({ message, onRetry, retryLabel = "重试" }: InlineErrorProps) {
+export function InlineError({ message, onRetry, retryLabel }: InlineErrorProps) {
   return (
     <div className="inline-error" role="alert">
       <svg
@@ -23,7 +23,7 @@ export function InlineError({ message, onRetry, retryLabel = "重试" }: InlineE
       <span className="inline-error-message">{message}</span>
       {onRetry && (
         <button className="inline-error-retry" onClick={onRetry}>
-          {retryLabel}
+          {retryLabel ?? "Retry"}
         </button>
       )}
     </div>
